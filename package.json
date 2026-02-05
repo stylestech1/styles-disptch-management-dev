@@ -27,7 +27,7 @@
     "framer-motion": "^12.23.24",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.554.0",
-    "next": "^15.5.7",
+    "next": "15.5.9",
     "next-svgr": "^0.0.2",
     "react": "19.1.0",
     "react-chartjs-2": "^5.3.1",
