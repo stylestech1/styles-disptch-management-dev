@@ -16,7 +16,7 @@ import GlobalFilter from "@/components/ui/GlobalFilter";
 
 interface NavbarProps {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   onMenuClick: () => void;
 }
 
@@ -30,6 +30,7 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
     "/admin/driverSummary",
     "/admin/truckSummary",
     "/admin/trucksmaintenance",
+    "/admin/centermaintenance",
     "admin/drivers",
     "/dispatchers/loads",
   ].some((path) => pathname.includes(path));
@@ -40,6 +41,7 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
     if (pathname.includes("drivers")) return "drivers";
     if (pathname.includes("truckSummary")) return "trucks";
     if (pathname.includes("trucksmaintenance")) return "trucks";
+    if (pathname.includes("centermaintenance")) return "trucks";
     return "default";
   };
 
@@ -138,11 +140,12 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
           }}
         >
           {(pathname === "/admin/truckdashboard" ||
-            pathname === "/admin/trucksmaintenance") && (
-            <div className="hidden sm:flex">
-              <HeaderSourceTruckDashboard />
-            </div>
-          )}
+            pathname === "/admin/trucksmaintenance" ||
+            pathname === "/admin/centermaintenance" && (
+              <div className="hidden sm:flex">
+                <HeaderSourceTruckDashboard />
+              </div>
+            ))}
           {shouldShowFilter && (
             <Box sx={{ display: { xs: "none", sm: "block" } }}>
               <GlobalFilter filterType={getFilterType()} />

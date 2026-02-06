@@ -49,10 +49,11 @@ import {
 } from "@/utils/googleDistanceCalculator";
 import { muiTheme } from "@/theme/theme";
 import { RootState, useAppSelector } from "@/redux/store";
+import { MdContentCopy } from "react-icons/md";
 
 // Lazy load the map components
 const LazyGoogleMapsLoader = lazy(
-  () => import("@/components/ui/GoogleMapsLoader")
+  () => import("@/components/ui/GoogleMapsLoader"),
 );
 const LazyMapWithRoute = lazy(() => import("@/components/ui/MapWithRoute"));
 
@@ -60,10 +61,10 @@ const LazyMapWithRoute = lazy(() => import("@/components/ui/MapWithRoute"));
 const useRouteCalculations = (
   dho: TPlace | null,
   origin: TPlace | null,
-  destinations: (TPlace | null)[]
+  destinations: (TPlace | null)[],
 ) => {
   const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(
-    null
+    null,
   );
   const [dhoToOriginTime, setDhoToOriginTime] = useState<number | null>(null);
   const [totalDistance, setTotalDistance] = useState<number | null>(null);
@@ -82,7 +83,7 @@ const useRouteCalculations = (
     try {
       const result = await calculateDhoToOriginDistance(
         { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) },
-        { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) }
+        { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) },
       );
       setDhoToOriginDistance(result.distance);
       setDhoToOriginTime(result.duration);
@@ -99,7 +100,7 @@ const useRouteCalculations = (
   // Calculate DHO ➡ Origin ➡ All Destinations
   const calculateTotalRoute = useCallback(async () => {
     const validDestinations = destinations.filter(
-      (dest): dest is TPlace => dest !== null
+      (dest): dest is TPlace => dest !== null,
     );
 
     if (
@@ -118,7 +119,7 @@ const useRouteCalculations = (
           origin
             ? { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) }
             : null,
-          destinationsCoords
+          destinationsCoords,
         );
 
         setTotalDistance(result.distance);
@@ -162,7 +163,7 @@ const useRouteCalculations = (
 // TODO: Custom hook for rate calculation
 const useRateCalculation = (
   dhoToOriginDistance: number | null,
-  totalDistance: number | null
+  totalDistance: number | null,
 ) => {
   const [dh, setDh] = useState<number | "">("");
   const [loadMiles, setLoadMiles] = useState<number | "">("");
@@ -208,6 +209,28 @@ const useRateCalculation = (
     setCalc(Number(result.toFixed(3)));
   }, [dh, loadMiles, rate]);
 
+  const copyCalculationToClipboard = () => {
+    const text = `Rate Calculation
+
+•  Dead Head (Miles): ${dh || "0"}
+•  Load Miles: ${loadMiles || "0"}
+•  Rate ($): $${rate || "0"}
+
+• Price Per Mile: $${calc || "0"}
+
+ Calculation: $${rate || "0"} / (${loadMiles || "0"} + ${dh || "0"} miles) = $${calc || "0"} per mile`;
+
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success("Rate Calculation copied !");
+      })
+      .catch((err) => {
+        console.error("Failed to copy:", err);
+        toast.error("Failed to copy calculation");
+      });
+  };
+
   const clearCalculation = useCallback(() => {
     setDh("");
     setLoadMiles("");
@@ -224,6 +247,7 @@ const useRateCalculation = (
     setRate,
     calc,
     clearCalculation,
+    copyCalculationToClipboard,
   };
 };
 
@@ -339,6 +363,7 @@ const CalculationPage = () => {
     setRate,
     calc,
     clearCalculation,
+    copyCalculationToClipboard,
   } = useRateCalculation(dhoToOriginDistance, totalDistance);
 
   // Destination management
@@ -354,7 +379,7 @@ const CalculationPage = () => {
         return newDestinations;
       });
     },
-    []
+    [],
   );
 
   const handleRemoveDestination = useCallback(
@@ -363,7 +388,7 @@ const CalculationPage = () => {
         setDestinations((prev) => prev.filter((_, i) => i !== index));
       }
     },
-    [destinations.length]
+    [destinations.length],
   );
 
   const clearAllRoutes = useCallback(() => {
@@ -374,13 +399,57 @@ const CalculationPage = () => {
 
   const hasValidRoute = useMemo(
     () => dho && origin && destinations.some((dest) => dest !== null),
-    [dho, origin, destinations]
+    [dho, origin, destinations],
   );
 
   const validDestinationsCount = useMemo(
     () => destinations.filter((dest) => dest !== null).length,
-    [destinations]
+    [destinations],
   );
+
+  const copyRouteDetailsToClipboard = () => {
+    const text = `Route Planning
+
+**DHO (Driver Home Origin) ***
+${dho ? `${dho.display_name}` : "No Location"}
+
+**Pick Up (Origin) ***
+${origin ? `${origin.display_name}` : "No Location"}
+
+
+**DHO to Origin**
+${dhoToOriginDistance ? `${dhoToOriginDistance.toFixed(1)} miles` : "0 miles"}
+${dhoToOriginTime ? formatTime(dhoToOriginTime) : "0 minutes"}
+
+**Total Route**
+${totalDistance ? `${totalDistance.toFixed(1)} miles` : "0 miles"}
+${totalTime ? formatTime(totalTime) : "0 minutes"}
+
+---
+
+** Destinations (${validDestinationsCount})
+
+${
+  destinations
+    .filter((dest) => dest !== null)
+    .map(
+      (dest, index) =>
+        `Destination-${index}-${resetKey} *\n\n${dest.display_name}`,
+    )
+    .join("\n\n") || "No destinations"
+}
+${destinations.filter((d) => d).length > 0 ? "" : ""}`;
+
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success("Route Planning copied !");
+      })
+      .catch((err) => {
+        console.error("Failed to copy:", err);
+        toast.error("Failed to copy route details");
+      });
+  };
 
   // Reset All Button
   const resetAllBtn = useCallback(() => {
@@ -397,7 +466,7 @@ const CalculationPage = () => {
     (
       type: "dho" | "origin" | "destination",
       place: TPlace | null,
-      index?: number
+      index?: number,
     ) => {
       if (type === "dho") {
         setDho(place);
@@ -407,7 +476,7 @@ const CalculationPage = () => {
         handleUpdateDestination(index, place);
       }
     },
-    [handleUpdateDestination]
+    [handleUpdateDestination],
   );
 
   return (
@@ -424,7 +493,7 @@ const CalculationPage = () => {
       >
         <Button
           sx={{
-            width: {xs: '100%', lg:"10%"},
+            width: { xs: "100%", lg: "10%" },
             mt: 2,
             py: 1.5,
             borderRadius: 2,
@@ -467,15 +536,27 @@ const CalculationPage = () => {
                 <Typography variant="h5" color="primary.main" fontWeight="600">
                   Rate Calculation
                 </Typography>
-                <Tooltip title="Clear all fields">
-                  <IconButton
-                    onClick={clearCalculation}
-                    size="small"
-                    color="inherit"
-                  >
-                    <Refresh />
-                  </IconButton>
-                </Tooltip>
+                <div className="flex items-center gap-1">
+                  <Tooltip title="Clear all fields">
+                    <IconButton
+                      onClick={clearCalculation}
+                      size="small"
+                      color="inherit"
+                    >
+                      <Refresh />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="copy all fields">
+                    <IconButton
+                      onClick={copyCalculationToClipboard}
+                      size="small"
+                      color="inherit"
+                      disabled={!dh && !loadMiles && !rate}
+                    >
+                      <MdContentCopy />
+                    </IconButton>
+                  </Tooltip>
+                </div>
               </Box>
 
               <Box>
@@ -510,7 +591,7 @@ const CalculationPage = () => {
                       value={loadMiles}
                       onChange={(e) =>
                         setLoadMiles(
-                          e.target.value ? Number(e.target.value) : ""
+                          e.target.value ? Number(e.target.value) : "",
                         )
                       }
                       type="number"
@@ -730,15 +811,27 @@ const CalculationPage = () => {
               <Typography variant="h5" color="primary.main" fontWeight="600">
                 Route Planning
               </Typography>
-              <Tooltip title="Recalculate distances">
-                <IconButton
-                  onClick={recalculateAll}
-                  size="small"
-                  disabled={isCalculating}
-                >
-                  <MyLocation />
-                </IconButton>
-              </Tooltip>
+              <div className="flex items-center gap-1">
+                <Tooltip title="Recalculate distances">
+                  <IconButton
+                    onClick={recalculateAll}
+                    size="small"
+                    disabled={isCalculating}
+                  >
+                    <MyLocation />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="copy all fields">
+                  <IconButton
+                    onClick={copyRouteDetailsToClipboard}
+                    size="small"
+                    color="inherit"
+                    disabled={!dho && !origin && destinations.every((d) => !d)}
+                  >
+                    <MdContentCopy />
+                  </IconButton>
+                </Tooltip>
+              </div>
             </Box>
 
             <Stack spacing={3}>
@@ -749,7 +842,6 @@ const CalculationPage = () => {
                 value={dho}
                 setValue={setDho}
                 placeholder="Enter driver's starting location"
-                // googleMapsApiKey={googleMapsApiKey!}
                 showZipCode={true}
               />
 
@@ -760,7 +852,6 @@ const CalculationPage = () => {
                 value={origin}
                 setValue={setOrigin}
                 placeholder="Enter origin address"
-                // googleMapsApiKey={googleMapsApiKey!}
                 showZipCode={true}
               />
 
@@ -848,7 +939,6 @@ const CalculationPage = () => {
                             handleUpdateDestination(index, place)
                           }
                           placeholder={`Enter destination ${index + 1} address`}
-                          // googleMapsApiKey={googleMapsApiKey!}
                           showZipCode={true}
                         />
                       </Box>

@@ -28,6 +28,8 @@ import { PiPaintBrushBroad } from "react-icons/pi";
 import Navbar from "@/components/layout/Header";
 import { FilterProvider } from "@/providers/FilterProvider";
 import { socketService } from "@/services/socketService";
+import { Collapse } from "@mui/material";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
 const DRAWER_WIDTH = 300;
 
@@ -43,6 +45,14 @@ export default function AdminLayout({
   const user = useAppSelector((state: RootState) => state.auth.user);
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const [openTabs, setOpenTabs] = useState<Record<string, boolean>>({});
+
+  const toggleTab = (label: string) => {
+    setOpenTabs((prev) => ({
+      ...prev,
+      [label]: !prev[label],
+    }));
+  };
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(isDesktop);
 
@@ -94,7 +104,7 @@ export default function AdminLayout({
     }
     // 🟢 regular tabs
     const activeTab = tabs.find(
-      (tab) => tab.label.replace(/\s+/g, "").toLowerCase() === cleanedPath
+      (tab) => tab.label.replace(/\s+/g, "").toLowerCase() === cleanedPath,
     );
     return activeTab || { label: "", subtitle: "" };
   };
@@ -156,51 +166,96 @@ export default function AdminLayout({
 
       {/* Navigation */}
       <List sx={{ flex: 1, overflowY: "auto", py: 1 }}>
-        {tabs.map(({ label, icon }, i) => {
+        {tabs.map((tab, i) => {
+          const hasChildren = !!tab.children?.length;
+
           if (
-            label !== "Truck Summary" &&
-            label !== "Load Details" &&
-            label !== "Driver Summary" &&
-            label !== "Notifications"
+            [
+              "Truck Summary",
+              "Load Details",
+              "Driver Summary",
+              "Notifications",
+            ].includes(tab.label)
           ) {
-            const link = `${base}/${label.replace(/\s+/g, "").toLowerCase()}`;
-            const active = pathname === link;
+            return null;
+          }
+
+          if (hasChildren) {
             return (
-              <ListItemButton
-                key={i}
-                component={NextLink}
-                href={link}
-                onClick={() => !isDesktop && setIsSidebarOpen(false)}
-                sx={{
-                  borderRadius: 2,
-                  mx: 1,
-                  my: 0.5,
-                  backgroundColor: active
-                    ? themePalette.currentPalette.primary
-                    : "transparent",
-                  color: active
-                    ? theme.palette.primary.contrastText || "#fff"
-                    : themePalette.currentPalette.primary,
-                  "&:hover": {
-                    backgroundColor: active
-                      ? alpha(themePalette.currentPalette.primary, 0.9)
-                      : alpha(themePalette.currentPalette.primary, 0.1),
-                    color: active
-                      ? themePalette.currentPalette.background
-                      : themePalette.currentPalette.primary,
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: "inherit" }}>{icon}</ListItemIcon>
-                <ListItemText
-                  primary={label}
-                  primaryTypographyProps={{
-                    fontWeight: 500,
+              <Box key={i}>
+                <ListItemButton
+                  onClick={() => toggleTab(tab.label)}
+                  sx={{
+                    borderRadius: 2,
+                    mx: 1,
+                    my: 0.5,
+                    color: themePalette.currentPalette.primary,
                   }}
-                />
-              </ListItemButton>
+                >
+                  <ListItemIcon sx={{ color: "inherit" }}>
+                    {tab.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={tab.label} />
+                  {openTabs[tab.label] ? <ExpandLess /> : <ExpandMore />}
+                </ListItemButton>
+
+                <Collapse in={openTabs[tab.label]} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {tab.children!.map((child, idx) => {
+                      const childActive = pathname === child.path;
+                      return (
+                        <ListItemButton
+                          key={idx}
+                          component={NextLink}
+                          href={child.path!}
+                          sx={{
+                            ml: 4,
+                            borderRadius: 2,
+                            color: childActive
+                              ? theme.palette.primary.contrastText
+                              : themePalette.currentPalette.primary,
+                            bgcolor: childActive
+                              ? themePalette.currentPalette.primary
+                              : "transparent",
+                          }}
+                        >
+                          <ListItemIcon sx={{ color: "inherit" }}>
+                            {child.icon}
+                          </ListItemIcon>
+                          <ListItemText primary={child.label} />
+                        </ListItemButton>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+              </Box>
             );
           }
+
+          const link = `${base}/${tab.label.replace(/\s+/g, "").toLowerCase()}`;
+          const active = pathname === link;
+
+          return (
+            <ListItemButton
+              key={i}
+              component={NextLink}
+              href={link}
+              sx={{
+                borderRadius: 2,
+                mx: 1,
+                my: 0.5,
+                backgroundColor: active
+                  ? themePalette.currentPalette.primary
+                  : "transparent",
+                color: active
+                  ? theme.palette.primary.contrastText
+                  : themePalette.currentPalette.primary,
+              }}
+            >
+              <ListItemIcon sx={{ color: "inherit" }}>{tab.icon}</ListItemIcon>
+              <ListItemText primary={tab.label} />
+            </ListItemButton>
+          );
         })}
       </List>
 
