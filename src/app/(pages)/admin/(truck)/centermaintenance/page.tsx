@@ -77,7 +77,6 @@ const DAY_LABEL: Record<DayKey, string> = {
 };
 
 const to12h = (hhmm: string) => {
-  // expects "HH:mm"
   if (!hhmm) return "";
   const [hStr, mStr] = hhmm.split(":");
   const h = Number(hStr);
@@ -148,7 +147,6 @@ const formatAddress = (c: ServiceCenter) => {
   const parts: string[] = [];
   if (addr) parts.push(addr);
 
-  // منع تكرار city/state لو address already يحتوي عليهم
   if (city && !addr.toLowerCase().includes(city.toLowerCase())) parts.push(city);
   if (state && !addr.toLowerCase().includes(state.toLowerCase())) parts.push(state);
 
@@ -182,7 +180,6 @@ export default function CenterMaintenance() {
   const parseAvailabilityToForm = (availability?: string) => {
     if (!availability) return null;
 
-    // مثال: "Mon-Fri: 7:30 AM - 5:30 PM"
     const parts = availability.split(":");
     if (parts.length < 2) return null;
 
@@ -199,7 +196,6 @@ export default function CenterMaintenance() {
     };
 
     const from12hTo24h = (t: string) => {
-      // يقبل "7:30 AM" أو "7:30AM"
       const m = t.replace(/\s+/g, " ").trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
       if (!m) return "";
       let hh = Number(m[1]);
@@ -226,7 +222,6 @@ export default function CenterMaintenance() {
     setSelectedCenter(center);
     setDialogMode("edit");
 
-    // ✅ مهم: متكررش city/state لو address full
     const addressText =
       (center.address && center.address.trim()) ||
       [center.city, center.state].filter(Boolean).join(", ");
@@ -265,7 +260,6 @@ export default function CenterMaintenance() {
   const [updateCenter, { isLoading: updating }] = useUpdateServiceCenterMutation();
   const [deleteCenter, { isLoading: deleting }] = useDeleteServiceCenterMutation();
 
-  // ✅ Query واحدة فقط
   const {
     data,
     isLoading,
@@ -343,7 +337,6 @@ export default function CenterMaintenance() {
   };
 
   const handleSubmitCenter = async (payload: MaintenanceCenterForm) => {
-    // Required UI fields
     if (!payload.name.trim()) {
       toast.error("Center name is required");
       return;
@@ -357,8 +350,6 @@ export default function CenterMaintenance() {
       return;
     }
 
-    // Backend required (as per errors you showed): city, state, location
-    // You said "skip lat/lng": we will send [0,0] or use existing center coords in edit if available
     const fallbackCity = dialogMode === "edit" ? trimOrEmpty(selectedCenter?.city) : "";
     const fallbackState = dialogMode === "edit" ? trimOrEmpty(selectedCenter?.state) : "";
 

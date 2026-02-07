@@ -104,7 +104,7 @@ export default function AddEditMaintenanceCenterDialog({
     useEffect(() => {
         if (!open) return;
         setStep(1);
-        setDayPickPhase("start"); // ✅ reset phase
+        setDayPickPhase("start"); 
         setForm({ ...defaultForm, ...(initialValues ?? {}) } as MaintenanceCenterForm);
     }, [open, mode, initialKey]);
 
@@ -138,10 +138,8 @@ export default function AddEditMaintenanceCenterDialog({
         const from = to12h(form.workFrom);
         const to = to12h(form.workTo);
 
-        // لو الوقت مش متعبّي: خليها فاضية (backend يعتبرها optional)
         if (!from || !to) return "";
 
-        // مثال: "Mon-Fri: 7:30 AM - 5:30 PM"
         return `${start}-${end}: ${from} - ${to}`;
     };
 
@@ -486,14 +484,12 @@ export default function AddEditMaintenanceCenterDialog({
                                         key={d}
                                         onClick={() => {
                                             if (dayPickPhase === "start") {
-                                                // ✅ first click -> set start and set end = start temporarily
                                                 setField("workStartDay", d);
                                                 setField("workEndDay", d);
                                                 setDayPickPhase("end");
                                                 return;
                                             }
 
-                                            // ✅ second click -> set end (and swap if needed)
                                             const sIdx = DAYS.indexOf(form.workStartDay);
                                             const eIdx = DAYS.indexOf(d);
 
@@ -504,7 +500,6 @@ export default function AddEditMaintenanceCenterDialog({
                                                 setField("workEndDay", d);
                                             }
 
-                                            // بعد ما حدّدنا end، أي كليك جديد يبدأ من جديد
                                             setDayPickPhase("start");
                                         }}
                                         sx={{
