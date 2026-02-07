@@ -140,17 +140,17 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
           }}
         >
           {(pathname === "/admin/truckdashboard" ||
-            pathname === "/admin/trucksmaintenance" ||
-            pathname === "/admin/centermaintenance" && (
+            pathname === "/admin/trucksmaintenance" && (
               <div className="hidden sm:flex">
                 <HeaderSourceTruckDashboard />
               </div>
             ))}
-          {shouldShowFilter && (
-            <Box sx={{ display: { xs: "none", sm: "block" } }}>
-              <GlobalFilter filterType={getFilterType()} />
-            </Box>
-          )}
+          {shouldShowFilter &&
+            pathname != "/admin/centermaintenance" && (
+              <Box sx={{ display: { xs: "none", sm: "block" } }}>
+                <GlobalFilter filterType={getFilterType()} />
+              </Box>
+            )}
           <NotificationProvider />
         </Box>
       </Toolbar>

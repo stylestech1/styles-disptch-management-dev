@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -80,9 +81,27 @@ export default function AdminLayout({
     router.replace("/");
   };
 
+  const findTabByPath = (items: any[], cleanedPath: string) => {
+    for (const item of items) {
+      // root link style: label-based
+      const itemPath = item.label?.replace(/\s+/g, "").toLowerCase();
+      if (itemPath === cleanedPath) return item;
+
+      // children link style: path-based (segment)
+      if (item.children?.length) {
+        const foundChild = item.children.find(
+          (c: any) => c.path?.toLowerCase() === cleanedPath,
+        );
+        if (foundChild) return foundChild;
+      }
+    }
+    return null;
+  };
+
   const getActiveTabInfo = () => {
-    const cleanedPath = pathname.split("/").pop();
-    // 🟢 Detect dynamic truck summary route
+    const cleanedPath = pathname.split("/").filter(Boolean).pop()?.toLowerCase() || "";
+
+    // dynamic routes
     if (pathname.includes("/admin/truckSummary")) {
       return {
         label: "Truck Summary",
@@ -92,8 +111,7 @@ export default function AdminLayout({
     if (pathname.includes("/admin/loadDetails")) {
       return {
         label: "Load Details",
-        subtitle:
-          "Manage and track all your shipments and deliveries in one place.",
+        subtitle: "Manage and track all your shipments and deliveries in one place.",
       };
     }
     if (pathname.includes("/admin/driverSummary")) {
@@ -102,12 +120,23 @@ export default function AdminLayout({
         subtitle: "Detailed overview of driver information and performance.",
       };
     }
-    // 🟢 regular tabs
-    const activeTab = tabs.find(
-      (tab) => tab.label.replace(/\s+/g, "").toLowerCase() === cleanedPath,
-    );
-    return activeTab || { label: "", subtitle: "" };
+
+    // ✅ search root + children
+    for (const tab of tabs) {
+      const tabKey = tab.label.replace(/\s+/g, "").toLowerCase();
+      if (tabKey === cleanedPath) return tab;
+
+      if (tab.children?.length) {
+        const child = tab.children.find(
+          (c) => c.path?.toLowerCase() === cleanedPath,
+        );
+        if (child) return child; // ✅ return child info to navbar
+      }
+    }
+
+    return { label: "", subtitle: "" };
   };
+
   const { label: title, subtitle } = getActiveTabInfo();
 
   const getInitials = (fullName: string) => {
@@ -202,30 +231,47 @@ export default function AdminLayout({
                 <Collapse in={openTabs[tab.label]} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
                     {tab.children!.map((child, idx) => {
-                      const childActive = pathname === child.path;
+                      const childLink = `${base}/${child.path}`;
+                      const childActive = pathname === childLink;
+
                       return (
                         <ListItemButton
                           key={idx}
                           component={NextLink}
-                          href={child.path!}
+                          href={childLink}
                           sx={{
                             ml: 4,
                             borderRadius: 2,
+
                             color: childActive
                               ? theme.palette.primary.contrastText
                               : themePalette.currentPalette.primary,
                             bgcolor: childActive
                               ? themePalette.currentPalette.primary
                               : "transparent",
+
+                            "&:hover": {
+                              bgcolor: alpha(theme.palette.primary.contrastText, 0.6),
+                              color: themePalette.currentPalette.primary,
+                            },
+
+                            transition: "background-color 0.2s ease, color 0.2s ease",
                           }}
                         >
-                          <ListItemIcon sx={{ color: "inherit" }}>
+                          <ListItemIcon
+                            sx={{
+                              color: "inherit",
+                              minWidth: 36,
+                            }}
+                          >
                             {child.icon}
                           </ListItemIcon>
+
                           <ListItemText primary={child.label} />
                         </ListItemButton>
                       );
                     })}
+
                   </List>
                 </Collapse>
               </Box>
@@ -246,7 +292,7 @@ export default function AdminLayout({
                 my: 0.5,
                 backgroundColor: active
                   ? themePalette.currentPalette.primary
-                  : "transparent",
+                  : theme.palette.primary.contrastText,
                 color: active
                   ? theme.palette.primary.contrastText
                   : themePalette.currentPalette.primary,

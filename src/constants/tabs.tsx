@@ -20,7 +20,17 @@ type TabItem = {
   path?: string;
   children?: TabItem[];
 };
+export function findTabByPath(tabs: TabItem[], targetPath: string): TabItem | null {
+  for (const tab of tabs) {
+    if (tab.path === targetPath) return tab;
 
+    if (tab.children?.length) {
+      const found = findTabByPath(tab.children, targetPath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
   admin: [
     {
@@ -46,16 +56,19 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       children: [
         {
           label: "Truck Maintenance",
+          subtitle: "Monitor and manage maintenance schedules across your entire fleet",
           icon: <HandymanIcon />,
           path: "trucksmaintenance",
         },
         {
           label: "Maintenance Centers",
+          subtitle: "Manage and monitor maintenance facilities across the United States",
           icon: <Building2 />,
           path: "centermaintenance",
         },
       ],
     },
+
     {
       label: "Drivers",
       subtitle: "Manage your driver team members and their access",
