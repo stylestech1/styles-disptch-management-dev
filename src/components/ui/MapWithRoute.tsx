@@ -1,54 +1,89 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { TPlace } from "@/components/sections/LocationAutocomplete";
 
+type Center = {
+  id: string;
+  name: string;
+  address?: string;
+  location?: { type: "Point"; coordinates: [number, number] }; // [lng, lat]
+};
+
 interface MapWithRouteProps {
-  dho: TPlace | null;
-  origin: TPlace | null;
-  destinations: (TPlace | null)[];
+  dho?: TPlace | null;
+  origin?: TPlace | null;
+  destinations?: (TPlace | null)[];
   height?: string;
   onLocationChange?: (
-    type: 'dho' | 'origin' | 'destination', 
-    place: TPlace | null, 
+    type: "dho" | "origin" | "destination",
+    place: TPlace | null,
     index?: number
   ) => void;
+
+  centers?: Center[];
+  selectedCenterId?: string | null;
+  onCenterSelect?: (center: Center) => void;
 }
 
 const MapWithRoute: React.FC<MapWithRouteProps> = ({
-  dho,
-  origin,
-  destinations,
+  dho = null,
+  origin = null,
+  destinations = [],
   height = "400px",
-  onLocationChange
+  onLocationChange,
+
+  centers = [],
+  selectedCenterId = null,
+  onCenterSelect,
 }) => {
+
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [directionsService] = useState(
-    () => new google.maps.DirectionsService()
-  );
-  const [directionsRenderer] = useState(
-    () => new google.maps.DirectionsRenderer()
-  );
+
+  // keep your current directions setup
+  const [directionsService] = useState(() => new google.maps.DirectionsService());
+  const [directionsRenderer] = useState(() => new google.maps.DirectionsRenderer());
+
+  // route markers (your existing logic)
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
 
-  // Initialize map
+  // centers markers (NEW)
+  const centerMarkersRef = useRef<Map<string, google.maps.Marker>>(new Map());
+
+  const getRedPin = (): google.maps.Icon => ({
+    url: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNy41OCAyIDQgNS41OCA0IDEwYzAgNS4yNSA2LjQgMTEuMzIgNy4wNSAxMS45M2ExLjQgMS40IDAgMCAwIDEuOSAwQzEzLjYgMjEuMzIgMjAgMTUuMjUgMjAgMTBjMC00LjQyLTMuNTgtOC04LTh6IiBmaWxsPSIjQzYyODI4Ii8+CjxjaXJjbGUgY3g9IjEyIiBjeT0iMTAiIHI9IjQuMiIgZmlsbD0id2hpdGUiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMCIgcj0iMi42IiBmaWxsPSIjQzYyODI4Ii8+Cjwvc3ZnPg==",
+    scaledSize: new google.maps.Size(32, 32),
+    anchor: new google.maps.Point(16, 32),
+  });
+
   useEffect(() => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !(window as any).google) return;
 
     const googleMap = new google.maps.Map(mapRef.current, {
       zoom: 5,
-      center: { lat: 39.8283, lng: -98.5795 }, // Center of US
+      center: { lat: 39.8283, lng: -98.5795 },
       mapTypeControl: false,
       streetViewControl: false,
+      fullscreenControl: false,
     });
 
     setMap(googleMap);
     directionsRenderer.setMap(googleMap);
   }, [directionsRenderer]);
 
-  // Clear previous markers and routes
-  const clearMarkers = () => {
-    markers.forEach((marker) => marker.setMap(null));
-    setMarkers([]);
+  // ---- helpers ----
+  const markersRef = useRef<google.maps.Marker[]>([]);
+
+  const clearRouteMarkers = () => {
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+  };
+
+  const clearCenterMarkers = () => {
+    centerMarkersRef.current.forEach((m) => m.setMap(null));
+    centerMarkersRef.current.clear();
   };
 
   const clearRoutes = () => {
@@ -60,25 +95,91 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
     } as google.maps.DirectionsResult);
   };
 
-  // Add markers and calculate route
+
+  useEffect(() => {
+    if (!map) return;
+    if (!centers || centers.length === 0) return;
+
+    // clear route stuff so map shows only centers pins
+    clearRouteMarkers();
+    clearRoutes();
+
+    // rebuild center markers
+    clearCenterMarkers();
+
+    const bounds = new google.maps.LatLngBounds();
+
+    centers.forEach((c) => {
+      const coords = c?.location?.coordinates;
+      if (!coords || coords.length < 2) return;
+
+      const [lng, lat] = coords;
+      const pos = { lat, lng };
+
+      const marker = new google.maps.Marker({
+        map,
+        position: pos,
+        title: c.name,
+        icon: getRedPin(),
+      });
+
+      marker.addListener("click", () => {
+        onCenterSelect?.(c);
+      });
+
+      centerMarkersRef.current.set(c.id, marker);
+      bounds.extend(pos);
+    });
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds);
+
+      const listener = google.maps.event.addListener(map, "idle", () => {
+        const z = map.getZoom();
+        if (z && z > 15) map.setZoom(15);
+        google.maps.event.removeListener(listener);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, centers]);
+
+
+  useEffect(() => {
+    if (!map) return;
+    if (!centers || centers.length === 0) return;
+    if (!selectedCenterId) return;
+
+    const marker = centerMarkersRef.current.get(selectedCenterId);
+    if (!marker) return;
+
+    const pos = marker.getPosition();
+    if (!pos) return;
+
+    map.panTo(pos);
+    map.setZoom(14);
+  }, [map, selectedCenterId, centers]);
+
+
   useEffect(() => {
     if (!map) return;
 
-    clearMarkers();
+    if (centers && centers.length > 0) return;
+
+    clearRouteMarkers();
+    clearCenterMarkers(); // in case we switched from centers -> route
     clearRoutes();
 
     const validDestinations = destinations.filter(
       (dest): dest is TPlace => dest !== null
     );
-    const allLocations: TPlace[] = [];
 
+    const allLocations: TPlace[] = [];
     if (dho) allLocations.push(dho);
     if (origin) allLocations.push(origin);
     allLocations.push(...validDestinations);
 
     if (allLocations.length === 0) return;
 
-    // Add markers
     const newMarkers = allLocations.map((location) => {
       const position = {
         lat: parseFloat(location.lat),
@@ -124,7 +225,6 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
         title: location.display_name,
       });
 
-      // Add info window
       const infoWindow = new google.maps.InfoWindow({
         content: `
           <div class="p-2">
@@ -143,12 +243,10 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
 
     setMarkers(newMarkers);
 
-    // Calculate and display route if we have enough points
     if ((dho && origin) || (origin && validDestinations.length > 0)) {
       calculateAndDisplayRoute();
     }
 
-    // Fit map to bounds
     const bounds = new google.maps.LatLngBounds();
     allLocations.forEach((location) => {
       bounds.extend({
@@ -168,7 +266,8 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
         google.maps.event.removeListener(listener);
       });
     }
-  }, [map, dho, origin, destinations, directionsService, directionsRenderer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, dho, origin, destinations, directionsService, directionsRenderer, centers]);
 
   const calculateAndDisplayRoute = () => {
     if (!map || (!dho && !origin)) return;
@@ -182,7 +281,6 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
     let routeDestination: google.maps.LatLngLiteral;
 
     if (dho && origin && validDestinations.length > 0) {
-      // DHO → Origin → Destinations
       routeOrigin = { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) };
       routeDestination = {
         lat: parseFloat(validDestinations[validDestinations.length - 1].lat),
@@ -191,10 +289,7 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
 
       waypoints = [
         {
-          location: {
-            lat: parseFloat(origin.lat),
-            lng: parseFloat(origin.lon),
-          },
+          location: { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) },
           stopover: true,
         },
         ...validDestinations.slice(0, -1).map((dest) => ({
@@ -203,11 +298,7 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
         })),
       ];
     } else if (origin && validDestinations.length > 0) {
-      // Origin → Destinations
-      routeOrigin = {
-        lat: parseFloat(origin.lat),
-        lng: parseFloat(origin.lon),
-      };
+      routeOrigin = { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) };
       routeDestination = {
         lat: parseFloat(validDestinations[validDestinations.length - 1].lat),
         lng: parseFloat(validDestinations[validDestinations.length - 1].lon),
@@ -218,12 +309,8 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
         stopover: true,
       }));
     } else if (dho && origin) {
-      // DHO → Origin 
       routeOrigin = { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) };
-      routeDestination = {
-        lat: parseFloat(origin.lat),
-        lng: parseFloat(origin.lon),
-      };
+      routeDestination = { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) };
     } else {
       return;
     }
@@ -232,7 +319,7 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
       {
         origin: routeOrigin,
         destination: routeDestination,
-        waypoints: waypoints,
+        waypoints,
         travelMode: google.maps.TravelMode.DRIVING,
         optimizeWaypoints: false,
       },

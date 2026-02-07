@@ -22,6 +22,20 @@ export type TUser = {
   jobId: number;
   driver?: string;
 };
+export type ServiceCenter = {
+  id: string;
+  name: string;
+  active?: boolean;
+  address?: string;
+  city?: string;
+  state?: string;
+  phone?: string;
+  email?: string;
+  availability?: string;
+  services?: string[];
+  location?: { type: "Point"; coordinates: [number, number] };
+};
+
 export type TAuthState = {
   user: TUser | null;
   token: string | null;

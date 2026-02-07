@@ -18,11 +18,13 @@ export type TPlace = {
 };
 
 interface Props {
-  label: string;
+  label?: string;
   value: TPlace | null;
   setValue: (place: TPlace | null) => void;
   placeholder?: string;
   showZipCode?: boolean;
+  required?: boolean;
+  startAdornment?: React.ReactNode;
 }
 
 const LocationAutocomplete = ({
@@ -30,6 +32,8 @@ const LocationAutocomplete = ({
   value,
   setValue,
   placeholder,
+  required,
+  startAdornment,
   showZipCode = true,
 }: Props) => {
   const [input, setInput] = useState(value?.display_name || "");
@@ -521,7 +525,7 @@ const LocationAutocomplete = ({
           mb: 1,
         }}
       >
-        {label} <span className="text-red-500">*</span>
+        {label} <span className="text-red-500">{required ? "*" : ""}</span>
       </Typography>
       <div className="flex items-end gap-5">
         <div className="relative flex items-end gap-4 w-full">
