@@ -22,7 +22,7 @@ import {
 import { CiLock, CiMap, CiUnlock, CiWarning } from "react-icons/ci";
 import { PiBuildingOfficeLight } from "react-icons/pi";
 import { TbBuilding } from "react-icons/tb";
-import { Suspense, useState, lazy, useEffect, useMemo } from "react";
+import React, { Suspense, useState, lazy, useEffect, useMemo } from "react";
 
 import {
   useCreateServiceCenterMutation,
@@ -55,7 +55,7 @@ type StatusFilter = "All" | "Opened" | "Closed" | "Inactive";
 type ServiceCenter = {
   id: string;
   name: string;
-  active?: boolean;
+  active?: boolean; // ✅ endpoint key
   address?: string;
   city?: string;
   state?: string;
@@ -63,9 +63,19 @@ type ServiceCenter = {
   email?: string;
   availability?: string;
   services?: string[];
+  googlePlaceId?: string; // ✅ saved place_id
   notes?: string;
   location?: { type: "Point"; coordinates: [number, number] }; // [lng, lat]
 };
+
+type PlaceHoursCache = Record<
+  string,
+  {
+    openNow: boolean;
+    fetchedAt: number;
+  }
+>;
+
 const DAY_LABEL: Record<DayKey, string> = {
   SUN: "Sun",
   MON: "Mon",
@@ -84,7 +94,7 @@ const to12h = (hhmm: string) => {
   if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
 
   const suffix = h >= 12 ? "PM" : "AM";
-  const h12 = ((h + 11) % 12) + 1; // 0 -> 12, 13 -> 1
+  const h12 = ((h + 11) % 12) + 1;
   return `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
 };
 
@@ -96,17 +106,8 @@ const buildAvailability = (form: MaintenanceCenterForm) => {
   const to = to12h(form.workTo);
 
   if (!from || !to) return "";
-
   return `${start}-${end}: ${from} - ${to}`;
 };
-
-function normalizeStatus(center: ServiceCenter): "Opened" | "Closed" | "Inactive" {
-  const s = ((center as any)?.status || "").toString().toLowerCase();
-  if (s.includes("open")) return "Opened";
-  if (s.includes("close")) return "Closed";
-  if (s.includes("inact")) return "Inactive";
-  return center?.active ? "Opened" : "Inactive";
-}
 
 function statusStyles(status: "Opened" | "Closed" | "Inactive") {
   if (status === "Opened") return { bg: "#E7F3FF", color: "#1E5FA8", border: "#CFE6FF" };
@@ -115,16 +116,13 @@ function statusStyles(status: "Opened" | "Closed" | "Inactive") {
 }
 
 const getErrorMessage = (err: any) => {
-  // RTK Query unwrap errors غالبًا بتبقى: { status, data }
   const data = err?.data;
 
   if (!data) return err?.error || err?.message || "Something went wrong";
   if (typeof data === "string") return data;
 
   if (Array.isArray(data?.errors)) {
-    return data.errors
-      .map((e: any) => e?.msg || e?.message || JSON.stringify(e))
-      .join(", ");
+    return data.errors.map((e: any) => e?.msg || e?.message || JSON.stringify(e)).join(", ");
   }
 
   if (typeof data?.message === "string") return data.message;
@@ -153,6 +151,44 @@ const formatAddress = (c: ServiceCenter) => {
   return parts.join(", ");
 };
 
+// ✅ Accurate open/close from Google Places JS (no CORS)
+function getOpenNowFromPlaces(placeId: string): Promise<boolean | null> {
+  return new Promise((resolve) => {
+    const g = (window as any).google;
+    if (!g?.maps?.places?.PlacesService) return resolve(null);
+
+    const service = new g.maps.places.PlacesService(document.createElement("div"));
+
+    service.getDetails(
+      { placeId, fields: ["opening_hours"] },
+      (place: any, status: any) => {
+        const ok = status === g.maps.places.PlacesServiceStatus.OK;
+        if (!ok) return resolve(null);
+
+        // ✅ Most accurate:
+        // opening_hours.isOpen() uses place timezone
+        const isOpenFn = place?.opening_hours?.isOpen;
+        if (typeof isOpenFn === "function") return resolve(!!isOpenFn.call(place.opening_hours));
+
+        // fallback
+        return resolve(!!place?.opening_hours?.open_now);
+      }
+    );
+  });
+}
+
+function getComputedStatus(center: ServiceCenter, cache: PlaceHoursCache): "Opened" | "Closed" | "Inactive" {
+  if (center.active === false) return "Inactive";
+
+  const pid = center.googlePlaceId;
+  if (!pid) return "Closed"; // no placeId => closed
+
+  const info = cache[pid];
+  if (!info) return "Closed"; // until fetched
+
+  return info.openNow ? "Opened" : "Closed";
+}
+
 export default function CenterMaintenance() {
   const theme = useAppSelector((state: RootState) => state.palette);
 
@@ -171,23 +207,27 @@ export default function CenterMaintenance() {
   const [editInitial, setEditInitial] = useState<Partial<MaintenanceCenterForm> | undefined>(undefined);
   const [dayPickPhase, setDayPickPhase] = useState<"start" | "end">("start");
 
+  // ✅ cache open/close from Google
+  const [hoursCache, setHoursCache] = useState<PlaceHoursCache>({});
+
   const openAdd = () => {
     setSelectedCenter(null);
     setDialogMode("add");
     setEditInitial(undefined);
     setDialogOpen(true);
   };
+
   const parseAvailabilityToForm = (availability?: string) => {
     if (!availability) return null;
 
     const parts = availability.split(":");
     if (parts.length < 2) return null;
 
-    const daysPart = parts[0].trim(); // "Mon-Fri"
-    const timePart = parts.slice(1).join(":").trim(); // "7:30 AM - 5:30 PM"
+    const daysPart = parts[0].trim();
+    const timePart = parts.slice(1).join(":").trim();
 
-    const [d1Raw, d2Raw] = daysPart.split("-").map(s => s.trim());
-    const [t1Raw, t2Raw] = timePart.split("-").map(s => s.trim());
+    const [d1Raw, d2Raw] = daysPart.split("-").map((s) => s.trim());
+    const [t1Raw, t2Raw] = timePart.split("-").map((s) => s.trim());
 
     const labelToDayKey = (lbl: string): DayKey | null => {
       const normalized = lbl.toLowerCase();
@@ -217,14 +257,13 @@ export default function CenterMaintenance() {
     };
   };
 
-
   const openEdit = (center: ServiceCenter) => {
     setSelectedCenter(center);
     setDialogMode("edit");
 
     const addressText =
-      (center.address && center.address.trim()) ||
-      [center.city, center.state].filter(Boolean).join(", ");
+      (center.address && center.address.trim()) || [center.city, center.state].filter(Boolean).join(", ");
+
     const parsed = parseAvailabilityToForm(center.availability);
 
     setEditInitial({
@@ -232,9 +271,10 @@ export default function CenterMaintenance() {
       location: addressText
         ? ({
           display_name: addressText,
-          lat: "0",
-          lon: "0",
-          place_id: `temp_center_${center.id}`,
+          // ⚠️ IMPORTANT: your autocomplete should pass real lat/lon in add/edit
+          lat: String(center.location?.coordinates?.[1] ?? "0"),
+          lon: String(center.location?.coordinates?.[0] ?? "0"),
+          place_id: center.googlePlaceId || `temp_center_${center.id}`,
           city: center.city ?? "",
           state: center.state ?? "",
         } as any as TPlace)
@@ -248,7 +288,6 @@ export default function CenterMaintenance() {
       workEndDay: (parsed?.workEndDay as DayKey) ?? "",
       workFrom: parsed?.workFrom ?? "",
       workTo: parsed?.workTo ?? "",
-
     });
 
     setDialogOpen(true);
@@ -260,18 +299,47 @@ export default function CenterMaintenance() {
   const [updateCenter, { isLoading: updating }] = useUpdateServiceCenterMutation();
   const [deleteCenter, { isLoading: deleting }] = useDeleteServiceCenterMutation();
 
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = useGetServiceCentersQuery({ page: 1, limit: 50 });
+  const { data, isLoading, error, refetch } = useGetServiceCentersQuery({ page: 1, limit: 50 });
 
   const centers: ServiceCenter[] = useMemo(() => (data?.data ?? []) as ServiceCenter[], [data]);
 
   useEffect(() => {
     if (error) console.error("Service Centers error:", error);
   }, [error]);
+
+  // ✅ Refresh open/close for all centers (accurate by place timezone)
+  const refreshAllOpenStatus = async () => {
+    const ids = centers.map((c) => c.googlePlaceId).filter(Boolean) as string[];
+    const unique = Array.from(new Set(ids));
+
+    for (const placeId of unique) {
+      // If google script not loaded yet => skip
+      const openNow = await getOpenNowFromPlaces(placeId);
+      if (openNow === null) continue;
+
+      setHoursCache((prev) => ({
+        ...prev,
+        [placeId]: { openNow, fetchedAt: Date.now() },
+      }));
+    }
+  };
+
+  // initial load when centers change
+  useEffect(() => {
+    if (!centers.length) return;
+    refreshAllOpenStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centers]);
+
+  // periodic refresh so it flips after 3AM automatically
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!centers.length) return;
+      refreshAllOpenStatus();
+    }, 60 * 1000); // every 1 minute (change to 5*60*1000 if you want)
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centers]);
 
   const stats = useMemo(() => {
     const total = centers.length;
@@ -280,20 +348,20 @@ export default function CenterMaintenance() {
     let inactive = 0;
 
     centers.forEach((c) => {
-      const st = normalizeStatus(c);
+      const st = getComputedStatus(c, hoursCache);
       if (st === "Opened") opened++;
       else if (st === "Closed") closed++;
       else inactive++;
     });
 
     return { total, opened, closed, inactive };
-  }, [centers]);
+  }, [centers, hoursCache]);
 
   const filteredCenters = useMemo(() => {
     const q = search.trim().toLowerCase();
 
     return centers.filter((c) => {
-      const st = normalizeStatus(c);
+      const st = getComputedStatus(c, hoursCache);
       const matchesStatus = status === "All" ? true : st === status;
 
       const haystack = [c?.name, c?.state, c?.city, c?.address, c?.email, c?.phone]
@@ -304,7 +372,7 @@ export default function CenterMaintenance() {
       const matchesSearch = q ? haystack.includes(q) : true;
       return matchesStatus && matchesSearch;
     });
-  }, [centers, search, status]);
+  }, [centers, search, status, hoursCache]);
 
   const openMenu = (e: React.MouseEvent<HTMLElement>, center: ServiceCenter) => {
     e.stopPropagation();
@@ -320,13 +388,14 @@ export default function CenterMaintenance() {
   const copyCenter = async (e: React.MouseEvent, center: ServiceCenter) => {
     e.stopPropagation();
     const text = `
-   Center Name: ${center?.name ?? ""}\n 
-   Location: ${formatAddress(center)}\n
-   Phone: ${center?.phone ?? ""}\n
-   Email: ${center?.email ?? ""}
-   Maintenance Services: ${Array.isArray(center.services) ? center.services.join(", ") : ""}\n
-   Availability: ${center?.availability ?? ""}\n
-   Notes: ${(center as any)?.notes ?? ""}\n`
+Center Name: ${center?.name ?? ""}\n
+Location: ${formatAddress(center)}\n
+Phone: ${center?.phone ?? ""}\n
+Email: ${center?.email ?? ""}\n
+Services: ${Array.isArray(center.services) ? center.services.join(", ") : ""}\n
+Availability: ${center?.availability ?? ""}\n
+Notes: ${(center as any)?.notes ?? ""}\n`;
+
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Copied successfully");
@@ -336,7 +405,7 @@ export default function CenterMaintenance() {
     }
   };
 
-  const handleSubmitCenter = async (payload: MaintenanceCenterForm) => {
+  const handleSubmitCenter = async (payload: MaintenanceCenterForm): Promise<void> => {
     if (!payload.name.trim()) {
       toast.error("Center name is required");
       return;
@@ -347,6 +416,12 @@ export default function CenterMaintenance() {
     }
     if (!payload.location?.display_name?.trim()) {
       toast.error("Location is required");
+      return;
+    }
+
+    // ✅ ensure place_id exists (needed for accurate open/close)
+    if (!(payload.location as any)?.place_id) {
+      toast.error("Please select a location from suggestions (place_id missing)");
       return;
     }
 
@@ -378,7 +453,7 @@ export default function CenterMaintenance() {
     const lat = isEdit ? (existingLat ?? latFromUI) : latFromUI;
 
     if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
-      toast.error("Location coordinates are missing");
+      toast.error("Location coordinates are missing (lat/lon)");
       return;
     }
 
@@ -387,17 +462,18 @@ export default function CenterMaintenance() {
       phone: payload.phone.trim(),
       city,
       state,
-
       address: payload.location.display_name.trim(),
-
       location: { type: "Point", coordinates: [lng, lat] },
 
       email: trimOrEmpty(payload.email) || undefined,
       services: payload.services?.length ? payload.services : undefined,
       availability: availability || undefined,
       notes: trimOrEmpty(payload.notes) || undefined,
+
       active: payload.status === "Active",
-      googlePlaceId: payload.location.place_id,
+
+      // ✅ must be the real google place_id
+      googlePlaceId: (payload.location as any).place_id,
 
       workStartDay: payload.workStartDay,
       workEndDay: payload.workEndDay,
@@ -421,7 +497,7 @@ export default function CenterMaintenance() {
       }
 
       setDialogOpen(false);
-      refetch(); // refresh list
+      refetch();
     } catch (err: any) {
       console.error("submit error:", err);
       toast.error(getErrorMessage(err), { id: loadingId });
@@ -446,7 +522,7 @@ export default function CenterMaintenance() {
   const MapFallback = () => (
     <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg border border-gray-200">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2" />
         <p className="text-gray-600">Loading Maps...</p>
       </div>
     </div>
@@ -475,14 +551,16 @@ export default function CenterMaintenance() {
 
         {/* Header */}
         <Box sx={{ mt: 4, pt: 2 }}>
-          <Box sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "column", md: "row" },
-            gap: 2,
-            mb: 2,
-            alignItems: { xs: "stretch", md: "center" },
-            justifyContent: { md: "space-between" },
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "column", md: "row" },
+              gap: 2,
+              mb: 2,
+              alignItems: { xs: "stretch", md: "center" },
+              justifyContent: { md: "space-between" },
+            }}
+          >
             <Box className="flex items-center gap-2">
               <CiMap size={24} color={theme.currentPalette.primary} />
               <Typography variant="h6" sx={{ color: theme.currentPalette.primary, fontWeight: 600 }}>
@@ -563,16 +641,17 @@ export default function CenterMaintenance() {
             </Box>
           </Box>
 
-
           {/* Search + Filter */}
           {viewMode === "list" && (
-            <Box sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "column", md: "row" },
-              gap: 2,
-              mb: 2,
-              alignItems: { xs: "stretch", md: "center" },
-            }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "column", md: "row" },
+                gap: 2,
+                mb: 2,
+                alignItems: { xs: "stretch", md: "center" },
+              }}
+            >
               <TextField
                 fullWidth
                 placeholder="Search By Centers and States.."
@@ -592,11 +671,7 @@ export default function CenterMaintenance() {
               />
 
               <FormControl sx={{ minWidth: 160 }}>
-                <Select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as StatusFilter)}
-                  sx={{ borderRadius: "10px", backgroundColor: "#fff" }}
-                >
+                <Select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} sx={{ borderRadius: "10px", backgroundColor: "#fff" }}>
                   <MenuItem value="All">All Status</MenuItem>
                   <MenuItem value="Opened">Opened</MenuItem>
                   <MenuItem value="Closed">Closed</MenuItem>
@@ -622,7 +697,11 @@ export default function CenterMaintenance() {
                   {showMaps ? (
                     <Suspense fallback={<MapFallback />}>
                       <LazyGoogleMapsLoader
-                        onLoad={() => console.log("Maps loaded successfully")}
+                        onLoad={() => {
+                          console.log("Maps loaded successfully");
+                          // ✅ when google is ready, refresh open/close accurately
+                          refreshAllOpenStatus();
+                        }}
                         onError={(err) => console.error("Failed to load maps:", err)}
                       >
                         <LazyMapWithRoute
@@ -649,7 +728,7 @@ export default function CenterMaintenance() {
                 ) : (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {filteredCenters.map((center) => {
-                      const st = normalizeStatus(center);
+                      const st = getComputedStatus(center, hoursCache);
                       const stStyle = statusStyles(st);
                       const isSelected = selectedCenter?.id === center.id;
 
@@ -668,12 +747,9 @@ export default function CenterMaintenance() {
                             "&:hover": { backgroundColor: "#F8FBFF" },
                           }}
                         >
-                          {/* Header */}
                           <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                              <Typography sx={{ fontSize: 18, fontWeight: 700, color: "#0F172A" }}>
-                                {center.name}
-                              </Typography>
+                              <Typography sx={{ fontSize: 18, fontWeight: 700, color: "#0F172A" }}>{center.name}</Typography>
 
                               <Box
                                 sx={{
@@ -692,23 +768,16 @@ export default function CenterMaintenance() {
                             </Box>
 
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <IconButton
-                                onClick={(e) => copyCenter(e, center)}
-                                sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}
-                              >
+                              <IconButton onClick={(e) => copyCenter(e, center)} sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}>
                                 <LuCopy size={18} />
                               </IconButton>
 
-                              <IconButton
-                                onClick={(e) => openMenu(e, center)}
-                                sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}
-                              >
+                              <IconButton onClick={(e) => openMenu(e, center)} sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}>
                                 <HiOutlineDotsHorizontal size={18} />
                               </IconButton>
                             </Box>
                           </Box>
 
-                          {/* Details */}
                           <Box sx={{ mt: 1.5, display: "grid", gap: 0.8 }}>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
                               <MdOutlineLocationOn />
@@ -737,7 +806,6 @@ export default function CenterMaintenance() {
                             )}
                           </Box>
 
-                          {/* Services */}
                           {Array.isArray(center.services) && center.services.length > 0 && (
                             <Box sx={{ mt: 1.5, display: "flex", flexWrap: "wrap", gap: 1 }}>
                               {center.services.map((s, idx) => (
@@ -759,9 +827,7 @@ export default function CenterMaintenance() {
                       );
                     })}
 
-                    {filteredCenters.length === 0 && (
-                      <Typography sx={{ px: 2, color: "text.secondary" }}>No centers found.</Typography>
-                    )}
+                    {filteredCenters.length === 0 && <Typography sx={{ px: 2, color: "text.secondary" }}>No centers found.</Typography>}
                   </Box>
                 )}
               </Box>
@@ -769,7 +835,6 @@ export default function CenterMaintenance() {
           </Box>
         </Box>
 
-        {/* Menu */}
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
           <MenuItem
             onClick={() => {

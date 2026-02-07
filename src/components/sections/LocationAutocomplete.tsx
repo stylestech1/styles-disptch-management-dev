@@ -1,6 +1,6 @@
 "use client";
 import { RootState, useAppSelector } from "@/redux/store";
-import { alpha, Box, Button, TextField, Typography } from "@mui/material";
+import { alpha, Box, Button, InputAdornment, TextField, Typography } from "@mui/material";
 import { useState, useEffect, useRef } from "react";
 
 export type TPlace = {
@@ -537,34 +537,38 @@ const LocationAutocomplete = ({
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onKeyDown={handleInputKeyDown}
-            placeholder={
-              placeholder ||
-              "Enter city, state and ZIP (e.g., ABINGDON VA 24210)"
-            }
+            placeholder={placeholder || "Enter city, state and ZIP (e.g., ABINGDON VA 24210)"}
             variant="outlined"
             fullWidth
             size="small"
             sx={{
               bgcolor: theme.currentPalette.background,
-            }}
-            slotProps={{
-              input: {
-                endAdornment: input && (
-                  <Button
-                    onClick={clearValue}
-                    type="button"
-                    variant="text"
-                    size="small"
-                    sx={{
-                      minWidth: 0,
-                      padding: 0.5,
-                      color: "red",
-                    }}
-                  >
-                    ✕
-                  </Button>
-                ),
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
               },
+            }}
+            InputProps={{
+              startAdornment: startAdornment ? (
+                <InputAdornment position="start" sx={{ mr: 0.5 }}>
+                  {startAdornment}
+                </InputAdornment>
+              ) : null,
+
+              endAdornment: input ? (
+                <Button
+                  onClick={clearValue}
+                  type="button"
+                  variant="text"
+                  size="small"
+                  sx={{
+                    minWidth: 0,
+                    padding: 0.5,
+                    color: "red",
+                  }}
+                >
+                  ✕
+                </Button>
+              ) : null,
             }}
           />
         </div>

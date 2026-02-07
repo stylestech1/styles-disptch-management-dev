@@ -1,122 +1,94 @@
-// "use client";
+// /* eslint-disable @typescript-eslint/no-explicit-any */
+// import { alpha, Box, Typography } from "@mui/material";
+// import { CheckCircle } from "lucide-react"; // لو مش عندك lucide-react قولي وهنبدله بـ react-icons
 
-// import React from "react";
-// import { Box, Typography } from "@mui/material";
-
-// type Props = {
-//   step: 1 | 2;
-//   primaryColor: string;
-//   leftLabel?: string;
-//   rightLabel?: string;
+// type DialogStepperProps = {
+//     steps: string[];
+//     activeStep: number; // 0-based
+//     theme: any;
 // };
 
-// export default function ModalStepsHeader({
-//   step,
-//   primaryColor,
-//   leftLabel = "General Information",
-//   rightLabel = "Operational Details",
-// }: Props) {
-//   const isStep2 = step === 2;
+// function DialogStepper({ steps, activeStep, theme }: DialogStepperProps) {
+//     return (
+//         <Box sx={{ mb: 3 }}>
+//             <Box
+//                 sx={{
+//                     display: "flex",
+//                     justifyContent: "space-between",
+//                     position: "relative",
+//                     px: 1,
+//                 }}
+//             >
+//                 {/* line */}
+//                 <Box
+//                     sx={{
+//                         position: "absolute",
+//                         top: "30%",
+//                         left: "10%",
+//                         width: "80%",
+//                         height: 2,
+//                         bgcolor: alpha(theme.currentPalette.primary, 0.15),
+//                         zIndex: 0,
+//                     }}
+//                 />
 
-//   return (
-//     <Box sx={{ px: 2, pt: 2 }}>
-//       {/* circles + line */}
-//       <Box sx={{ position: "relative", height: 36 }}>
-//         {/* line background */}
-//         <Box
-//           sx={{
-//             position: "absolute",
-//             left: 14,
-//             right: 14,
-//             top: 14,
-//             height: 2,
-//             borderRadius: "999px",
-//             backgroundColor: "#D6E6FF",
-//           }}
-//         />
+//                 {steps.map((label, i) => {
+//                     const isActive = i === activeStep;
+//                     const isCompleted = i < activeStep;
 
-//         {/* line progress */}
-//         <Box
-//           sx={{
-//             position: "absolute",
-//             left: 14,
-//             top: 14,
-//             height: 2,
-//             borderRadius: "999px",
-//             backgroundColor: primaryColor,
-//             width: isStep2 ? "100%" : "50%",
-//             transition: "width .2s ease",
-//           }}
-//         />
+//                     return (
+//                         <Box
+//                             key={i}
+//                             sx={{
+//                                 display: "flex",
+//                                 flexDirection: "column",
+//                                 alignItems: "center",
+//                                 zIndex: 1,
+//                                 minWidth: 80,
+//                             }}
+//                         >
+//                             <Box
+//                                 sx={{
+//                                     width: 44,
+//                                     height: 44,
+//                                     borderRadius: "50%",
+//                                     border: "3px solid",
+//                                     borderColor:
+//                                         isActive || isCompleted
+//                                             ? theme.currentPalette.primary
+//                                             : alpha(theme.currentPalette.text, 0.2),
+//                                     bgcolor: isCompleted
+//                                         ? theme.currentPalette.primary
+//                                         : isActive
+//                                             ? theme.currentPalette.primary
+//                                             : theme.currentPalette.background,
+//                                     color: isCompleted || isActive ? "#fff" : theme.currentPalette.text,
+//                                     display: "flex",
+//                                     alignItems: "center",
+//                                     justifyContent: "center",
+//                                     fontWeight: 700,
+//                                 }}
+//                             >
+//                                 {isCompleted ? <CheckCircle size={22} /> : i + 1}
+//                             </Box>
 
-//         {/* left circle (1) */}
-//         <Box
-//           sx={{
-//             position: "absolute",
-//             left: 0,
-//             top: 4,
-//             width: 28,
-//             height: 28,
-//             borderRadius: "999px",
-//             display: "grid",
-//             placeItems: "center",
-//             fontSize: 12,
-//             fontWeight: 800,
-//             color: "#fff",
-//             backgroundColor: primaryColor,
-//             border: `1px solid ${primaryColor}`,
-//             zIndex: 2,
-//           }}
-//         >
-//           1
+//                             <Typography
+//                                 sx={{
+//                                     mt: 1,
+//                                     fontSize: 13,
+//                                     fontWeight: 600,
+//                                     textAlign: "center",
+//                                     color: isActive
+//                                         ? theme.currentPalette.primary
+//                                         : alpha(theme.currentPalette.text, 0.6),
+//                                 }}
+//                             >
+//                                 {label}
+//                             </Typography>
+//                         </Box>
+//                     );
+//                 })}
+//             </Box>
 //         </Box>
-
-//         {/* right circle (2) */}
-//         <Box
-//           sx={{
-//             position: "absolute",
-//             right: 0,
-//             top: 4,
-//             width: 28,
-//             height: 28,
-//             borderRadius: "999px",
-//             display: "grid",
-//             placeItems: "center",
-//             fontSize: 12,
-//             fontWeight: 800,
-//             color: isStep2 ? "#fff" : "#94A3B8",
-//             backgroundColor: isStep2 ? primaryColor : "#fff",
-//             border: isStep2 ? `1px solid ${primaryColor}` : "1px solid #D6E6FF",
-//             zIndex: 2,
-//           }}
-//         >
-//           2
-//         </Box>
-//       </Box>
-
-//       {/* labels */}
-//       <Box
-//         sx={{
-//           mt: 0.5,
-//           display: "flex",
-//           justifyContent: "space-between",
-//           alignItems: "flex-start",
-//         }}
-//       >
-//         <Typography sx={{ fontSize: 12, fontWeight: 800, color: "#0F172A" }}>
-//           {leftLabel}
-//         </Typography>
-
-//         <Typography
-//           sx={{
-//             fontSize: 12,
-//             fontWeight: 800,
-//             color: isStep2 ? "#0F172A" : "#CBD5E1",
-//           }}
-//         >
-//           {rightLabel}
-//         </Typography>
-//       </Box>
-//     </Box>
-//   );
+//     );
 // }
