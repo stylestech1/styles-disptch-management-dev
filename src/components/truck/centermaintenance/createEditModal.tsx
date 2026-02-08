@@ -21,13 +21,13 @@ import {
     useMediaQuery,
 } from "@mui/material";
 
-import { IoAdd, IoClose } from "react-icons/io5";
-import { MdOutlineEmail, MdOutlineLocationOn, MdOutlinePhone } from "react-icons/md";
-import { CiCircleCheck, CiEdit } from "react-icons/ci";
-import { PiBuildingOfficeLight } from "react-icons/pi";
+import {  IoClose } from "react-icons/io5";
+import { CiCircleCheck } from "react-icons/ci";
+
 
 import LocationAutocomplete, { TPlace } from "@/components/sections/LocationAutocomplete";
 import { useAppSelector, RootState } from "@/redux/store";
+import { Building2, CircleCheckBig, HousePlus, Mail, MapPinHouse, Phone, SquarePen, Wrench } from "lucide-react";
 
 export type DayKey = "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT";
 
@@ -147,7 +147,7 @@ export default function AddEditMaintenanceCenterDialog({
     }, [open, mode, initialKey]);
 
     const title = mode === "add" ? "Add Maintenance Center" : "Edit Maintenance Center";
-    const icon = mode === "add" ? <IoAdd size={16} /> : <CiEdit size={16} />;
+    const icon = mode === "add" ? <HousePlus size={16} color={theme.currentPalette.primary} /> : <SquarePen size={16} color={theme.currentPalette.primary} />;
 
     const setField = <K extends keyof MaintenanceCenterForm>(key: K, value: MaintenanceCenterForm[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -384,7 +384,7 @@ export default function AddEditMaintenanceCenterDialog({
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <PiBuildingOfficeLight color={theme.currentPalette.primary} />
+                                            <Building2 color={theme.currentPalette.primary} />
                                         </InputAdornment>
                                     ),
                                 }}
@@ -398,7 +398,7 @@ export default function AddEditMaintenanceCenterDialog({
                                 value={form.location}
                                 setValue={(place) => setField("location", place)}
                                 placeholder="Search for city or street"
-                                startAdornment={<MdOutlineLocationOn size={20} color="#2563EB" />}
+                                startAdornment={<MapPinHouse size={20} color={theme.currentPalette.primary} />}
                             />
                             {!!errors.location && (
                                 <FormHelperText error sx={{ mt: 0.5 }}>
@@ -436,7 +436,7 @@ export default function AddEditMaintenanceCenterDialog({
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <MdOutlinePhone color={theme.currentPalette.primary} />
+                                                    <Phone color={theme.currentPalette.primary} />
                                                 </InputAdornment>
                                             ),
                                         }}
@@ -453,7 +453,7 @@ export default function AddEditMaintenanceCenterDialog({
                                             sx={selectSx}
                                             startAdornment={
                                                 <InputAdornment position="start">
-                                                    <CiCircleCheck color={theme.currentPalette.primary} />
+                                                    <CircleCheckBig color={theme.currentPalette.primary} />
                                                 </InputAdornment>
                                             }
                                         >
@@ -482,7 +482,7 @@ export default function AddEditMaintenanceCenterDialog({
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <MdOutlineEmail color={theme.currentPalette.primary} />
+                                            <Mail color={theme.currentPalette.primary} />
                                         </InputAdornment>
                                     ),
                                 }}
@@ -492,13 +492,29 @@ export default function AddEditMaintenanceCenterDialog({
 
                         <FieldBlock>
                             <FieldLabel label="Maintenance Services" />
+
                             <Autocomplete
                                 multiple
                                 options={servicesOptions}
                                 value={form.services}
                                 onChange={(_, value) => setField("services", value as string[])}
                                 renderInput={(params) => (
-                                    <TextField {...params} placeholder="e.g. Oil Change, Brake Repair" sx={inputSx} />
+                                    <TextField
+                                        {...params}
+                                        placeholder="e.g. Oil Change, Brake Repair"
+                                        sx={inputSx}
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            startAdornment: (
+                                                <>
+                                                    <InputAdornment position="start">
+                                                        <Wrench size={18} color={theme.currentPalette.primary} />
+                                                    </InputAdornment>
+                                                    {params.InputProps.startAdornment}
+                                                </>
+                                            ),
+                                        }}
+                                    />
                                 )}
                                 sx={{
                                     "& .MuiOutlinedInput-root": {
@@ -509,6 +525,7 @@ export default function AddEditMaintenanceCenterDialog({
                                 }}
                             />
                         </FieldBlock>
+
 
                         <Button
                             fullWidth

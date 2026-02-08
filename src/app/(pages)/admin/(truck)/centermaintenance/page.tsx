@@ -19,9 +19,8 @@ import {
   Menu,
 } from "@mui/material";
 
-import { CiLock, CiMap, CiUnlock, CiWarning } from "react-icons/ci";
-import { PiBuildingOfficeLight } from "react-icons/pi";
-import { TbBuilding } from "react-icons/tb";
+import { Lock, Unlock, AlertTriangle, Map, Building2, Mail, Phone, MapPin, Pin, Trash, Clock, Copy, Ellipsis, Search } from "lucide-react";
+
 import React, { Suspense, useState, lazy, useEffect, useMemo } from "react";
 
 import {
@@ -31,31 +30,20 @@ import {
   useDeleteServiceCenterMutation,
 } from "@/redux/slices/apiSlice";
 
-import { FiSearch } from "react-icons/fi";
-import {
-  MdOutlineLocationOn,
-  MdOutlineEmail,
-  MdOutlinePhone,
-  MdOutlineAccessTime,
-  MdModeEdit,
-  MdDelete,
-} from "react-icons/md";
-import { HiOutlineDotsHorizontal } from "react-icons/hi";
-import { LuCopy } from "react-icons/lu";
-
 import AddEditMaintenanceCenterDialog, {
   AddEditMode,
   DayKey,
   MaintenanceCenterForm,
 } from "@/components/truck/centermaintenance/createEditModal";
 import { TPlace } from "@/components/sections/LocationAutocomplete";
+import Pagination from "@/components/ui/Pagination";
 
 type StatusFilter = "All" | "Opened" | "Closed" | "Inactive";
 
 type ServiceCenter = {
   id: string;
   name: string;
-  active?: boolean; // ✅ endpoint key
+  active?: boolean;
   address?: string;
   city?: string;
   state?: string;
@@ -63,7 +51,7 @@ type ServiceCenter = {
   email?: string;
   availability?: string;
   services?: string[];
-  googlePlaceId?: string; // ✅ saved place_id
+  googlePlaceId?: string;
   notes?: string;
   location?: { type: "Point"; coordinates: [number, number] }; // [lng, lat]
 };
@@ -151,7 +139,6 @@ const formatAddress = (c: ServiceCenter) => {
   return parts.join(", ");
 };
 
-// ✅ Accurate open/close from Google Places JS (no CORS)
 function getOpenNowFromPlaces(placeId: string): Promise<boolean | null> {
   return new Promise((resolve) => {
     const g = (window as any).google;
@@ -159,21 +146,15 @@ function getOpenNowFromPlaces(placeId: string): Promise<boolean | null> {
 
     const service = new g.maps.places.PlacesService(document.createElement("div"));
 
-    service.getDetails(
-      { placeId, fields: ["opening_hours"] },
-      (place: any, status: any) => {
-        const ok = status === g.maps.places.PlacesServiceStatus.OK;
-        if (!ok) return resolve(null);
+    service.getDetails({ placeId, fields: ["opening_hours"] }, (place: any, status: any) => {
+      const ok = status === g.maps.places.PlacesServiceStatus.OK;
+      if (!ok) return resolve(null);
 
-        // ✅ Most accurate:
-        // opening_hours.isOpen() uses place timezone
-        const isOpenFn = place?.opening_hours?.isOpen;
-        if (typeof isOpenFn === "function") return resolve(!!isOpenFn.call(place.opening_hours));
+      const isOpenFn = place?.opening_hours?.isOpen;
+      if (typeof isOpenFn === "function") return resolve(!!isOpenFn.call(place.opening_hours));
 
-        // fallback
-        return resolve(!!place?.opening_hours?.open_now);
-      }
-    );
+      return resolve(!!place?.opening_hours?.open_now);
+    });
   });
 }
 
@@ -181,10 +162,10 @@ function getComputedStatus(center: ServiceCenter, cache: PlaceHoursCache): "Open
   if (center.active === false) return "Inactive";
 
   const pid = center.googlePlaceId;
-  if (!pid) return "Closed"; // no placeId => closed
+  if (!pid) return "Closed";
 
   const info = cache[pid];
-  if (!info) return "Closed"; // until fetched
+  if (!info) return "Closed";
 
   return info.openNow ? "Opened" : "Closed";
 }
@@ -205,10 +186,11 @@ export default function CenterMaintenance() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<AddEditMode>("add");
   const [editInitial, setEditInitial] = useState<Partial<MaintenanceCenterForm> | undefined>(undefined);
-  const [dayPickPhase, setDayPickPhase] = useState<"start" | "end">("start");
 
-  // ✅ cache open/close from Google
   const [hoursCache, setHoursCache] = useState<PlaceHoursCache>({});
+
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
   const openAdd = () => {
     setSelectedCenter(null);
@@ -271,7 +253,6 @@ export default function CenterMaintenance() {
       location: addressText
         ? ({
           display_name: addressText,
-          // ⚠️ IMPORTANT: your autocomplete should pass real lat/lon in add/edit
           lat: String(center.location?.coordinates?.[1] ?? "0"),
           lon: String(center.location?.coordinates?.[0] ?? "0"),
           place_id: center.googlePlaceId || `temp_center_${center.id}`,
@@ -299,21 +280,35 @@ export default function CenterMaintenance() {
   const [updateCenter, { isLoading: updating }] = useUpdateServiceCenterMutation();
   const [deleteCenter, { isLoading: deleting }] = useDeleteServiceCenterMutation();
 
-  const { data, isLoading, error, refetch } = useGetServiceCentersQuery({ page: 1, limit: 50 });
+  const { data, isLoading, error, refetch } = useGetServiceCentersQuery({ page, limit });
 
   const centers: ServiceCenter[] = useMemo(() => (data?.data ?? []) as ServiceCenter[], [data]);
+
+  const pagination = useMemo(() => {
+    const p = (data as any)?.paginationResult;
+
+    if (!p) return null;
+
+    return {
+      currentPage: Number(p.currentPage ?? page),
+      totalPages: Number(p.totalPages ?? 0),
+      total: Number(p.totalDocs ?? 0),
+    };
+  }, [data, page]);
 
   useEffect(() => {
     if (error) console.error("Service Centers error:", error);
   }, [error]);
 
-  // ✅ Refresh open/close for all centers (accurate by place timezone)
+  useEffect(() => {
+    setPage(1);
+  }, [search, status]);
+
   const refreshAllOpenStatus = async () => {
     const ids = centers.map((c) => c.googlePlaceId).filter(Boolean) as string[];
     const unique = Array.from(new Set(ids));
 
     for (const placeId of unique) {
-      // If google script not loaded yet => skip
       const openNow = await getOpenNowFromPlaces(placeId);
       if (openNow === null) continue;
 
@@ -324,25 +319,23 @@ export default function CenterMaintenance() {
     }
   };
 
-  // initial load when centers change
   useEffect(() => {
     if (!centers.length) return;
     refreshAllOpenStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centers]);
 
-  // periodic refresh so it flips after 3AM automatically
   useEffect(() => {
     const id = setInterval(() => {
       if (!centers.length) return;
       refreshAllOpenStatus();
-    }, 60 * 1000); // every 1 minute (change to 5*60*1000 if you want)
+    }, 60 * 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centers]);
 
   const stats = useMemo(() => {
-    const total = centers.length;
+    const total = centers.length; 
     let opened = 0;
     let closed = 0;
     let inactive = 0;
@@ -418,8 +411,6 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
       toast.error("Location is required");
       return;
     }
-
-    // ✅ ensure place_id exists (needed for accurate open/close)
     if (!(payload.location as any)?.place_id) {
       toast.error("Please select a location from suggestions (place_id missing)");
       return;
@@ -464,17 +455,12 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
       state,
       address: payload.location.display_name.trim(),
       location: { type: "Point", coordinates: [lng, lat] },
-
       email: trimOrEmpty(payload.email) || undefined,
       services: payload.services?.length ? payload.services : undefined,
       availability: availability || undefined,
       notes: trimOrEmpty(payload.notes) || undefined,
-
       active: payload.status === "Active",
-
-      // ✅ must be the real google place_id
       googlePlaceId: (payload.location as any).place_id,
-
       workStartDay: payload.workStartDay,
       workEndDay: payload.workEndDay,
       workFrom: payload.workFrom,
@@ -508,6 +494,8 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
     const loadingId = toast.loading("Deleting...");
     try {
       await deleteCenter(id).unwrap();
+      if (centers.length === 1 && page > 1) setPage((p) => p - 1);
+
       toast.success("Center deleted", { id: loadingId });
       refetch();
     } catch (err: any) {
@@ -542,15 +530,25 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
         {/* Stats */}
         <Box sx={{ mt: 3 }}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard title="Total Centers" value={String(stats.total)} icon={PiBuildingOfficeLight} iconColor={theme.currentPalette.primary} />
-            <StatsCard title="Opened" value={String(stats.opened)} icon={CiUnlock} iconColor={theme.currentPalette.primary} />
-            <StatsCard title="Closed" value={String(stats.closed)} icon={CiLock} iconColor={theme.currentPalette.primary} />
-            <StatsCard title="Inactive" value={String(stats.inactive)} icon={CiWarning} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="Total Centers" value={String(stats.total)} icon={Building2} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="Opened" value={String(stats.opened)} icon={Unlock} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="Closed" value={String(stats.closed)} icon={Lock} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="Inactive" value={String(stats.inactive)} icon={AlertTriangle} iconColor={theme.currentPalette.primary} />
           </div>
         </Box>
 
-        {/* Header */}
-        <Box sx={{ mt: 4, pt: 2 }}>
+        {/* Container */}
+        <Box
+          sx={{
+            mt: 4,
+            p: 2,
+            backgroundColor: "#fff",
+            borderRadius: "16px",
+            border: "1px solid #E5E7EB",
+            boxShadow: "0 1px 6px rgba(16,24,40,.06)",
+          }}
+        >
+          {/* Header */}
           <Box
             sx={{
               display: "flex",
@@ -562,7 +560,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
             }}
           >
             <Box className="flex items-center gap-2">
-              <CiMap size={24} color={theme.currentPalette.primary} />
+              <Map size={24} color={theme.currentPalette.primary} />
               <Typography variant="h6" sx={{ color: theme.currentPalette.primary, fontWeight: 600 }}>
                 Centers Overview
               </Typography>
@@ -615,7 +613,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
                   gap: 1,
                 }}
               >
-                <CiMap size={22} />
+                <Map size={22} />
                 Map View
               </Button>
 
@@ -635,7 +633,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
                   gap: 1,
                 }}
               >
-                <TbBuilding size={22} />
+                <Building2 size={22} />
                 List View
               </Button>
             </Box>
@@ -660,7 +658,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <FiSearch className={theme.currentPalette.primary} />
+                      <Search className={theme.currentPalette.primary} />
                     </InputAdornment>
                   ),
                 }}
@@ -671,7 +669,11 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
               />
 
               <FormControl sx={{ minWidth: 160 }}>
-                <Select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} sx={{ borderRadius: "10px", backgroundColor: "#fff" }}>
+                <Select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as StatusFilter)}
+                  sx={{ borderRadius: "10px", backgroundColor: "#fff" }}
+                >
                   <MenuItem value="All">All Status</MenuItem>
                   <MenuItem value="Opened">Opened</MenuItem>
                   <MenuItem value="Closed">Closed</MenuItem>
@@ -698,11 +700,9 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
                     <Suspense fallback={<MapFallback />}>
                       <LazyGoogleMapsLoader
                         onLoad={() => {
-                          console.log("Maps loaded successfully");
-                          // ✅ when google is ready, refresh open/close accurately
                           refreshAllOpenStatus();
                         }}
-                        onError={(err) => console.error("Failed to load maps:", err)}
+                        onError={(err: any) => console.error("Failed to load maps:", err)}
                       >
                         <LazyMapWithRoute
                           centers={filteredCenters}
@@ -726,109 +726,125 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
                 {isLoading ? (
                   <Typography sx={{ px: 2, color: "text.secondary" }}>Loading...</Typography>
                 ) : (
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {filteredCenters.map((center) => {
-                      const st = getComputedStatus(center, hoursCache);
-                      const stStyle = statusStyles(st);
-                      const isSelected = selectedCenter?.id === center.id;
+                  <>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      {filteredCenters.map((center) => {
+                        const st = getComputedStatus(center, hoursCache);
+                        const stStyle = statusStyles(st);
+                        const isSelected = selectedCenter?.id === center.id;
 
-                      return (
-                        <Box
-                          key={center.id}
-                          onClick={() => onSelectCenterFromList(center)}
-                          sx={{
-                            cursor: "pointer",
-                            backgroundColor: "#fff",
-                            borderRadius: "12px",
-                            border: isSelected ? `2px solid ${theme.currentPalette.primary}` : "1px solid #D6E6FF",
-                            boxShadow: "0 1px 0 rgba(16,24,40,.02)",
-                            p: 2,
-                            transition: "0.15s",
-                            "&:hover": { backgroundColor: "#F8FBFF" },
-                          }}
-                        >
-                          <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                              <Typography sx={{ fontSize: 18, fontWeight: 700, color: "#0F172A" }}>{center.name}</Typography>
+                        return (
+                          <Box
+                            key={center.id}
+                            onClick={() => onSelectCenterFromList(center)}
+                            sx={{
+                              cursor: "pointer",
+                              backgroundColor: "#fff",
+                              borderRadius: "12px",
+                              border: isSelected ? `2px solid ${theme.currentPalette.primary}` : "1px solid #D6E6FF",
+                              boxShadow: "0 1px 0 rgba(16,24,40,.02)",
+                              p: 2,
+                              transition: "0.15s",
+                              "&:hover": { backgroundColor: "#F8FBFF" },
+                            }}
+                          >
+                            <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                                <Typography sx={{ fontSize: 18, fontWeight: 700, color: "#0F172A" }}>{center.name}</Typography>
 
-                              <Box
-                                sx={{
-                                  px: 1.2,
-                                  py: 0.4,
-                                  borderRadius: "8px",
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  backgroundColor: stStyle.bg,
-                                  color: stStyle.color,
-                                  border: `1px solid ${stStyle.border}`,
-                                }}
-                              >
-                                {st}
+                                <Box
+                                  sx={{
+                                    px: 1.2,
+                                    py: 0.4,
+                                    borderRadius: "8px",
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    backgroundColor: stStyle.bg,
+                                    color: stStyle.color,
+                                    border: `1px solid ${stStyle.border}`,
+                                  }}
+                                >
+                                  {st}
+                                </Box>
+                              </Box>
+
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <IconButton onClick={(e) => copyCenter(e, center)} sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}>
+                                  <Copy size={18} />
+                                </IconButton>
+
+                                <IconButton onClick={(e) => openMenu(e, center)} sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}>
+                                  <Ellipsis size={18} />
+                                </IconButton>
                               </Box>
                             </Box>
 
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <IconButton onClick={(e) => copyCenter(e, center)} sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}>
-                                <LuCopy size={18} />
-                              </IconButton>
-
-                              <IconButton onClick={(e) => openMenu(e, center)} sx={{ border: "1px solid #E5E7EB", borderRadius: "10px" }}>
-                                <HiOutlineDotsHorizontal size={18} />
-                              </IconButton>
-                            </Box>
-                          </Box>
-
-                          <Box sx={{ mt: 1.5, display: "grid", gap: 0.8 }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                              <MdOutlineLocationOn />
-                              <Typography sx={{ fontSize: 13 }}>{formatAddress(center)}</Typography>
-                            </Box>
-
-                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                            <Box sx={{ mt: 1.5, display: "grid", gap: 0.8 }}>
                               <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                                <MdOutlinePhone />
-                                <Typography sx={{ fontSize: 13 }}>{center.phone}</Typography>
+                                <MapPin />
+                                <Typography sx={{ fontSize: 13 }}>{formatAddress(center)}</Typography>
                               </Box>
 
-                              {center?.email && (
+                              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                                  <MdOutlineEmail />
-                                  <Typography sx={{ fontSize: 13 }}>{center.email}</Typography>
+                                  <Phone />
+                                  <Typography sx={{ fontSize: 13 }}>{center.phone}</Typography>
+                                </Box>
+
+                                {center?.email && (
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
+                                    <Mail />
+                                    <Typography sx={{ fontSize: 13 }}>{center.email}</Typography>
+                                  </Box>
+                                )}
+                              </Box>
+
+                              {center?.availability && (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
+                                  <Clock size={14} />
+                                  <Typography sx={{ fontSize: 13 }}>{center.availability}</Typography>
                                 </Box>
                               )}
                             </Box>
 
-                            {center?.availability && (
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                                <MdOutlineAccessTime />
-                                <Typography sx={{ fontSize: 13 }}>{center.availability}</Typography>
+                            {Array.isArray(center.services) && center.services.length > 0 && (
+                              <Box sx={{ mt: 1.5, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                                {center.services.map((s, idx) => (
+                                  <Chip
+                                    key={`${center.id}-srv-${idx}`}
+                                    label={s}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: "#EAF2FF",
+                                      color: "#1E5FA8",
+                                      fontWeight: 600,
+                                      borderRadius: "999px",
+                                    }}
+                                  />
+                                ))}
                               </Box>
                             )}
                           </Box>
+                        );
+                      })}
 
-                          {Array.isArray(center.services) && center.services.length > 0 && (
-                            <Box sx={{ mt: 1.5, display: "flex", flexWrap: "wrap", gap: 1 }}>
-                              {center.services.map((s, idx) => (
-                                <Chip
-                                  key={`${center.id}-srv-${idx}`}
-                                  label={s}
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: "#EAF2FF",
-                                    color: "#1E5FA8",
-                                    fontWeight: 600,
-                                    borderRadius: "999px",
-                                  }}
-                                />
-                              ))}
-                            </Box>
-                          )}
-                        </Box>
-                      );
-                    })}
+                      {filteredCenters.length === 0 && (
+                        <Typography sx={{ px: 2, color: "text.secondary" }}>No centers found.</Typography>
+                      )}
+                    </Box>
 
-                    {filteredCenters.length === 0 && <Typography sx={{ px: 2, color: "text.secondary" }}>No centers found.</Typography>}
-                  </Box>
+                    {viewMode === "list" && !isLoading && filteredCenters.length > 0 && pagination && (
+                      <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
+                        <Pagination
+                          pagination={pagination}
+                          page={page}
+                          setPage={setPage}
+                          pageSize={10}
+                          showInfo={false}
+                        />
+                      </Box>
+                    )}
+                  </>
                 )}
               </Box>
             )}
@@ -844,7 +860,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
             className="flex gap-1"
             sx={{ color: theme.currentPalette.primary }}
           >
-            <MdModeEdit /> Edit Details
+            <Pin /> Edit Details
           </MenuItem>
 
           <MenuItem
@@ -855,7 +871,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
             sx={{ color: "error.main" }}
             className="flex gap-1"
           >
-            <MdDelete /> Delete
+            <Trash /> Delete
           </MenuItem>
         </Menu>
       </Box>
