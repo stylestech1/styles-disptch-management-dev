@@ -508,7 +508,7 @@ export default function AddEditMaintenanceCenterDialog({
                                             startAdornment: (
                                                 <>
                                                     <InputAdornment position="start">
-                                                        <Wrench size={18} color={theme.currentPalette.primary} />
+                                                        <Wrench  color={theme.currentPalette.primary} />
                                                     </InputAdornment>
                                                     {params.InputProps.startAdornment}
                                                 </>

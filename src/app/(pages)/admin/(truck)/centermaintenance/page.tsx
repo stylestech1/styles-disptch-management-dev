@@ -335,7 +335,7 @@ export default function CenterMaintenance() {
   }, [centers]);
 
   const stats = useMemo(() => {
-    const total = centers.length; 
+    const total = centers.length;
     let opened = 0;
     let closed = 0;
     let inactive = 0;
@@ -781,19 +781,19 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
 
                             <Box sx={{ mt: 1.5, display: "grid", gap: 0.8 }}>
                               <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                                <MapPin />
+                                <MapPin size={14} />
                                 <Typography sx={{ fontSize: 13 }}>{formatAddress(center)}</Typography>
                               </Box>
 
                               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                                  <Phone />
+                                  <Phone size={14} />
                                   <Typography sx={{ fontSize: 13 }}>{center.phone}</Typography>
                                 </Box>
 
                                 {center?.email && (
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#475569" }}>
-                                    <Mail />
+                                    <Mail size={14} />
                                     <Typography sx={{ fontSize: 13 }}>{center.email}</Typography>
                                   </Box>
                                 )}
