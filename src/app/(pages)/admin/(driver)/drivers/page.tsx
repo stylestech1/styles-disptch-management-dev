@@ -29,6 +29,7 @@ import {
   FormControl,
   Select,
   Switch,
+  Tooltip,
 } from "@mui/material";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import Pagination from "@/components/ui/Pagination";
@@ -68,8 +69,6 @@ import {
   OctagonX,
   Pen,
   StickyNote,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
   UserRoundCheck,
   UserRoundX,
@@ -78,8 +77,6 @@ import {
 } from "lucide-react";
 import { TTimeOffs, TTimeOffStatus } from "@/types/driverType";
 import { useFilter } from "@/providers/FilterProvider";
-import { Tooltip, tooltipClasses } from "@mui/material";
-import { styled } from "@mui/material/styles";
 
 const DriversPage = () => {
   const router = useRouter();
@@ -367,39 +364,24 @@ const DriversPage = () => {
       searchHook.handleSearchReset();
     }
   };
-  // const [isOpen, setIsOpen] = useState(false);
 
-  // const handleToggle = () => {
-  //   setIsOpen((prev) => !prev);
-  // };
-    // const BlueTooltip = styled(({ className, ...props }) => (
-    //   <Tooltip {...props} arrow classes={{ popper: className }} />
-    // ))(() => ({
-    //   [`& .${tooltipClasses.tooltip}`]: {
-    //     backgroundColor: "#1E3A8A", // dark blue like screenshot
-    //     color: "#fff",
-    //     fontSize: "0.875rem",
-    //     padding: "8px 12px",
-    //     borderRadius: "4px",
-    //   },
-    //   [`& .${tooltipClasses.arrow}`]: {
-    //     color: "#1E3A8A", // same as tooltip background
-    //   },
-    // }));
   const handleDriverToggle = async (driver: TDriver) => {
     const newToggleValue = !driver.toggle;
 
     try {
-      // Optimistic UI update
+      // Optimistic UI update - RTK Query will automatically refetch driver summary
       await updateDriver({
         id: driver.id,
         body: { toggle: newToggleValue },
       }).unwrap();
 
+      // 🔄 Refetch driver list to show updated toggle state
+      refetchDrivers();
+
       toast.success(
         newToggleValue
-          ? "15% deduction enabled"
-          : "Standard mileage calculation applied",
+          ? "15% deduction enabled - Driver summary will update automatically"
+          : "Standard mileage calculation applied - Driver summary will update automatically",
       );
     } catch (err) {
       toast.error("Failed to update toggle");
@@ -608,7 +590,6 @@ const DriversPage = () => {
       transition: "all 0.2s ease-in-out",
     };
 
-
     return (
       <TableRow
         sx={tableRowSx}
@@ -766,7 +747,7 @@ const DriversPage = () => {
                 ? "15% deduction is applied to total miles"
                 : "Standard mileage calculation (No deduction)"
             }
-            
+            arrow
           >
             <Switch
               checked={Boolean(driver.toggle)}

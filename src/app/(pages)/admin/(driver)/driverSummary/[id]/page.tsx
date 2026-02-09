@@ -58,13 +58,16 @@ const DriverSummary = () => {
 
   const earningsRef = useRef(null);
 
-  // ✅ Lazy Query for filtered data
-  const { data: driverSummaryData, error: summaryError } =
-    useGetDriverSummaryWithFilterQuery({
-      id: id as string,
-      from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
-      to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
-    });
+  // ✅ Lazy Query for filtered data with refetch capability
+  const { 
+    data: driverSummaryData, 
+    error: summaryError,
+    refetch: refetchFilteredSummary  // Add refetch capability
+  } = useGetDriverSummaryWithFilterQuery({
+    id: id as string,
+    from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
+    to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
+  });
 
   const [earningsAnchorEl, setEarningsAnchorEl] = useState<HTMLElement | null>(
     null,
@@ -80,15 +83,16 @@ const DriverSummary = () => {
 
   const isEarningsOpen = Boolean(earningsAnchorEl);
 
-  //
+  // ✅ Specific Driver Summary with refetch capability
   const {
     data: specificDriverSummaryData,
     isLoading: specificDriverSummaryLoading,
+    refetch: refetchDriverSummary  // Add refetch capability
   } = useGetSpecificDriverSummaryQuery(id as string, {
     skip: !id,
     refetchOnFocus: false,
     refetchOnReconnect: false,
-    refetchOnMountOrArgChange: false,
+    refetchOnMountOrArgChange: true,  // Changed to true for auto-refetch
   });
 
   // Get Truck Summary data based on filter state
@@ -110,8 +114,41 @@ const DriverSummary = () => {
     }
   }, [summaryError, setError]);
 
+  // ✅ Auto-refetch when driver data might have changed (toggle updated)
+  useEffect(() => {
+    // Set up a refetch interval to check for updates
+    const interval = setInterval(() => {
+      if (isFiltered) {
+        refetchFilteredSummary();
+      } else {
+        refetchDriverSummary();
+      }
+    }, 10000); // Refetch every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [isFiltered, refetchFilteredSummary, refetchDriverSummary]);
+
+  // ✅ Listen for driver toggle changes (if using event-based approach)
+  useEffect(() => {
+    const handleDriverUpdated = () => {
+      // When driver is updated, refetch the summary data
+      if (isFiltered) {
+        refetchFilteredSummary();
+      } else {
+        refetchDriverSummary();
+      }
+    };
+
+    // Listen for custom event if using event-based approach
+    window.addEventListener('driver-updated', handleDriverUpdated);
+
+    return () => {
+      window.removeEventListener('driver-updated', handleDriverUpdated);
+    };
+  }, [isFiltered, refetchFilteredSummary, refetchDriverSummary]);
+
   const profile = profileData?.data;
-  const summaryData = driverSummaryData?.data;
+  const summaryData = isFiltered ? driverSummaryData?.data : specificDriverSummaryData?.data;
 
   // ✅ Table Row Renderer for Loads
   const renderDriverSummaryRow = (load: TLoads, index: number) => {
@@ -207,7 +244,7 @@ const DriverSummary = () => {
       id: 4,
       icon: <Calendar size={25} />,
       name: "Hire Date",
-      value: profile?.hireDate.split("T")[0],
+      value: profile?.hireDate?.split("T")[0] || "N/A",
     },
   ];
 
@@ -347,7 +384,6 @@ const DriverSummary = () => {
                   fontSize: "30px",
                   color: theme.currentPalette.text,
                   display: "inline-block",
-
                   paddingBottom: "2px",
                   cursor: "pointer",
                 }}
@@ -357,7 +393,7 @@ const DriverSummary = () => {
               >
                 $
                 <span style={{ borderBottom: "2px dotted #08172B" }}>
-                  {summaryData?.earnings.totalEarnings || 0}
+                  {summaryData?.earnings?.totalEarnings?.toFixed(2) || "0.00"}
                 </span>
               </Typography>
             </Box>
@@ -366,14 +402,6 @@ const DriverSummary = () => {
               anchorEl={earningsAnchorEl}
               onClose={handleEarningsLeave}
               disableRestoreFocus
-              // anchorOrigin={{
-              //   vertical: "top",
-              //   horizontal: "center",
-              // }}
-              // transformOrigin={{
-              //   vertical: "bottom",
-              //   horizontal: "center",
-              // }}
               PaperProps={{
                 onMouseEnter: () => setEarningsAnchorEl(earningsRef.current),
                 onMouseLeave: handleEarningsLeave,
@@ -417,7 +445,7 @@ const DriverSummary = () => {
                   <span>
                     $
                     {Number(summaryData?.earnings?.baseEarnings).toFixed(2) ||
-                      0}
+                      "0.00"}
                   </span>
                 </Typography>
 
@@ -431,7 +459,7 @@ const DriverSummary = () => {
                   <span>Bonus</span>
                   <span>
                     +$
-                    {Number(summaryData?.earnings?.totalBonus).toFixed(2) || 0}
+                    {Number(summaryData?.earnings?.totalBonus).toFixed(2) || "0.00"}
                   </span>
                 </Typography>
 
@@ -446,7 +474,7 @@ const DriverSummary = () => {
                   <span>
                     +$
                     {Number(summaryData?.earnings?.totalDetention).toFixed(2) ||
-                      0}
+                      "0.00"}
                   </span>
                 </Typography>
 
@@ -457,11 +485,11 @@ const DriverSummary = () => {
                     color: "#B3261E",
                   }}
                 >
-                  <span>Deduction</span>
+                  <span>Deduction (15% toggle)</span>
                   <span>
                     -$
                     {Number(summaryData?.earnings?.totalDeduction).toFixed(2) ||
-                      0}
+                      "0.00"}
                   </span>
                 </Typography>
               </Stack>
@@ -515,7 +543,7 @@ const DriverSummary = () => {
             <Typography
               sx={{ fontSize: "30px", color: theme.currentPalette.text }}
             >
-              ${summaryData?.totalLoads || 0}
+              ${summaryData?.avgPricePerMile?.toFixed(2) || "0.00"}
             </Typography>
           </Box>
 
@@ -541,7 +569,7 @@ const DriverSummary = () => {
             <Typography
               sx={{ fontSize: "30px", color: theme.currentPalette.text }}
             >
-              {summaryData?.totalMiles || 0}
+              {summaryData?.totalMiles?.toLocaleString() || 0}
             </Typography>
           </Box>
         </div>
@@ -558,7 +586,7 @@ const DriverSummary = () => {
           variant="body2"
           sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
         >
-          Complete list of all loads assigned to this truck
+          Complete list of all loads assigned to this driver
         </Typography>
       </Box>
 
@@ -578,7 +606,7 @@ const DriverSummary = () => {
               <div className="flex flex-col items-center justify-center">
                 <div className="text-3xl mb-3">📦</div>
                 <Typography sx={{ color: theme.currentPalette.primary }}>
-                  {isFilterActive
+                  {isFiltered
                     ? "No load records found for the selected date range"
                     : "No load records found"}
                 </Typography>
@@ -588,7 +616,7 @@ const DriverSummary = () => {
                     fontSize: "14px",
                   }}
                 >
-                  {isFilterActive
+                  {isFiltered
                     ? "Please adjust your date filter"
                     : "There are no loads available for this driver"}
                 </Typography>
@@ -615,7 +643,7 @@ const DriverSummary = () => {
               }}
             >
               Showing {displayedData.length} loads
-              {isFilterActive && " (filtered)"}
+              {isFiltered && " (filtered)"}
             </Typography>
           </Box>
         </div>
