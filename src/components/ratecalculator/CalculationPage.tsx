@@ -50,6 +50,13 @@ import {
 import { muiTheme } from "@/theme/theme";
 import { RootState, useAppSelector } from "@/redux/store";
 import { MdContentCopy } from "react-icons/md";
+import {
+  DollarSign,
+  LandPlot,
+  MapPinMinus,
+  MapPinPlus,
+  PackageX,
+} from "lucide-react";
 
 // Lazy load the map components
 const LazyGoogleMapsLoader = lazy(
@@ -533,10 +540,19 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                   mb: 3,
                 }}
               >
-                <Typography variant="h5" color="primary.main" fontWeight="600">
-                  Rate Calculation
-                </Typography>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-col ">
+                  <Typography
+                    variant="h5"
+                    color="primary.main"
+                    fontWeight="600"
+                  >
+                    Rate Calculation
+                  </Typography>
+                  <Typography color={theme.currentPalette.background}>
+                    Price Per Mile = Rate / ( Dead Head Miles + Load Miles)
+                  </Typography>
+                </div>
+                {/* <div className="flex items-center gap-1">
                   <Tooltip title="Clear all fields">
                     <IconButton
                       onClick={clearCalculation}
@@ -546,25 +562,51 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                       <Refresh />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="copy all fields">
-                    <IconButton
-                      onClick={copyCalculationToClipboard}
-                      size="small"
-                      color="inherit"
-                      disabled={!dh && !loadMiles && !rate}
-                    >
-                      <MdContentCopy />
-                    </IconButton>
-                  </Tooltip>
-                </div>
+                </div> */}
               </Box>
-
+              <Stack
+                direction="row"
+                gap={3}
+                alignItems="center"
+                flexWrap="wrap"
+                sx={{ mb: 2 }}
+              >
+                {/* Price Per Mile Button */}
+                <Button
+                  variant="outlined"
+                  sx={{
+                    minWidth: 200,
+                    height: 56,
+                    borderColor: "success.light",
+                    backgroundColor: "success.50",
+                    color: "text.primary",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    px: 2,
+                    textTransform: "none",
+                    fontWeight: "normal",
+                    width: "100%",
+                    fontSize: "1rem",
+                    border: "info",
+                    [muiTheme.breakpoints.down("md")]: {
+                      width: "100%",
+                    },
+                  }}
+                >
+                  <Typography component="span" sx={{ mr: 1 }}>
+                    Price Per Mile
+                  </Typography>
+                  <Typography component="span" sx={{ fontWeight: "medium" }}>
+                    {calc !== "" ? `$${calc}` : ""}
+                  </Typography>
+                </Button>
+              </Stack>
               <Box>
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
-                      label="Dead Head (Miles)"
+                      label="Dead Head Miles"
                       placeholder="0.00"
                       value={dh}
                       onChange={(e) =>
@@ -575,7 +617,7 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <DirectionsCar />
+                              <PackageX />
                             </InputAdornment>
                           ),
                         },
@@ -599,7 +641,7 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <Speed />
+                              <LandPlot />
                             </InputAdornment>
                           ),
                         },
@@ -610,7 +652,7 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
-                      label="Rate ($)"
+                      label="Rate"
                       placeholder="0.00"
                       value={rate}
                       onChange={(e) =>
@@ -621,7 +663,7 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <AttachMoney />
+                              <DollarSign />
                             </InputAdornment>
                           ),
                         },
@@ -629,39 +671,6 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                     />
                   </Grid>
                 </Grid>
-
-                <Stack
-                  direction="row"
-                  gap={3}
-                  alignItems="center"
-                  flexWrap="wrap"
-                >
-                  {/* Result */}
-                  <TextField
-                    label="Price Per Mile"
-                    value={calc !== "" ? `$${calc}` : ""}
-                    slotProps={{
-                      input: {
-                        readOnly: true,
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <AttachMoney />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                    sx={{
-                      minWidth: 200,
-                      "& .MuiOutlinedInput-root": {
-                        backgroundColor: "success.50",
-                        borderColor: "success.light",
-                      },
-                      [muiTheme.breakpoints.down("md")]: {
-                        width: "100%",
-                      },
-                    }}
-                  />
-                </Stack>
 
                 {calc !== "" && (
                   <Fade in={true}>
@@ -679,13 +688,11 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
             <Paper
               elevation={0}
               sx={{
-                p: 3,
+                p: 4,
                 borderRadius: 3,
                 border: "1px solid",
                 borderColor: "divider",
                 backgroundColor: theme.currentPalette.background,
-                height: "fit-content",
-                minHeight: 600,
               }}
             >
               <Box
@@ -697,92 +704,174 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
                 }}
               >
                 <Typography variant="h5" color="primary.main" fontWeight="600">
-                  Route Map
+                  Route Planning
                 </Typography>
-                <Chip
-                  icon={<Route />}
-                  label={`${validDestinationsCount} Stops`}
-                  color="primary"
-                  variant="outlined"
-                />
+                <div className="flex items-center gap-1">
+                  <Tooltip title="Recalculate distances">
+                    <IconButton
+                      onClick={recalculateAll}
+                      size="small"
+                      disabled={isCalculating}
+                    >
+                      <MyLocation />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="copy all fields">
+                    <IconButton
+                      onClick={copyRouteDetailsToClipboard}
+                      size="small"
+                      color="inherit"
+                      disabled={
+                        !dho && !origin && destinations.every((d) => !d)
+                      }
+                    >
+                      <MdContentCopy />
+                    </IconButton>
+                  </Tooltip>
+                </div>
               </Box>
+              {/* Distance Statistics */}
+              <div className="mb-3">
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <StatCard
+                      title="DHO to Origin"
+                      value={`${dhoToOriginDistance?.toFixed(1) || "0.0"} miles`}
+                      subtitle={
+                        dhoToOriginTime ? formatTime(dhoToOriginTime) : ""
+                      }
+                      icon={<Route />}
+                      color="info"
+                    />
+                  </Grid>
 
-              <Suspense fallback={<MapFallback />}>
-                <LazyGoogleMapsLoader
-                  onLoad={() => console.log("Maps loaded successfully")}
-                  onError={(error) =>
-                    console.error("Failed to load maps:", error)
-                  }
-                >
-                  <LazyMapWithRoute
-                    dho={dho}
-                    origin={origin}
-                    destinations={destinations}
-                    height="500px"
-                    {...{
-                      onLocationChange: handleMapLocationChange,
-                    }}
-                  />
-                </LazyGoogleMapsLoader>
-              </Suspense>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <StatCard
+                      title="Total Route"
+                      value={`${totalDistance?.toFixed(1) || "0.0"} miles`}
+                      subtitle={
+                        totalTime
+                          ? formatTime(totalTime)
+                          : `${validDestinationsCount} stops`
+                      }
+                      icon={<DirectionsCar />}
+                      color="info"
+                    />
+                  </Grid>
+                </Grid>
+              </div>
+              <Stack spacing={3}>
+                {/* DHO Input */}
+                <LocationAutocomplete
+                  key={`dho-${resetKey}`}
+                  label="DHO (Driver Home Origin)"
+                  value={dho}
+                  setValue={setDho}
+                  placeholder="Enter driver's starting location"
+                  showZipCode={true}
+                />
 
-              {/* Route Summary */}
-              <Fade in={!!hasValidRoute}>
+                {/* Origin Input */}
+                <LocationAutocomplete
+                  key={`origin-${resetKey}`}
+                  label="Pick Up (Origin)"
+                  value={origin}
+                  setValue={setOrigin}
+                  placeholder="Enter origin address"
+                  showZipCode={true}
+                />
+
+                <Divider />
+
+                {/* Destinations Section */}
                 <Box>
-                  <Stack spacing={2} sx={{ mt: 2 }}>
-                    <Divider />
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight="600"
-                      color="text.primary"
-                    >
-                      Route Summary
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 2 }}
+                  >
+                    <Typography variant="h6" fontWeight="500">
+                      Destinations ({validDestinationsCount})
                     </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      useFlexGap
-                    >
-                      {dho && (
-                        <Chip
-                          label="DHO"
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Clear all routes">
+                        <IconButton
+                          onClick={clearAllRoutes}
                           size="small"
-                          color="primary"
-                          variant="filled"
-                        />
-                      )}
-                      {origin && (
-                        <Chip
-                          label="Origin"
-                          size="small"
-                          color="secondary"
-                          variant="filled"
-                        />
-                      )}
-                      {destinations
-                        .filter((d) => d !== null)
-                        .map((_, index) => (
-                          <Chip
-                            key={index}
-                            label={`Dest ${index + 1}`}
-                            size="small"
-                            color="success"
-                            variant="filled"
-                          />
-                        ))}
+                          color="error"
+                        >
+                          <MapPinMinus />
+                        </IconButton>
+                      </Tooltip>
+                      <Button
+                        onClick={handleAddDestination}
+                        variant="outlined"
+                        size="small"
+                      >
+                        <MapPinPlus />
+                      </Button>
                     </Stack>
-                    {totalDistance && (
-                      <Typography variant="body2" color="text.secondary">
-                        Total distance:{" "}
-                        <strong>{totalDistance.toFixed(1)} miles</strong>
-                        {totalTime &&
-                          ` • Estimated time: ${formatTime(totalTime)}`}
-                      </Typography>
-                    )}
+                  </Stack>
+
+                  <Stack spacing={2}>
+                    {destinations.map((destination, index) => (
+                      <Stack
+                        key={`dest-stack-${index}-${resetKey}`}
+                        direction="row"
+                        spacing={1}
+                        alignItems="flex-end"
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <LocationAutocomplete
+                            label={`Destination-${index}-${resetKey}`}
+                            value={destination}
+                            setValue={(place) =>
+                              handleUpdateDestination(index, place)
+                            }
+                            placeholder={`Enter destination ${index + 1} address`}
+                            showZipCode={true}
+                          />
+                        </Box>
+                        {destinations.length > 1 && (
+                          <Tooltip title="Remove destination">
+                            <IconButton
+                              onClick={() => handleRemoveDestination(index)}
+                              sx={{ mb: 0.5 }}
+                              color="error"
+                              size="small"
+                            >
+                              <Close />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    ))}
                   </Stack>
                 </Box>
-              </Fade>
+
+                {isCalculating && (
+                  <Fade in={true}>
+                    <Alert severity="info">
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <CircularProgress size={20} />
+                        <Typography variant="body2">
+                          Calculating distances and travel times...
+                        </Typography>
+                      </Stack>
+                    </Alert>
+                  </Fade>
+                )}
+
+                {!hasValidRoute && (
+                  <Fade in={true}>
+                    <Alert severity="warning">
+                      Please enter DHO, Origin, and at least one destination to
+                      see the complete route.
+                    </Alert>
+                  </Fade>
+                )}
+              </Stack>
             </Paper>
           </Stack>
         </Grid>
@@ -790,14 +879,17 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
         {/* Right Column - Map */}
         <Grid size={{ xs: 12, lg: 6 }}>
           {/* Route Planning Section */}
+
           <Paper
             elevation={0}
             sx={{
-              p: 4,
+              p: 3,
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
               backgroundColor: theme.currentPalette.background,
+              height: "fit-content",
+              minHeight: 600,
             }}
           >
             <Box
@@ -809,178 +901,87 @@ ${destinations.filter((d) => d).length > 0 ? "" : ""}`;
               }}
             >
               <Typography variant="h5" color="primary.main" fontWeight="600">
-                Route Planning
+                Route Map
               </Typography>
-              <div className="flex items-center gap-1">
-                <Tooltip title="Recalculate distances">
-                  <IconButton
-                    onClick={recalculateAll}
-                    size="small"
-                    disabled={isCalculating}
-                  >
-                    <MyLocation />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="copy all fields">
-                  <IconButton
-                    onClick={copyRouteDetailsToClipboard}
-                    size="small"
-                    color="inherit"
-                    disabled={!dho && !origin && destinations.every((d) => !d)}
-                  >
-                    <MdContentCopy />
-                  </IconButton>
-                </Tooltip>
-              </div>
+              <Chip
+                icon={<Route />}
+                label={`${validDestinationsCount} Stops`}
+                color="primary"
+                variant="outlined"
+              />
             </Box>
 
-            <Stack spacing={3}>
-              {/* DHO Input */}
-              <LocationAutocomplete
-                key={`dho-${resetKey}`}
-                label="DHO (Driver Home Origin)"
-                value={dho}
-                setValue={setDho}
-                placeholder="Enter driver's starting location"
-                showZipCode={true}
-              />
+            <Suspense fallback={<MapFallback />}>
+              <LazyGoogleMapsLoader
+                onLoad={() => console.log("Maps loaded successfully")}
+                onError={(error) =>
+                  console.error("Failed to load maps:", error)
+                }
+              >
+                <LazyMapWithRoute
+                  dho={dho}
+                  origin={origin}
+                  destinations={destinations}
+                  height="500px"
+                  {...{
+                    onLocationChange: handleMapLocationChange,
+                  }}
+                />
+              </LazyGoogleMapsLoader>
+            </Suspense>
 
-              {/* Origin Input */}
-              <LocationAutocomplete
-                key={`origin-${resetKey}`}
-                label="Pick Up (Origin)"
-                value={origin}
-                setValue={setOrigin}
-                placeholder="Enter origin address"
-                showZipCode={true}
-              />
-
-              {/* Distance Statistics */}
-              {(dhoToOriginDistance !== null || totalDistance !== null) && (
-                <Grid container spacing={2}>
-                  {dhoToOriginDistance !== null && (
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <StatCard
-                        title="DHO to Origin"
-                        value={`${dhoToOriginDistance.toFixed(1)} miles`}
-                        subtitle={
-                          dhoToOriginTime ? formatTime(dhoToOriginTime) : ""
-                        }
-                        icon={<Route />}
-                        color="info"
-                      />
-                    </Grid>
-                  )}
-                  {totalDistance !== null && (
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <StatCard
-                        title="Total Route"
-                        value={`${totalDistance.toFixed(1)} miles`}
-                        subtitle={
-                          totalTime
-                            ? formatTime(totalTime)
-                            : `${validDestinationsCount} stops`
-                        }
-                        icon={<DirectionsCar />}
-                        color="success"
-                      />
-                    </Grid>
-                  )}
-                </Grid>
-              )}
-
-              <Divider />
-
-              {/* Destinations Section */}
+            {/* Route Summary */}
+            <Fade in={!!hasValidRoute}>
               <Box>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ mb: 2 }}
-                >
-                  <Typography variant="h6" fontWeight="500">
-                    Destinations ({validDestinationsCount})
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <Divider />
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="600"
+                    color="text.primary"
+                  >
+                    Route Summary
                   </Typography>
-                  <Stack direction="row" spacing={1}>
-                    <Tooltip title="Clear all routes">
-                      <IconButton
-                        onClick={clearAllRoutes}
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {dho && (
+                      <Chip
+                        label="DHO"
                         size="small"
-                        color="error"
-                      >
-                        <Close />
-                      </IconButton>
-                    </Tooltip>
-                    <Button
-                      startIcon={<Add />}
-                      onClick={handleAddDestination}
-                      variant="outlined"
-                      size="medium"
-                    >
-                      Add
-                    </Button>
-                  </Stack>
-                </Stack>
-
-                <Stack spacing={2}>
-                  {destinations.map((destination, index) => (
-                    <Stack
-                      key={`dest-stack-${index}-${resetKey}`}
-                      direction="row"
-                      spacing={1}
-                      alignItems="flex-end"
-                    >
-                      <Box sx={{ flex: 1 }}>
-                        <LocationAutocomplete
-                          label={`Destination-${index}-${resetKey}`}
-                          value={destination}
-                          setValue={(place) =>
-                            handleUpdateDestination(index, place)
-                          }
-                          placeholder={`Enter destination ${index + 1} address`}
-                          showZipCode={true}
+                        color="primary"
+                        variant="filled"
+                      />
+                    )}
+                    {origin && (
+                      <Chip
+                        label="Origin"
+                        size="small"
+                        color="secondary"
+                        variant="filled"
+                      />
+                    )}
+                    {destinations
+                      .filter((d) => d !== null)
+                      .map((_, index) => (
+                        <Chip
+                          key={index}
+                          label={`Dest ${index + 1}`}
+                          size="small"
+                          color="success"
+                          variant="filled"
                         />
-                      </Box>
-                      {destinations.length > 1 && (
-                        <Tooltip title="Remove destination">
-                          <IconButton
-                            onClick={() => handleRemoveDestination(index)}
-                            sx={{ mb: 0.5 }}
-                            color="error"
-                            size="small"
-                          >
-                            <Close />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Stack>
-                  ))}
+                      ))}
+                  </Stack>
+                  {totalDistance && (
+                    <Typography variant="body2" color="text.secondary">
+                      Total distance:{" "}
+                      <strong>{totalDistance.toFixed(1)} miles</strong>
+                      {totalTime &&
+                        ` • Estimated time: ${formatTime(totalTime)}`}
+                    </Typography>
+                  )}
                 </Stack>
               </Box>
-
-              {isCalculating && (
-                <Fade in={true}>
-                  <Alert severity="info">
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <CircularProgress size={20} />
-                      <Typography variant="body2">
-                        Calculating distances and travel times...
-                      </Typography>
-                    </Stack>
-                  </Alert>
-                </Fade>
-              )}
-
-              {!hasValidRoute && (
-                <Fade in={true}>
-                  <Alert severity="warning">
-                    Please enter DHO, Origin, and at least one destination to
-                    see the complete route.
-                  </Alert>
-                </Fade>
-              )}
-            </Stack>
+            </Fade>
           </Paper>
         </Grid>
       </Grid>
