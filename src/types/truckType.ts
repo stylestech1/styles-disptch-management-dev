@@ -19,6 +19,7 @@ export type TMaintenance = {
   intervalDays?: number;
   remindBeforeMile?: number;
   remindBeforeDays?: number;
+  serviceCenter: string;
   createdBy: string;
   statusPerTruck: TStatusPerTruck[];
   createdAt: string;

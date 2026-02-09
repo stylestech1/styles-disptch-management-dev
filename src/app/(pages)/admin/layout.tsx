@@ -251,7 +251,7 @@ export default function AdminLayout({
                               : "transparent",
 
                             "&:hover": {
-                              bgcolor: alpha(theme.palette.primary.contrastText, 0.6),
+                              bgcolor: alpha(themePalette.currentPalette.primary, 0.08),
                               color: themePalette.currentPalette.primary,
                             },
 
@@ -287,15 +287,22 @@ export default function AdminLayout({
               component={NextLink}
               href={link}
               sx={{
+                ml: 4,
                 borderRadius: 2,
-                mx: 1,
-                my: 0.5,
-                backgroundColor: active
-                  ? themePalette.currentPalette.primary
-                  : theme.palette.primary.contrastText,
+
                 color: active
                   ? theme.palette.primary.contrastText
                   : themePalette.currentPalette.primary,
+                bgcolor: active
+                  ? themePalette.currentPalette.primary
+                  : "transparent",
+
+                "&:hover": {
+                  bgcolor: alpha(themePalette.currentPalette.primary, 0.08),
+                  color: themePalette.currentPalette.primary,
+                },
+
+                transition: "background-color 0.2s ease, color 0.2s ease",
               }}
             >
               <ListItemIcon sx={{ color: "inherit" }}>{tab.icon}</ListItemIcon>

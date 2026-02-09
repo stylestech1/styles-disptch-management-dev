@@ -8,7 +8,7 @@ import { Roboto } from "next/font/google";
 import MuiThemeProvider from "@/providers/MuiThemeProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ChatProvider } from "@/providers/ChatProvider";
-import ChatBubble from "@/components/chat/ChatBubble";
+// import ChatBubble from "@/components/chat/ChatBubble";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -34,7 +34,7 @@ export default function RootLayout({
             <ChatProvider>
             <SpeedInsights />
             {children}
-            <ChatBubble />
+            {/* <ChatBubble /> */}
             <Toaster position="top-center" reverseOrder={false} />
             </ChatProvider>
           </MuiThemeProvider>

@@ -1,11 +1,10 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MessageCircleMore } from "lucide-react";
 import { RootState, useAppSelector } from "@/redux/store";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { Badge } from "./ui/Badge";
-import { Box } from "@mui/material";
+import { Badge, Box, IconButton } from "@mui/material";
 
 const ChatBubble = () => {
   const userRole = useAppSelector((state: RootState) => state.auth.user?.role);
@@ -21,52 +20,54 @@ const ChatBubble = () => {
     0
   );
 
-  // -------------- Run Sound when notify --------------
-  const prevUnreadRef = useRef(totalUnreadCount);
-
-  useEffect(() => {
-    if (
-      totalUnreadCount > prevUnreadRef.current &&
-      !pathname.includes("/chat")
-    ) {
-      const audio = new Audio("/audio/message.mp3");
-      audio.play().catch(console.log);
-    }
-
-    prevUnreadRef.current = totalUnreadCount;
-  }, [totalUnreadCount, pathname]);
-
   if (
     pathname.includes("/chat") ||
     pathname === "/" ||
-    pathname.startsWith("/login")
+    pathname.startsWith("/login") ||
+    !userRole
   ) {
     return null;
   }
 
+  const href =
+    userRole === "employee" ? "/dispatchers/chat" : `/${userRole}/chat`;
+
   return (
-    <Box position="relative">
-      <Link
-        href={
-          userRole === "employee" ? "/dispatchers/chat" : `/${userRole}/chat`
-        }
-        className="fixed bottom-6 right-6 p-4 z-50 flex items-center justify-center rounded-full"
-        style={{
-          color: theme.currentPalette.background,
-          backgroundColor: theme.currentPalette.primary,
+    <Box>
+      <Badge
+        badgeContent={totalUnreadCount}
+        color="error"
+        overlap="circular"
+        invisible={totalUnreadCount === 0}
+        sx={{
+          "& .MuiBadge-badge": {
+            top: 4,
+            right: 4,
+            fontSize: "12px",
+            minWidth: 20,
+            height: 20,
+          },
         }}
       >
-        {totalUnreadCount > 0 && (
-          <Badge
-            variant="danger"
-            size="sm"
-            className="absolute -top-1 -right-1"
-          >
-            {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
-          </Badge>
-        )}
-        <MessageCircleMore size={25} />
-      </Link>
+        <IconButton
+          component={Link}
+          href={href}
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            bgcolor: "#fff",
+            border: "1px solid",
+            borderColor: "#E5E7EB",
+            color: theme.currentPalette.primary,
+            "&:hover": {
+              bgcolor: "#F9FAFB",
+            },
+          }}
+        >
+          <MessageCircleMore size={20} />
+        </IconButton>
+      </Badge>
     </Box>
   );
 };

@@ -13,6 +13,7 @@ import HeaderSourceTruckDashboard from "../truck/HeaderSourceTruckDashboard";
 import { usePathname } from "next/navigation";
 import { IoMenu } from "react-icons/io5";
 import GlobalFilter from "@/components/ui/GlobalFilter";
+import ChatBubble from "../chat/ChatBubble";
 
 interface NavbarProps {
   title: string;
@@ -139,19 +140,21 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
             gap: { xs: 0.5, sm: 1 },
           }}
         >
-          {(pathname === "/admin/truckdashboard" ||
-            pathname === "/admin/trucksmaintenance" && (
-              <div className="hidden sm:flex">
-                <HeaderSourceTruckDashboard />
-              </div>
-            ))}
+          {(pathname === "/admin/truckdashboard" || pathname === "/admin/trucksmaintenance") && (
+            <div className="hidden sm:flex">
+              <HeaderSourceTruckDashboard />
+            </div>
+          )}
+
           {shouldShowFilter &&
             pathname != "/admin/centermaintenance" && (
               <Box sx={{ display: { xs: "none", sm: "block" } }}>
                 <GlobalFilter filterType={getFilterType()} />
               </Box>
             )}
+          <ChatBubble />
           <NotificationProvider />
+
         </Box>
       </Toolbar>
     </AppBar>
