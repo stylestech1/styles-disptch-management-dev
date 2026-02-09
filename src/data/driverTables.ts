@@ -8,6 +8,7 @@ export const driverColumns: Column[] = [
   { key: "pricePerMile", header: "Price/Mile", align: "center" },
   { key: "hireDate", header: "Hire Date", align: "center" },
   { key: "status", header: "Status", align: "center" },
+  { key: "toggle", header: "Reduced Rate", align: "center" },
   { key: "actions", header: "Actions", align: "center" },
 ];
 

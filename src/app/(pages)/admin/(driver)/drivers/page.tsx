@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ import {
   CircularProgress,
   FormControl,
   Select,
+  Switch,
 } from "@mui/material";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import Pagination from "@/components/ui/Pagination";
@@ -66,6 +68,8 @@ import {
   OctagonX,
   Pen,
   StickyNote,
+  ToggleLeft,
+  ToggleRight,
   Trash2,
   UserRoundCheck,
   UserRoundX,
@@ -74,6 +78,8 @@ import {
 } from "lucide-react";
 import { TTimeOffs, TTimeOffStatus } from "@/types/driverType";
 import { useFilter } from "@/providers/FilterProvider";
+import { Tooltip, tooltipClasses } from "@mui/material";
+import { styled } from "@mui/material/styles";
 
 const DriversPage = () => {
   const router = useRouter();
@@ -86,12 +92,12 @@ const DriversPage = () => {
   const [deleteToast, setDeleteToast] = useState({ open: false, message: "" });
   const [openStepper, setOpenStepper] = useState(false);
   const [togglePage, setTogglePage] = useState<"drivers" | "timeoff">(
-    "drivers"
+    "drivers",
   );
   const [timeOffFilter, setTimeOffFilter] = useState<TTimeOffStatus>("all");
   const [openTimeOffDialog, setOpenTimeOffDialog] = useState(false);
   const [selectedTimeOff, setSelectedTimeOff] = useState<TTimeOffs | null>(
-    null
+    null,
   );
   const { fromDate, toDate, isFiltered } = useFilter();
 
@@ -107,7 +113,7 @@ const DriversPage = () => {
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: true,
-    }
+    },
   );
 
   const { data: filteredData } = useGetDriverWithFilterQuery(
@@ -117,7 +123,7 @@ const DriversPage = () => {
       page,
       limit: 10,
     },
-    { skip: !isFiltered || !fromDate || !toDate, refetchOnFocus: false }
+    { skip: !isFiltered || !fromDate || !toDate, refetchOnFocus: false },
   );
   const { data: timeOffsFilteredData } = useGetFilterTimeOffsQuery(
     {
@@ -126,7 +132,7 @@ const DriversPage = () => {
       page,
       limit: 10,
     },
-    { skip: !isFiltered || !fromDate || !toDate, refetchOnFocus: false }
+    { skip: !isFiltered || !fromDate || !toDate, refetchOnFocus: false },
   );
 
   useEffect(() => {
@@ -160,7 +166,7 @@ const DriversPage = () => {
       refetchOnFocus: true,
       refetchOnReconnect: true,
       refetchOnMountOrArgChange: 5,
-    }
+    },
   );
 
   const [
@@ -353,12 +359,50 @@ const DriversPage = () => {
   // 🔹 Toggle Handler
   const handleToggleChange: ToggleButtonGroupProps["onChange"] = (
     _,
-    newValue
+    newValue,
   ) => {
     if (newValue !== null) {
       setTogglePage(newValue);
       setPage(1);
       searchHook.handleSearchReset();
+    }
+  };
+  // const [isOpen, setIsOpen] = useState(false);
+
+  // const handleToggle = () => {
+  //   setIsOpen((prev) => !prev);
+  // };
+    // const BlueTooltip = styled(({ className, ...props }) => (
+    //   <Tooltip {...props} arrow classes={{ popper: className }} />
+    // ))(() => ({
+    //   [`& .${tooltipClasses.tooltip}`]: {
+    //     backgroundColor: "#1E3A8A", // dark blue like screenshot
+    //     color: "#fff",
+    //     fontSize: "0.875rem",
+    //     padding: "8px 12px",
+    //     borderRadius: "4px",
+    //   },
+    //   [`& .${tooltipClasses.arrow}`]: {
+    //     color: "#1E3A8A", // same as tooltip background
+    //   },
+    // }));
+  const handleDriverToggle = async (driver: TDriver) => {
+    const newToggleValue = !driver.toggle;
+
+    try {
+      // Optimistic UI update
+      await updateDriver({
+        id: driver.id,
+        body: { toggle: newToggleValue },
+      }).unwrap();
+
+      toast.success(
+        newToggleValue
+          ? "15% deduction enabled"
+          : "Standard mileage calculation applied",
+      );
+    } catch (err) {
+      toast.error("Failed to update toggle");
     }
   };
 
@@ -382,6 +426,7 @@ const DriversPage = () => {
       hireDate: driver.hireDate,
       pricePerMile: driver.pricePerMile,
       createdBy: driver.createdBy,
+      toggle: driver.toggle,
     });
     setEditMode(true);
     setOpen(true);
@@ -390,14 +435,14 @@ const DriversPage = () => {
   // ✅ Handle Form Change
   const handleFormChange = <K extends keyof TDriver>(
     field: K,
-    value: TDriver[K]
+    value: TDriver[K],
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const getChangedFields = (
     original: Partial<TDriver>,
-    updated: Partial<TDriver>
+    updated: Partial<TDriver>,
   ): Partial<TDriver> => {
     const changedFields: Record<string, unknown> = {};
 
@@ -487,7 +532,7 @@ const DriversPage = () => {
   const handleTimeOffStatus = async (
     id: string,
     status: "approved" | "rejected",
-    adminNote?: string
+    adminNote?: string,
   ) => {
     if (updatingId) return;
     setUpdatingId(id);
@@ -500,7 +545,7 @@ const DriversPage = () => {
       toast.success(
         status === "approved"
           ? "Time off request approved successfully"
-          : "Time off request rejected successfully"
+          : "Time off request rejected successfully",
       );
       refetchTimeOffs();
     } catch (err: unknown) {
@@ -535,7 +580,7 @@ const DriversPage = () => {
     try {
       await deleteDriver(driverToDelete.id).unwrap();
       toast.success(
-        `✅ Driver #${driverToDelete.driverId} deleted successfully!`
+        `✅ Driver #${driverToDelete.driverId} deleted successfully!`,
       );
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
@@ -553,7 +598,6 @@ const DriversPage = () => {
     setDriverToDelete(null);
   };
 
-  // ✅ Render Driver Table Row
   const renderDriverRow = (driver: TDriver) => {
     // Styles
     const tableRowSx: SxProps = {
@@ -563,6 +607,7 @@ const DriversPage = () => {
       },
       transition: "all 0.2s ease-in-out",
     };
+
 
     return (
       <TableRow
@@ -712,6 +757,22 @@ const DriversPage = () => {
               }
             />
           )}
+        </td>
+        {/* Reduced Rate */}
+        <td className="p-4 text-center">
+          <Tooltip
+            title={
+              driver.toggle
+                ? "15% deduction is applied to total miles"
+                : "Standard mileage calculation (No deduction)"
+            }
+            
+          >
+            <Switch
+              checked={Boolean(driver.toggle)}
+              onChange={() => handleDriverToggle(driver)}
+            />
+          </Tooltip>
         </td>
 
         {/* Actions */}
@@ -1570,10 +1631,10 @@ const DriversPage = () => {
                         if (isNaN(from.getTime()) || isNaN(to.getTime()))
                           return "Invalid date";
                         const diffTime = Math.abs(
-                          to.getTime() - from.getTime()
+                          to.getTime() - from.getTime(),
                         );
                         const diffDays = Math.ceil(
-                          diffTime / (1000 * 60 * 60 * 24)
+                          diffTime / (1000 * 60 * 60 * 24),
                         );
                         return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
                       })()}
@@ -1649,7 +1710,7 @@ const DriversPage = () => {
                       handleTimeOffStatus(
                         selectedTimeOff.id,
                         "approved",
-                        "Approved by admin"
+                        "Approved by admin",
                       );
                       setOpenTimeOffDialog(false);
                     }}
@@ -1674,7 +1735,7 @@ const DriversPage = () => {
                       handleTimeOffStatus(
                         selectedTimeOff.id,
                         "rejected",
-                        "Not available"
+                        "Not available",
                       );
                       setOpenTimeOffDialog(false);
                     }}
