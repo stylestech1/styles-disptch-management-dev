@@ -69,23 +69,6 @@ const LazyGoogleMapsLoader = lazy(
 );
 const LazyMapWithRoute = lazy(() => import("@/components/ui/MapWithRoute"));
 
-// Debounce utility function
-const useDebounce = (value: any, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
 const useRouteCalculations = (
   dho: TPlace | null,
   origin: TPlace | null,
@@ -99,32 +82,19 @@ const useRouteCalculations = (
   const [totalTime, setTotalTime] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Debounce the inputs to prevent excessive calculations
-  const debouncedDho = useDebounce(dho, 1000);
-  const debouncedOrigin = useDebounce(origin, 1000);
-  const debouncedDestinations = useDebounce(destinations, 1000);
-
+  // Calculate DHO ➡ Origin
   const calculateDhoToOrigin = useCallback(async () => {
-    if (!debouncedDho || !debouncedOrigin) {
+    if (!dho || !origin) {
       setDhoToOriginDistance(null);
       setDhoToOriginTime(null);
       return;
     }
 
+    setIsCalculating(true);
     try {
-      setIsCalculating(true);
-      // Use setTimeout to yield to main thread
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
       const result = await calculateDhoToOriginDistance(
-        {
-          lat: parseFloat(debouncedDho.lat),
-          lng: parseFloat(debouncedDho.lon),
-        },
-        {
-          lat: parseFloat(debouncedOrigin.lat),
-          lng: parseFloat(debouncedOrigin.lon),
-        },
+        { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) },
+        { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) },
       );
       setDhoToOriginDistance(result.distance);
       setDhoToOriginTime(result.duration);
@@ -136,8 +106,9 @@ const useRouteCalculations = (
     } finally {
       setIsCalculating(false);
     }
-  }, [debouncedDho, debouncedOrigin]);
+  }, [dho, origin]);
 
+  // Calculate DHO ➡ Origin ➡ All Destinations
   const calculateTotalRoute = useCallback(async () => {
     const validDestinations = destinations.filter(
       (dest): dest is TPlace => dest !== null,
@@ -147,6 +118,7 @@ const useRouteCalculations = (
       (dho && origin && validDestinations.length > 0) ||
       (origin && validDestinations.length > 0)
     ) {
+      setIsCalculating(true);
       try {
         const destinationsCoords = validDestinations.map((dest) => ({
           lat: parseFloat(dest.lat),
@@ -168,6 +140,8 @@ const useRouteCalculations = (
         setTotalDistance(null);
         setTotalTime(null);
         toast.error("Failed to calculate total route distance");
+      } finally {
+        setIsCalculating(false);
       }
     } else {
       setTotalDistance(null);
@@ -201,11 +175,6 @@ const useRateCalculation = (
   const [rate, setRate] = useState<number | "">("");
   const [calc, setCalc] = useState<number | "">("");
 
-  // Debounce the calculations to prevent blocking
-  const debouncedDh = useDebounce(dh, 300);
-  const debouncedLoadMiles = useDebounce(loadMiles, 300);
-  const debouncedRate = useDebounce(rate, 300);
-
   useEffect(() => {
     if (dhoToOriginDistance !== null)
       setDh(Number(dhoToOriginDistance.toFixed(1)));
@@ -214,32 +183,6 @@ const useRateCalculation = (
   useEffect(() => {
     if (totalDistance !== null) setLoadMiles(Number(totalDistance.toFixed(1)));
   }, [totalDistance]);
-
-  useEffect(() => {
-    const dhNum = Number(debouncedDh);
-    const loadMilesNum = Number(debouncedLoadMiles);
-    const rateNum = Number(debouncedRate);
-
-    if (
-      debouncedDh === "" ||
-      debouncedLoadMiles === "" ||
-      debouncedRate === ""
-    ) {
-      setCalc("");
-      return;
-    }
-    if (isNaN(dhNum) || isNaN(loadMilesNum) || isNaN(rateNum)) {
-      setCalc("");
-      return;
-    }
-    if (loadMilesNum + dhNum === 0) {
-      setCalc("");
-      return;
-    }
-
-    const result = rateNum / (loadMilesNum + dhNum);
-    setCalc(Number(result.toFixed(3)));
-  }, [debouncedDh, debouncedLoadMiles, debouncedRate]);
 
   const clearCalculation = useCallback(() => {
     setDh("");
@@ -601,15 +544,15 @@ const CalculationPage = () => {
     [handleUpdateDestination],
   );
 
-  // Non-blocking input handlers
-  const handleInputChange = useCallback((setter: (value: any) => void) => {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
-      // Use requestAnimationFrame to prevent blocking
-      requestAnimationFrame(() => {
-        setter(e.target.value ? Number(e.target.value) : "");
-      });
-    };
-  }, []);
+  // // Non-blocking input handlers
+  // const handleInputChange = useCallback((setter: (value: any) => void) => {
+  //   return (e: React.ChangeEvent<HTMLInputElement>) => {
+  //     // Use requestAnimationFrame to prevent blocking
+  //     requestAnimationFrame(() => {
+  //       setter(e.target.value ? Number(e.target.value) : "");
+  //     });
+  //   };
+  // }, []);
 
   // Handle focus/blur for navigation detection
   const handleInputFocus = useCallback(() => {
@@ -757,24 +700,27 @@ const CalculationPage = () => {
                       label="Dead Head Miles"
                       placeholder="0.00"
                       value={dh}
-                      onChange={handleInputChange(setDh)}
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
+                      onChange={(e) =>
+                        setDh(e.target.value ? Number(e.target.value) : "")
+                      } // onFocus={handleInputFocus}
+                      // onBlur={handleInputBlur}
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
                       type="number"
-                      inputProps={{
-                        // Allow normal keyboard navigation
-                        onKeyDown: (e) => {
-                          // Don't interfere with Tab, Arrow keys, etc.
-                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                            return;
-                          }
-                        },
-                      }}
+                      inputProps={
+                        {
+                          // Allow normal keyboard navigation
+                          // onKeyDown: (e) => {
+                          //   // Don't interfere with Tab, Arrow keys, etc.
+                          //   if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                          //     return;
+                          //   }
+                          // },
+                        }
+                      }
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -794,23 +740,29 @@ const CalculationPage = () => {
                       label="Load Miles"
                       placeholder="e.g. 50"
                       value={loadMiles}
-                      onChange={handleInputChange(setLoadMiles)}
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
+                      onChange={(e) =>
+                        setLoadMiles(
+                          e.target.value ? Number(e.target.value) : "",
+                        )
+                      }
+                      // onFocus={handleInputFocus}
+                      // onBlur={handleInputBlur}
                       type="number"
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
-                      inputProps={{
-                        // Allow normal keyboard navigation
-                        onKeyDown: (e) => {
-                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                            return;
-                          }
-                        },
-                      }}
+                      inputProps={
+                        {
+                          // Allow normal keyboard navigation
+                          // onKeyDown: (e) => {
+                          //   if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                          //     return;
+                          //   }
+                          // },
+                        }
+                      }
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -829,18 +781,21 @@ const CalculationPage = () => {
                       label="Rate"
                       placeholder="e.g. 50"
                       value={rate}
-                      onChange={handleInputChange(setRate)}
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
+                      onChange={(e) =>
+                        setRate(e.target.value ? Number(e.target.value) : "")
+                      } // onFocus={handleInputFocus}
+                      // onBlur={handleInputBlur}
                       type="number"
-                      inputProps={{
-                        // Allow normal keyboard navigation
-                        onKeyDown: (e) => {
-                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                            return;
-                          }
-                        },
-                      }}
+                      inputProps={
+                        {
+                          // Allow normal keyboard navigation
+                          // onKeyDown: (e) => {
+                          //   if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                          //     return;
+                          //   }
+                          // },
+                        }
+                      }
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -940,7 +895,7 @@ const CalculationPage = () => {
                         color={theme.currentPalette.primary}
                       />
                     }
-                    // onFocus={handleInputFocus}
+                    onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
                   />
 
@@ -1155,7 +1110,7 @@ const CalculationPage = () => {
         sx={{
           position: "absolute",
           left: "75%",
-          top: "2%",
+          top: "-10%",
           width: isMobile ? 300 : 380,
           display: "flex",
           flexDirection: "column",
