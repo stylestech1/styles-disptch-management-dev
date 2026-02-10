@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -8,7 +9,6 @@ import React, {
   Suspense,
   useCallback,
   useMemo,
-  useRef,
 } from "react";
 import toast from "react-hot-toast";
 import {
@@ -30,8 +30,8 @@ import {
   Fade,
   alpha,
   Dialog,
-  useMediaQuery,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { DirectionsCar, Check, Route as RouteIcon } from "@mui/icons-material";
 import LocationAutocomplete, {
@@ -55,7 +55,6 @@ import {
   MapPinned,
   Send,
   Trash2,
-  Truck,
 } from "lucide-react";
 import { UsersList } from "@/components/chat/UsersList";
 import {
@@ -80,9 +79,7 @@ const useRouteCalculations = (
   const [dhoToOriginTime, setDhoToOriginTime] = useState<number | null>(null);
   const [totalDistance, setTotalDistance] = useState<number | null>(null);
   const [totalTime, setTotalTime] = useState<number | null>(null);
-  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Calculate DHO ➡ Origin
   const calculateDhoToOrigin = useCallback(async () => {
     if (!dho || !origin) {
       setDhoToOriginDistance(null);
@@ -90,7 +87,6 @@ const useRouteCalculations = (
       return;
     }
 
-    setIsCalculating(true);
     try {
       const result = await calculateDhoToOriginDistance(
         { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) },
@@ -103,12 +99,9 @@ const useRouteCalculations = (
       setDhoToOriginDistance(null);
       setDhoToOriginTime(null);
       toast.error("Failed to calculate distance");
-    } finally {
-      setIsCalculating(false);
     }
   }, [dho, origin]);
 
-  // Calculate DHO ➡ Origin ➡ All Destinations
   const calculateTotalRoute = useCallback(async () => {
     const validDestinations = destinations.filter(
       (dest): dest is TPlace => dest !== null,
@@ -118,7 +111,6 @@ const useRouteCalculations = (
       (dho && origin && validDestinations.length > 0) ||
       (origin && validDestinations.length > 0)
     ) {
-      setIsCalculating(true);
       try {
         const destinationsCoords = validDestinations.map((dest) => ({
           lat: parseFloat(dest.lat),
@@ -140,8 +132,6 @@ const useRouteCalculations = (
         setTotalDistance(null);
         setTotalTime(null);
         toast.error("Failed to calculate total route distance");
-      } finally {
-        setIsCalculating(false);
       }
     } else {
       setTotalDistance(null);
@@ -162,7 +152,6 @@ const useRouteCalculations = (
     dhoToOriginTime,
     totalDistance,
     totalTime,
-    isCalculating,
   };
 };
 
@@ -183,6 +172,19 @@ const useRateCalculation = (
   useEffect(() => {
     if (totalDistance !== null) setLoadMiles(Number(totalDistance.toFixed(1)));
   }, [totalDistance]);
+
+  useEffect(() => {
+    const dhNum = Number(dh);
+    const loadMilesNum = Number(loadMiles);
+    const rateNum = Number(rate);
+
+    if (dh === "" || loadMiles === "" || rate === "") return;
+    if (isNaN(dhNum) || isNaN(loadMilesNum) || isNaN(rateNum)) return;
+    if (loadMilesNum + dhNum === 0) return;
+
+    const result = rateNum / (loadMilesNum + dhNum);
+    setCalc(Number(result.toFixed(3)));
+  }, [dh, loadMiles, rate]);
 
   const clearCalculation = useCallback(() => {
     setDh("");
@@ -219,7 +221,7 @@ const MapFallback = () => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      height: "100%",
+      height: 500,
       bgcolor: "grey.50",
       borderRadius: 2,
       border: "1px solid",
@@ -306,13 +308,14 @@ const MetricBox = ({
 
 const CalculationPage = () => {
   const theme = useAppSelector((state: RootState) => state.palette);
+
   const selectedConversationId = useAppSelector(
     (state: RootState) => state.chat.selectedConversationId,
   );
-
-  const [addMessage, { isLoading: isSendingMessage }] = useAddMessageMutation();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
+
+  const [addMessage, { isLoading: isSendingMessage }] = useAddMessageMutation();
 
   const [dho, setDho] = useState<TPlace | null>(null);
   const [origin, setOrigin] = useState<TPlace | null>(null);
@@ -325,9 +328,6 @@ const CalculationPage = () => {
   const [notes, setNotes] = useState("");
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-
-  // Refs to track if we're currently in an input
-  const isInInputRef = useRef(false);
 
   const openShare = () => setShareOpen(true);
   const closeShare = () => {
@@ -342,7 +342,6 @@ const CalculationPage = () => {
         : [...prev, userId],
     );
   };
-
   const [createOrGetConversation, { isLoading: isCreatingConversation }] =
     useCreateOrGetConversationMutation();
 
@@ -507,6 +506,7 @@ const CalculationPage = () => {
     }
 
     try {
+      // send to all selected users
       for (const userId of selectedUserIds) {
         const conversation = await createOrGetConversation({ userId }).unwrap();
         await addMessage({ conversationId: conversation.id, text }).unwrap();
@@ -543,25 +543,6 @@ const CalculationPage = () => {
     },
     [handleUpdateDestination],
   );
-
-  // // Non-blocking input handlers
-  // const handleInputChange = useCallback((setter: (value: any) => void) => {
-  //   return (e: React.ChangeEvent<HTMLInputElement>) => {
-  //     // Use requestAnimationFrame to prevent blocking
-  //     requestAnimationFrame(() => {
-  //       setter(e.target.value ? Number(e.target.value) : "");
-  //     });
-  //   };
-  // }, []);
-
-  // Handle focus/blur for navigation detection
-  const handleInputFocus = useCallback(() => {
-    isInInputRef.current = true;
-  }, []);
-
-  const handleInputBlur = useCallback(() => {
-    isInInputRef.current = false;
-  }, []);
 
   const borderBlue = alpha(theme.currentPalette.primary, 0.35);
 
@@ -696,31 +677,19 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
-                      required
                       label="Dead Head Miles"
                       placeholder="0.00"
                       value={dh}
-                      onChange={(e) =>
-                        setDh(e.target.value ? Number(e.target.value) : "")
-                      } // onFocus={handleInputFocus}
-                      // onBlur={handleInputBlur}
+                      required
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
-                      type="number"
-                      inputProps={
-                        {
-                          // Allow normal keyboard navigation
-                          // onKeyDown: (e) => {
-                          //   // Don't interfere with Tab, Arrow keys, etc.
-                          //   if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                          //     return;
-                          //   }
-                          // },
-                        }
+                      onChange={(e) =>
+                        setDh(e.target.value ? Number(e.target.value) : "")
                       }
+                      type="number"
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -736,33 +705,21 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
-                      required
                       label="Load Miles"
                       placeholder="e.g. 50"
                       value={loadMiles}
-                      onChange={(e) =>
-                        setLoadMiles(
-                          e.target.value ? Number(e.target.value) : "",
-                        )
-                      }
-                      // onFocus={handleInputFocus}
-                      // onBlur={handleInputBlur}
-                      type="number"
+                      required
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
-                      inputProps={
-                        {
-                          // Allow normal keyboard navigation
-                          // onKeyDown: (e) => {
-                          //   if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                          //     return;
-                          //   }
-                          // },
-                        }
+                      onChange={(e) =>
+                        setLoadMiles(
+                          e.target.value ? Number(e.target.value) : "",
+                        )
                       }
+                      type="number"
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -783,19 +740,8 @@ const CalculationPage = () => {
                       value={rate}
                       onChange={(e) =>
                         setRate(e.target.value ? Number(e.target.value) : "")
-                      } // onFocus={handleInputFocus}
-                      // onBlur={handleInputBlur}
-                      type="number"
-                      inputProps={
-                        {
-                          // Allow normal keyboard navigation
-                          // onKeyDown: (e) => {
-                          //   if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                          //     return;
-                          //   }
-                          // },
-                        }
                       }
+                      type="number"
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -864,7 +810,7 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 6 }}>
                     <MetricBox
                       title="Total Route"
-                      icon={<Truck fontSize="small" />}
+                      icon={<DirectionsCar fontSize="small" />}
                       value={
                         totalDistance
                           ? `${totalDistance.toFixed(1)} miles`
@@ -886,34 +832,32 @@ const CalculationPage = () => {
                     key={`dho-${resetKey}`}
                     label="DHO(Driver Home Origin)"
                     value={dho}
-                    setValue={setDho}
                     required
+                    setValue={setDho}
                     placeholder="e.g. FixIt Auto Center"
+                    showZipCode={true}
                     startAdornment={
                       <MapPinHouse
                         size={18}
                         color={theme.currentPalette.primary}
                       />
                     }
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
                   />
 
                   <LocationAutocomplete
                     key={`origin-${resetKey}`}
                     label="Pick Up (Origin)"
                     value={origin}
-                    required
                     setValue={setOrigin}
+                    required
                     placeholder="e.g. FixIt Auto Center"
+                    showZipCode={true}
                     startAdornment={
                       <MapPinCheck
                         size={18}
                         color={theme.currentPalette.primary}
                       />
                     }
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
                   />
 
                   <Stack
@@ -969,19 +913,18 @@ const CalculationPage = () => {
                         <LocationAutocomplete
                           label={`Destination ${index + 1}`}
                           value={destination}
+                          required
                           setValue={(place) =>
                             handleUpdateDestination(index, place)
                           }
-                          required
                           placeholder="e.g. FixIt Auto Center"
+                          showZipCode={true}
                           startAdornment={
                             <MapPinned
                               size={18}
                               color={theme.currentPalette.primary}
                             />
                           }
-                          onFocus={handleInputFocus}
-                          onBlur={handleInputBlur}
                         />
                       </Box>
 
@@ -1020,19 +963,10 @@ const CalculationPage = () => {
                       placeholder="Add any additional information here..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
                       fullWidth
                       multiline
                       minRows={4}
                       InputLabelProps={{ shrink: true }}
-                      inputProps={{
-                        onKeyDown: (e) => {
-                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
-                            return;
-                          }
-                        },
-                      }}
                     />
                   </Box>
                 </Stack>
@@ -1070,12 +1004,10 @@ const CalculationPage = () => {
                 </Typography>
 
                 <Chip
+                  // icon={<RouteIcon />}
                   label={`${validDestinationsCount} Stops`}
                   variant="outlined"
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    backgroundColor: alpha(theme.currentPalette.primary, 0.02),
-                  }}
+                  sx={{color: theme.currentPalette.primary , backgroundColor:alpha(theme.currentPalette.primary , 0.02)}}
                 />
               </Stack>
 
@@ -1090,10 +1022,8 @@ const CalculationPage = () => {
                     dho={dho}
                     origin={origin}
                     destinations={destinations}
-                    height="500px"
-                    {...{
-                      onLocationChange: handleMapLocationChange,
-                    }}
+                    height="520px"
+                    onLocationChange={handleMapLocationChange}
                   />
                 </LazyGoogleMapsLoader>
               </Suspense>
@@ -1157,7 +1087,16 @@ const CalculationPage = () => {
               }}
             />
 
-            <Box>
+            <Box
+              sx={{
+                mt: 2,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: alpha(theme.currentPalette.primary, 0.35),
+                overflow: "hidden",
+                bgcolor: "#fff",
+              }}
+            >
               <Box sx={{ maxHeight: 260, overflow: "auto" }}>
                 <UsersList
                   searchQuery={shareSearch}
