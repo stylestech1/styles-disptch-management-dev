@@ -1,6 +1,6 @@
 "use client";
 import { RootState, useAppSelector } from "@/redux/store";
-import { alpha, Box, Button, InputAdornment, TextField, Typography } from "@mui/material";
+import { alpha, Box, Button, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import { useState, useEffect, useRef } from "react";
 
 export type TPlace = {
@@ -516,7 +516,7 @@ const LocationAutocomplete = ({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <Typography
+      {/* <Typography
         sx={{
           color: theme.currentPalette.primary,
           fontSize: "16px",
@@ -526,7 +526,7 @@ const LocationAutocomplete = ({
         }}
       >
         {label} <span className="text-red-500">{required ? "*" : ""}</span>
-      </Typography>
+      </Typography> */}
       <div className="flex items-end gap-5">
         <div className="relative flex items-end gap-4 w-full">
           <TextField
@@ -537,40 +537,83 @@ const LocationAutocomplete = ({
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onKeyDown={handleInputKeyDown}
-            placeholder={placeholder || "Enter city, state and ZIP (e.g., ABINGDON VA 24210)"}
+            label={
+              <span>
+                {label}{" "}
+                {required ? (
+                  <span style={{ color: "#ef4444", fontWeight: 700 }}>*</span>
+                ) : null}
+              </span>
+            }
+            placeholder={placeholder || "e.g. FixIt Auto Center"}
             variant="outlined"
             fullWidth
-            size="small"
             sx={{
-              bgcolor: theme.currentPalette.background,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "10px",
+              mt: 1.25,
+              "& .MuiInputLabel-root": {
+                color: "text.secondary",
+                fontWeight: 500,
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(0,0,0,0.23)",
+                borderWidth: 1,
+              },
+
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(0,0,0,0.23)",
+              },
+
+              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(0,0,0,0.23)",
+              },
+
+              "& .MuiInputBase-input": {
+                fontSize: 14,
+                color: "#0F172A",
               },
             }}
+            InputLabelProps={{
+              shrink: true,
+            }}
             InputProps={{
-              startAdornment: startAdornment ? (
-                <InputAdornment position="start" sx={{ mr: 0.5 }}>
-                  {startAdornment}
+              startAdornment: (
+                <InputAdornment position="start" sx={{ ml: 0.75, mr: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: 2,
+                      color: theme.currentPalette.primary,
+                      "& svg": { width: 18, height: 18 },
+                    }}
+                  >
+                    {startAdornment}
+                  </Box>
                 </InputAdornment>
-              ) : null,
-
+              ),
               endAdornment: input ? (
-                <Button
-                  onClick={clearValue}
-                  type="button"
-                  variant="text"
-                  size="small"
-                  sx={{
-                    minWidth: 0,
-                    padding: 0.5,
-                    color: "red",
-                  }}
-                >
-                  ✕
-                </Button>
+                <InputAdornment position="end">
+                  <IconButton
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={clearValue}
+                    size="small"
+                    sx={{
+                      width: 20,
+                      height: 20 ,
+                      borderRadius: 2,
+                      color: alpha("#0F172A", 0.5),
+                      "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.08) },
+                    }}
+                  >
+                    ✕
+                  </IconButton>
+                </InputAdornment>
               ) : null,
             }}
           />
+
         </div>
       </div>
 

@@ -215,18 +215,35 @@ export default function AdminLayout({
                 <ListItemButton
                   onClick={() => toggleTab(tab.label)}
                   sx={{
-                    borderRadius: 2,
                     mx: 1,
                     my: 0.5,
+                    borderRadius: 2,
                     color: themePalette.currentPalette.primary,
+
+                    pl: 4,
+                    pr: 2,
                   }}
                 >
-                  <ListItemIcon sx={{ color: "inherit" }}>
+                  <ListItemIcon
+                    sx={{
+                      color: "inherit",
+                      minWidth: 36, 
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
                     {tab.icon}
                   </ListItemIcon>
-                  <ListItemText primary={tab.label} />
+
+                  <ListItemText sx={{
+                    ml: 3,
+                  }}
+                    primary={tab.label} />
+
                   {openTabs[tab.label] ? <ExpandLess /> : <ExpandMore />}
                 </ListItemButton>
+
 
                 <Collapse in={openTabs[tab.label]} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
@@ -262,9 +279,12 @@ export default function AdminLayout({
                             sx={{
                               color: "inherit",
                               minWidth: 36,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
                           >
-                            {child.icon}
+                            {tab.icon}
                           </ListItemIcon>
 
                           <ListItemText primary={child.label} />

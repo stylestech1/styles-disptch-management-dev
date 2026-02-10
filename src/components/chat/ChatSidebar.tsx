@@ -183,7 +183,7 @@ export const ChatSidebar = () => {
                 All Users
               </Typography>
             </div>
-            <UsersList searchQuery={searchQuery} />
+            {/* <UsersList searchQuery={searchQuery} /> */}
           </>
         )}
       </Box>
