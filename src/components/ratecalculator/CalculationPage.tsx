@@ -32,6 +32,7 @@ import {
   Dialog,
   useTheme,
   useMediaQuery,
+  Popover,
 } from "@mui/material";
 import { DirectionsCar, Check, Route as RouteIcon } from "@mui/icons-material";
 import LocationAutocomplete, {
@@ -55,6 +56,7 @@ import {
   MapPinned,
   Send,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { UsersList } from "@/components/chat/UsersList";
 import {
@@ -322,19 +324,13 @@ const CalculationPage = () => {
   const [destinations, setDestinations] = useState<(TPlace | null)[]>([null]);
   const [resetKey, setResetKey] = useState(0);
 
-  const [shareOpen, setShareOpen] = useState(false);
   const [shareSearch, setShareSearch] = useState("");
 
   const [notes, setNotes] = useState("");
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  const openShare = () => setShareOpen(true);
-  const closeShare = () => {
-    setShareOpen(false);
-    setShareSearch("");
-    setSelectedUserIds([]);
-  };
+
   const toggleUser = (userId: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(userId)
@@ -344,6 +340,20 @@ const CalculationPage = () => {
   };
   const [createOrGetConversation, { isLoading: isCreatingConversation }] =
     useCreateOrGetConversationMutation();
+  const [shareAnchorEl, setShareAnchorEl] =
+    useState<HTMLElement | null>(null);
+
+  const openShare = (event: React.MouseEvent<HTMLElement>) => {
+    setShareAnchorEl(event.currentTarget);
+  };
+
+  const closeShare = () => {
+    setShareAnchorEl(null);
+    setShareSearch("");
+    setSelectedUserIds([]);
+  };
+
+  const shareOpen = Boolean(shareAnchorEl);
 
   const { dhoToOriginDistance, dhoToOriginTime, totalDistance, totalTime } =
     useRouteCalculations(dho, origin, destinations);
@@ -446,11 +456,9 @@ const CalculationPage = () => {
         `• DHO: ${dho!.display_name}`,
         `• Pick Up (Origin): ${origin!.display_name}`,
         ``,
-        `• DHO to Origin: ${Number(dhoToOriginDistance).toFixed(1)} miles${
-          dhoToOriginTime ? ` • ${formatTime(dhoToOriginTime)}` : ""
+        `• DHO to Origin: ${Number(dhoToOriginDistance).toFixed(1)} miles${dhoToOriginTime ? ` • ${formatTime(dhoToOriginTime)}` : ""
         }`,
-        `• Total Route: ${Number(totalDistance).toFixed(1)} miles${
-          totalTime ? ` • ${formatTime(totalTime)}` : ""
+        `• Total Route: ${Number(totalDistance).toFixed(1)} miles${totalTime ? ` • ${formatTime(totalTime)}` : ""
         }`,
         ``,
         `Destinations (${validDests.length}):`,
@@ -810,7 +818,7 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 6 }}>
                     <MetricBox
                       title="Total Route"
-                      icon={<DirectionsCar fontSize="small" />}
+                      icon={<Truck fontSize="small" />}
                       value={
                         totalDistance
                           ? `${totalDistance.toFixed(1)} miles`
@@ -975,7 +983,8 @@ const CalculationPage = () => {
           </Grid>
 
           {/* RIGHT */}
-          <Grid size={{ xs: 12, lg: 6 }}>
+          {/* RIGHT */}
+          <Grid size={{ xs: 12, lg: 6 }} sx={{ minWidth: 0, display: "flex" }}>
             <Paper
               elevation={0}
               sx={{
@@ -984,66 +993,90 @@ const CalculationPage = () => {
                 border: "1px solid",
                 borderColor: borderBlue,
                 bgcolor: "#fff",
-                minHeight: 650,
+
+                width: "100%",
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+
+                minWidth: 0,
+                overflow: "hidden",
               }}
             >
               <Stack
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, minWidth: 0, gap: 1 }}
               >
                 <Typography
                   sx={{
                     fontSize: 18,
                     fontWeight: 800,
                     color: theme.currentPalette.primary,
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   Route Map
                 </Typography>
 
                 <Chip
-                  // icon={<RouteIcon />}
                   label={`${validDestinationsCount} Stops`}
                   variant="outlined"
-                  sx={{color: theme.currentPalette.primary , backgroundColor:alpha(theme.currentPalette.primary , 0.02)}}
+                  sx={{
+                    flexShrink: 0,
+                    color: theme.currentPalette.primary,
+                    backgroundColor: alpha(theme.currentPalette.primary, 0.02),
+                    maxWidth: 140,
+                    "& .MuiChip-label": {
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
                 />
               </Stack>
 
-              <Suspense fallback={<MapFallback />}>
-                <LazyGoogleMapsLoader
-                  onLoad={() => console.log("Maps loaded successfully")}
-                  onError={(error) =>
-                    console.error("Failed to load maps:", error)
-                  }
-                >
-                  <LazyMapWithRoute
-                    dho={dho}
-                    origin={origin}
-                    destinations={destinations}
-                    height="520px"
-                    onLocationChange={handleMapLocationChange}
-                  />
-                </LazyGoogleMapsLoader>
-              </Suspense>
+              <Box sx={{ flex: 1, minHeight: 0, width: "100%" }}>
+                <Suspense fallback={<MapFallback />}>
+                  <LazyGoogleMapsLoader>
+                    <LazyMapWithRoute
+                      dho={dho}
+                      origin={origin}
+                      destinations={destinations}
+                      height="100%"
+                      onLocationChange={handleMapLocationChange}
+                    />
+                  </LazyGoogleMapsLoader>
+                </Suspense>
+              </Box>
             </Paper>
           </Grid>
+
+
         </Grid>
       </Container>
 
-      <Dialog
+      <Popover
         open={shareOpen}
+        anchorEl={shareAnchorEl}
         onClose={closeShare}
-        maxWidth="xs"
-        fullWidth
-        sx={{
-          position: "absolute",
-          left: "75%",
-          top: "-10%",
-          width: isMobile ? 300 : 380,
-          display: "flex",
-          flexDirection: "column",
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        PaperProps={{
+          sx: {
+            width: isMobile ? 300 : 380,
+            borderRadius: 2,
+          },
         }}
       >
         <Box sx={{ p: 0 }}>
@@ -1145,7 +1178,7 @@ const CalculationPage = () => {
             </Box>
           </Box>
         </Box>
-      </Dialog>
+      </Popover>
     </>
   );
 };
