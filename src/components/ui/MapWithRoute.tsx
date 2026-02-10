@@ -19,7 +19,7 @@ interface MapWithRouteProps {
   onLocationChange?: (
     type: "dho" | "origin" | "destination",
     place: TPlace | null,
-    index?: number
+    index?: number,
   ) => void;
 
   centers?: Center[];
@@ -38,13 +38,16 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
   selectedCenterId = null,
   onCenterSelect,
 }) => {
-
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
 
   // keep your current directions setup
-  const [directionsService] = useState(() => new google.maps.DirectionsService());
-  const [directionsRenderer] = useState(() => new google.maps.DirectionsRenderer());
+  const [directionsService] = useState(
+    () => new google.maps.DirectionsService(),
+  );
+  const [directionsRenderer] = useState(
+    () => new google.maps.DirectionsRenderer(),
+  );
 
   // route markers (your existing logic)
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
@@ -71,13 +74,13 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
 
     setMap(googleMap);
     directionsRenderer.setMap(googleMap);
-  }, [directionsRenderer]);
-
+  }, []);
+  // directionsRenderer
   // ---- helpers ----
   const markersRef = useRef<google.maps.Marker[]>([]);
 
   const clearRouteMarkers = () => {
-    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
   };
 
@@ -94,7 +97,6 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
       } as google.maps.DirectionsRequest,
     } as google.maps.DirectionsResult);
   };
-
 
   useEffect(() => {
     if (!map) return;
@@ -143,7 +145,6 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, centers]);
 
-
   useEffect(() => {
     if (!map) return;
     if (!centers || centers.length === 0) return;
@@ -159,7 +160,6 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
     map.setZoom(14);
   }, [map, selectedCenterId, centers]);
 
-
   useEffect(() => {
     if (!map) return;
 
@@ -170,7 +170,7 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
     clearRoutes();
 
     const validDestinations = destinations.filter(
-      (dest): dest is TPlace => dest !== null
+      (dest): dest is TPlace => dest !== null,
     );
 
     const allLocations: TPlace[] = [];
@@ -241,7 +241,7 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
       return marker;
     });
 
-    setMarkers(newMarkers);
+    // setMarkers(newMarkers);
 
     if ((dho && origin) || (origin && validDestinations.length > 0)) {
       calculateAndDisplayRoute();
@@ -267,13 +267,21 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, dho, origin, destinations, directionsService, directionsRenderer, centers]);
+  }, [
+    map,
+    dho,
+    origin,
+    destinations,
+    directionsService,
+    directionsRenderer,
+    centers,
+  ]);
 
   const calculateAndDisplayRoute = () => {
     if (!map || (!dho && !origin)) return;
 
     const validDestinations = destinations.filter(
-      (dest): dest is TPlace => dest !== null
+      (dest): dest is TPlace => dest !== null,
     );
 
     let waypoints: google.maps.DirectionsWaypoint[] = [];
@@ -289,7 +297,10 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
 
       waypoints = [
         {
-          location: { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) },
+          location: {
+            lat: parseFloat(origin.lat),
+            lng: parseFloat(origin.lon),
+          },
           stopover: true,
         },
         ...validDestinations.slice(0, -1).map((dest) => ({
@@ -298,7 +309,10 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
         })),
       ];
     } else if (origin && validDestinations.length > 0) {
-      routeOrigin = { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) };
+      routeOrigin = {
+        lat: parseFloat(origin.lat),
+        lng: parseFloat(origin.lon),
+      };
       routeDestination = {
         lat: parseFloat(validDestinations[validDestinations.length - 1].lat),
         lng: parseFloat(validDestinations[validDestinations.length - 1].lon),
@@ -310,7 +324,10 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
       }));
     } else if (dho && origin) {
       routeOrigin = { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) };
-      routeDestination = { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) };
+      routeDestination = {
+        lat: parseFloat(origin.lat),
+        lng: parseFloat(origin.lon),
+      };
     } else {
       return;
     }
@@ -329,7 +346,7 @@ const MapWithRoute: React.FC<MapWithRouteProps> = ({
         } else {
           console.warn("Directions request failed due to", status);
         }
-      }
+      },
     );
   };
 

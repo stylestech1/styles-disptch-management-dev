@@ -541,7 +541,7 @@ const CalculationPage = () => {
       if (type === "destination" && index !== undefined)
         handleUpdateDestination(index, place);
     },
-    [handleUpdateDestination],
+    [],
   );
 
   const borderBlue = alpha(theme.currentPalette.primary, 0.35);
