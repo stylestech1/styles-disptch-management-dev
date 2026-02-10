@@ -1,6 +1,14 @@
 "use client";
 import { RootState, useAppSelector } from "@/redux/store";
-import { alpha, Box, Button, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
+import {
+  alpha,
+  Box,
+  Button,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useState, useEffect, useRef } from "react";
 
 export type TPlace = {
@@ -25,6 +33,8 @@ interface Props {
   showZipCode?: boolean;
   required?: boolean;
   startAdornment?: React.ReactNode;
+  onFocus?: () => void; // Add this
+  onBlur?: () => void; // Add this
 }
 
 const LocationAutocomplete = ({
@@ -35,6 +45,8 @@ const LocationAutocomplete = ({
   required,
   startAdornment,
   showZipCode = true,
+  onFocus,
+  onBlur,
 }: Props) => {
   const [input, setInput] = useState(value?.display_name || "");
   const [suggestions, setSuggestions] = useState<TPlace[]>([]);
@@ -46,7 +58,7 @@ const LocationAutocomplete = ({
   const [shouldSearch, setShouldSearch] = useState(true);
   const theme = useAppSelector((state: RootState) => state.palette);
   const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(
-    null
+    null,
   );
   const userTypedRef = useRef(false);
 
@@ -125,14 +137,14 @@ const LocationAutocomplete = ({
                     allPredictions = [...allPredictions, ...predictions];
                   }
                   resolve();
-                }
+                },
               );
             });
 
             await new Promise((resolve) => setTimeout(resolve, 100));
           } catch (error) {
             console.log(
-              `Request type ${requestConfig.types} failed, trying next...`
+              `Request type ${requestConfig.types} failed, trying next...`,
             );
           }
         }
@@ -141,7 +153,7 @@ const LocationAutocomplete = ({
           .filter(
             (prediction, index, self) =>
               index ===
-              self.findIndex((p) => p.place_id === prediction.place_id)
+              self.findIndex((p) => p.place_id === prediction.place_id),
           )
           .slice(0, 10);
 
@@ -177,7 +189,7 @@ const LocationAutocomplete = ({
   }, [input, isSelecting, shouldSearch]);
 
   const getGeocodedAddress = async (
-    placeId: string
+    placeId: string,
   ): Promise<TPlace | null> => {
     if (placeId.startsWith("temp_") || placeId.startsWith("geocoded_")) {
       return null;
@@ -280,7 +292,7 @@ const LocationAutocomplete = ({
       }
 
       const service = new google.maps.places.PlacesService(
-        document.createElement("div")
+        document.createElement("div"),
       );
 
       const request: google.maps.places.PlaceDetailsRequest = {
@@ -505,7 +517,7 @@ const LocationAutocomplete = ({
               setInput(displayName);
             }
             setLoading(false);
-          }
+          },
         );
       } catch (error) {
         console.error("Error in direct zip search:", error);
@@ -534,8 +546,8 @@ const LocationAutocomplete = ({
             type="text"
             value={input}
             onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
+            onFocus={onFocus}
+            onBlur={onBlur}
             onKeyDown={handleInputKeyDown}
             label={
               <span>
@@ -563,9 +575,10 @@ const LocationAutocomplete = ({
                 borderColor: "rgba(0,0,0,0.23)",
               },
 
-              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "rgba(0,0,0,0.23)",
-              },
+              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                {
+                  borderColor: "rgba(0,0,0,0.23)",
+                },
 
               "& .MuiInputBase-input": {
                 fontSize: 14,
@@ -601,10 +614,12 @@ const LocationAutocomplete = ({
                     size="small"
                     sx={{
                       width: 20,
-                      height: 20 ,
+                      height: 20,
                       borderRadius: 2,
                       color: alpha("#0F172A", 0.5),
-                      "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.08) },
+                      "&:hover": {
+                        bgcolor: alpha(theme.currentPalette.primary, 0.08),
+                      },
                     }}
                   >
                     ✕
@@ -613,7 +628,6 @@ const LocationAutocomplete = ({
               ) : null,
             }}
           />
-
         </div>
       </div>
 

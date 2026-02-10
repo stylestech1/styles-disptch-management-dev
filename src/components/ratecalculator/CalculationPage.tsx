@@ -8,6 +8,7 @@ import React, {
   Suspense,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import toast from "react-hot-toast";
 import {
@@ -29,9 +30,13 @@ import {
   Fade,
   alpha,
   Dialog,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { DirectionsCar, Check, Route as RouteIcon } from "@mui/icons-material";
-import LocationAutocomplete, { TPlace } from "@/components/sections/LocationAutocomplete";
+import LocationAutocomplete, {
+  TPlace,
+} from "@/components/sections/LocationAutocomplete";
 import {
   calculateDhoToOriginDistance,
   calculateFullRouteDistance,
@@ -50,35 +55,76 @@ import {
   MapPinned,
   Send,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { UsersList } from "@/components/chat/UsersList";
-import { useAddMessageMutation, useCreateOrGetConversationMutation } from "@/redux/slices/apiSlice";
+import {
+  useAddMessageMutation,
+  useCreateOrGetConversationMutation,
+} from "@/redux/slices/apiSlice";
 
 // Lazy load the map components
-const LazyGoogleMapsLoader = lazy(() => import("@/components/ui/GoogleMapsLoader"));
+const LazyGoogleMapsLoader = lazy(
+  () => import("@/components/ui/GoogleMapsLoader"),
+);
 const LazyMapWithRoute = lazy(() => import("@/components/ui/MapWithRoute"));
+
+// Debounce utility function
+const useDebounce = (value: any, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const useRouteCalculations = (
   dho: TPlace | null,
   origin: TPlace | null,
-  destinations: (TPlace | null)[]
+  destinations: (TPlace | null)[],
 ) => {
-  const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(null);
+  const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(
+    null,
+  );
   const [dhoToOriginTime, setDhoToOriginTime] = useState<number | null>(null);
   const [totalDistance, setTotalDistance] = useState<number | null>(null);
   const [totalTime, setTotalTime] = useState<number | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  // Debounce the inputs to prevent excessive calculations
+  const debouncedDho = useDebounce(dho, 1000);
+  const debouncedOrigin = useDebounce(origin, 1000);
+  const debouncedDestinations = useDebounce(destinations, 1000);
 
   const calculateDhoToOrigin = useCallback(async () => {
-    if (!dho || !origin) {
+    if (!debouncedDho || !debouncedOrigin) {
       setDhoToOriginDistance(null);
       setDhoToOriginTime(null);
       return;
     }
 
     try {
+      setIsCalculating(true);
+      // Use setTimeout to yield to main thread
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       const result = await calculateDhoToOriginDistance(
-        { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) },
-        { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) }
+        {
+          lat: parseFloat(debouncedDho.lat),
+          lng: parseFloat(debouncedDho.lon),
+        },
+        {
+          lat: parseFloat(debouncedOrigin.lat),
+          lng: parseFloat(debouncedOrigin.lon),
+        },
       );
       setDhoToOriginDistance(result.distance);
       setDhoToOriginTime(result.duration);
@@ -87,11 +133,15 @@ const useRouteCalculations = (
       setDhoToOriginDistance(null);
       setDhoToOriginTime(null);
       toast.error("Failed to calculate distance");
+    } finally {
+      setIsCalculating(false);
     }
-  }, [dho, origin]);
+  }, [debouncedDho, debouncedOrigin]);
 
   const calculateTotalRoute = useCallback(async () => {
-    const validDestinations = destinations.filter((dest): dest is TPlace => dest !== null);
+    const validDestinations = destinations.filter(
+      (dest): dest is TPlace => dest !== null,
+    );
 
     if (
       (dho && origin && validDestinations.length > 0) ||
@@ -105,8 +155,10 @@ const useRouteCalculations = (
 
         const result = await calculateFullRouteDistance(
           dho ? { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) } : null,
-          origin ? { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) } : null,
-          destinationsCoords
+          origin
+            ? { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) }
+            : null,
+          destinationsCoords,
         );
 
         setTotalDistance(result.distance);
@@ -136,17 +188,27 @@ const useRouteCalculations = (
     dhoToOriginTime,
     totalDistance,
     totalTime,
+    isCalculating,
   };
 };
 
-const useRateCalculation = (dhoToOriginDistance: number | null, totalDistance: number | null) => {
+const useRateCalculation = (
+  dhoToOriginDistance: number | null,
+  totalDistance: number | null,
+) => {
   const [dh, setDh] = useState<number | "">("");
   const [loadMiles, setLoadMiles] = useState<number | "">("");
   const [rate, setRate] = useState<number | "">("");
   const [calc, setCalc] = useState<number | "">("");
 
+  // Debounce the calculations to prevent blocking
+  const debouncedDh = useDebounce(dh, 300);
+  const debouncedLoadMiles = useDebounce(loadMiles, 300);
+  const debouncedRate = useDebounce(rate, 300);
+
   useEffect(() => {
-    if (dhoToOriginDistance !== null) setDh(Number(dhoToOriginDistance.toFixed(1)));
+    if (dhoToOriginDistance !== null)
+      setDh(Number(dhoToOriginDistance.toFixed(1)));
   }, [dhoToOriginDistance]);
 
   useEffect(() => {
@@ -154,17 +216,30 @@ const useRateCalculation = (dhoToOriginDistance: number | null, totalDistance: n
   }, [totalDistance]);
 
   useEffect(() => {
-    const dhNum = Number(dh);
-    const loadMilesNum = Number(loadMiles);
-    const rateNum = Number(rate);
+    const dhNum = Number(debouncedDh);
+    const loadMilesNum = Number(debouncedLoadMiles);
+    const rateNum = Number(debouncedRate);
 
-    if (dh === "" || loadMiles === "" || rate === "") return;
-    if (isNaN(dhNum) || isNaN(loadMilesNum) || isNaN(rateNum)) return;
-    if (loadMilesNum + dhNum === 0) return;
+    if (
+      debouncedDh === "" ||
+      debouncedLoadMiles === "" ||
+      debouncedRate === ""
+    ) {
+      setCalc("");
+      return;
+    }
+    if (isNaN(dhNum) || isNaN(loadMilesNum) || isNaN(rateNum)) {
+      setCalc("");
+      return;
+    }
+    if (loadMilesNum + dhNum === 0) {
+      setCalc("");
+      return;
+    }
 
     const result = rateNum / (loadMilesNum + dhNum);
     setCalc(Number(result.toFixed(3)));
-  }, [dh, loadMiles, rate]);
+  }, [debouncedDh, debouncedLoadMiles, debouncedRate]);
 
   const clearCalculation = useCallback(() => {
     setDh("");
@@ -173,7 +248,16 @@ const useRateCalculation = (dhoToOriginDistance: number | null, totalDistance: n
     setCalc("");
   }, []);
 
-  return { dh, setDh, loadMiles, setLoadMiles, rate, setRate, calc, clearCalculation };
+  return {
+    dh,
+    setDh,
+    loadMiles,
+    setLoadMiles,
+    rate,
+    setRate,
+    calc,
+    clearCalculation,
+  };
 };
 
 const formatTime = (hours: number): string => {
@@ -192,7 +276,7 @@ const MapFallback = () => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      height: 500,
+      height: "100%",
       bgcolor: "grey.50",
       borderRadius: 2,
       border: "1px solid",
@@ -246,17 +330,27 @@ const MetricBox = ({
             {icon}
           </Box>
 
-          <Typography sx={{ fontSize: 15, fontWeight: 600, color: "text.secondary" }}>
+          <Typography
+            sx={{ fontSize: 15, fontWeight: 600, color: "text.secondary" }}
+          >
             {title}
           </Typography>
         </Stack>
 
-        <Typography sx={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: primary }}>
+        <Typography
+          sx={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: primary }}
+        >
           {value}
         </Typography>
 
         {sub ? (
-          <Typography sx={{ fontSize: 16, fontWeight: 600, color: alpha("#0F172A", 0.55) }}>
+          <Typography
+            sx={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: alpha("#0F172A", 0.55),
+            }}
+          >
             {sub}
           </Typography>
         ) : (
@@ -269,13 +363,13 @@ const MetricBox = ({
 
 const CalculationPage = () => {
   const theme = useAppSelector((state: RootState) => state.palette);
-
-  // ✅ selected conversation from redux (required to send message)
   const selectedConversationId = useAppSelector(
-    (state: RootState) => state.chat.selectedConversationId
+    (state: RootState) => state.chat.selectedConversationId,
   );
 
   const [addMessage, { isLoading: isSendingMessage }] = useAddMessageMutation();
+  const muiTheme = useTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
 
   const [dho, setDho] = useState<TPlace | null>(null);
   const [origin, setOrigin] = useState<TPlace | null>(null);
@@ -289,6 +383,9 @@ const CalculationPage = () => {
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
+  // Refs to track if we're currently in an input
+  const isInInputRef = useRef(false);
+
   const openShare = () => setShareOpen(true);
   const closeShare = () => {
     setShareOpen(false);
@@ -297,32 +394,48 @@ const CalculationPage = () => {
   };
   const toggleUser = (userId: string) => {
     setSelectedUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
     );
   };
+
   const [createOrGetConversation, { isLoading: isCreatingConversation }] =
     useCreateOrGetConversationMutation();
 
   const { dhoToOriginDistance, dhoToOriginTime, totalDistance, totalTime } =
     useRouteCalculations(dho, origin, destinations);
 
-  const { dh, setDh, loadMiles, setLoadMiles, rate, setRate, calc, clearCalculation } =
-    useRateCalculation(dhoToOriginDistance, totalDistance);
+  const {
+    dh,
+    setDh,
+    loadMiles,
+    setLoadMiles,
+    rate,
+    setRate,
+    calc,
+    clearCalculation,
+  } = useRateCalculation(dhoToOriginDistance, totalDistance);
 
   const handleAddDestination = useCallback(() => {
     setDestinations((prev) => [...prev, null]);
   }, []);
 
-  const handleUpdateDestination = useCallback((index: number, place: TPlace | null) => {
-    setDestinations((prev) => {
-      const next = [...prev];
-      next[index] = place;
-      return next;
-    });
-  }, []);
+  const handleUpdateDestination = useCallback(
+    (index: number, place: TPlace | null) => {
+      setDestinations((prev) => {
+        const next = [...prev];
+        next[index] = place;
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleRemoveDestination = useCallback((index: number) => {
-    setDestinations((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+    setDestinations((prev) =>
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+    );
   }, []);
 
   const clearAllRoutes = useCallback(() => {
@@ -333,7 +446,7 @@ const CalculationPage = () => {
 
   const validDestinationsCount = useMemo(
     () => destinations.filter((dest) => dest !== null).length,
-    [destinations]
+    [destinations],
   );
 
   const hasNum = (v: number | "" | null | undefined) =>
@@ -360,7 +473,6 @@ const CalculationPage = () => {
     return missing;
   };
 
-  // ✅ build message text (same as copy) but returns string
   const buildShareMessage = useCallback(() => {
     const missingRate = getMissingRateFields();
     const missingRoute = getMissingRouteFields();
@@ -381,7 +493,7 @@ const CalculationPage = () => {
         `• Price Per Mile: $${calc}`,
         ``,
         `Calculation: $${rate} / (${loadMiles} + ${dh}) = $${calc} per mile`,
-        ``
+        ``,
       );
     }
 
@@ -392,15 +504,19 @@ const CalculationPage = () => {
         `• DHO: ${dho!.display_name}`,
         `• Pick Up (Origin): ${origin!.display_name}`,
         ``,
-        `• DHO to Origin: ${Number(dhoToOriginDistance).toFixed(1)} miles${dhoToOriginTime ? ` • ${formatTime(dhoToOriginTime)}` : ""
+        `• DHO to Origin: ${Number(dhoToOriginDistance).toFixed(1)} miles${
+          dhoToOriginTime ? ` • ${formatTime(dhoToOriginTime)}` : ""
         }`,
-        `• Total Route: ${Number(totalDistance).toFixed(1)} miles${totalTime ? ` • ${formatTime(totalTime)}` : ""
+        `• Total Route: ${Number(totalDistance).toFixed(1)} miles${
+          totalTime ? ` • ${formatTime(totalTime)}` : ""
         }`,
         ``,
         `Destinations (${validDests.length}):`,
-        ...validDests.map((d, i) => `- Destination ${i + 1}: ${d.display_name}`),
+        ...validDests.map(
+          (d, i) => `- Destination ${i + 1}: ${d.display_name}`,
+        ),
         ``,
-        `Notes: ${notes?.trim() ? notes.trim() : "—"}`
+        `Notes: ${notes?.trim() ? notes.trim() : "—"}`,
       );
     }
 
@@ -420,7 +536,6 @@ const CalculationPage = () => {
     notes,
   ]);
 
-  // ✅ copy button (copies the same text)
   const copyGlobalFields = useCallback(async () => {
     const text = buildShareMessage();
     if (!text) {
@@ -442,7 +557,6 @@ const CalculationPage = () => {
       return;
     }
 
-
     const text = buildShareMessage();
     if (!text) {
       toast.error("Nothing to share, please fill calculations first");
@@ -450,7 +564,6 @@ const CalculationPage = () => {
     }
 
     try {
-      // send to all selected users
       for (const userId of selectedUserIds) {
         const conversation = await createOrGetConversation({ userId }).unwrap();
         await addMessage({ conversationId: conversation.id, text }).unwrap();
@@ -475,13 +588,37 @@ const CalculationPage = () => {
   }, [clearCalculation]);
 
   const handleMapLocationChange = useCallback(
-    (type: "dho" | "origin" | "destination", place: TPlace | null, index?: number) => {
+    (
+      type: "dho" | "origin" | "destination",
+      place: TPlace | null,
+      index?: number,
+    ) => {
       if (type === "dho") setDho(place);
       if (type === "origin") setOrigin(place);
-      if (type === "destination" && index !== undefined) handleUpdateDestination(index, place);
+      if (type === "destination" && index !== undefined)
+        handleUpdateDestination(index, place);
     },
-    [handleUpdateDestination]
+    [handleUpdateDestination],
   );
+
+  // Non-blocking input handlers
+  const handleInputChange = useCallback((setter: (value: any) => void) => {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Use requestAnimationFrame to prevent blocking
+      requestAnimationFrame(() => {
+        setter(e.target.value ? Number(e.target.value) : "");
+      });
+    };
+  }, []);
+
+  // Handle focus/blur for navigation detection
+  const handleInputFocus = useCallback(() => {
+    isInInputRef.current = true;
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    isInInputRef.current = false;
+  }, []);
 
   const borderBlue = alpha(theme.currentPalette.primary, 0.35);
 
@@ -515,7 +652,12 @@ const CalculationPage = () => {
   return (
     <>
       <Container maxWidth="xl" sx={{ py: 3 }}>
-        <Stack direction="row" justifyContent="flex-end" gap={1} marginBottom={2}>
+        <Stack
+          direction="row"
+          justifyContent="flex-end"
+          gap={1}
+          marginBottom={2}
+        >
           <Tooltip title="Send Message">
             <span>
               <IconButton sx={iconBtnSx(theme)} onClick={openShare}>
@@ -557,11 +699,19 @@ const CalculationPage = () => {
                   "& .MuiOutlinedInput-root": { borderRadius: 2 },
                 }}
               >
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: theme.currentPalette.primary }}>
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: theme.currentPalette.primary,
+                  }}
+                >
                   Rate Calculation
                 </Typography>
 
-                <Typography sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}>
+                <Typography
+                  sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}
+                >
                   Price Per Mile = Rate / ( Dead Head Miles + Load Miles)
                 </Typography>
 
@@ -584,11 +734,17 @@ const CalculationPage = () => {
                       cursor: "default",
                     }}
                   >
-                    <Typography component="span" sx={{ fontSize: 14, fontWeight: 700 }}>
+                    <Typography
+                      component="span"
+                      sx={{ fontSize: 14, fontWeight: 700 }}
+                    >
                       Price Per Mile
                     </Typography>
-                    <Typography component="span" sx={{ fontSize: 16, fontWeight: 800 }}>
-                      {calc !== "" ? `$${calc}` : "—"}
+                    <Typography
+                      component="span"
+                      sx={{ fontSize: 16, fontWeight: 800 }}
+                    >
+                      {calc !== "" ? `$${Number(calc).toFixed(2)}` : "$0.00"}
                     </Typography>
                   </Box>
                 </Stack>
@@ -597,11 +753,28 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
+                      required
                       label="Dead Head Miles"
                       placeholder="0.00"
                       value={dh}
-                      onChange={(e) => setDh(e.target.value ? Number(e.target.value) : "")}
+                      onChange={handleInputChange(setDh)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
+                      sx={{
+                        "& .MuiFormLabel-asterisk": {
+                          color: "red",
+                        },
+                      }}
                       type="number"
+                      inputProps={{
+                        // Allow normal keyboard navigation
+                        onKeyDown: (e) => {
+                          // Don't interfere with Tab, Arrow keys, etc.
+                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                            return;
+                          }
+                        },
+                      }}
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -617,11 +790,27 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
+                      required
                       label="Load Miles"
                       placeholder="e.g. 50"
                       value={loadMiles}
-                      onChange={(e) => setLoadMiles(e.target.value ? Number(e.target.value) : "")}
+                      onChange={handleInputChange(setLoadMiles)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       type="number"
+                      sx={{
+                        "& .MuiFormLabel-asterisk": {
+                          color: "red",
+                        },
+                      }}
+                      inputProps={{
+                        // Allow normal keyboard navigation
+                        onKeyDown: (e) => {
+                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                            return;
+                          }
+                        },
+                      }}
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -640,8 +829,18 @@ const CalculationPage = () => {
                       label="Rate"
                       placeholder="e.g. 50"
                       value={rate}
-                      onChange={(e) => setRate(e.target.value ? Number(e.target.value) : "")}
+                      onChange={handleInputChange(setRate)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       type="number"
+                      inputProps={{
+                        // Allow normal keyboard navigation
+                        onKeyDown: (e) => {
+                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                            return;
+                          }
+                        },
+                      }}
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -656,7 +855,11 @@ const CalculationPage = () => {
 
                   {calc !== "" && (
                     <Fade in={true}>
-                      <Alert severity="success" sx={{ mt: 2, width: "100%" }} icon={<Check />}>
+                      <Alert
+                        severity="success"
+                        sx={{ mt: 2, width: "100%" }}
+                        icon={<Check />}
+                      >
                         <Typography variant="body2">
                           Calculation: ${rate} / ({loadMiles} + {dh} miles) ={" "}
                           <strong>${calc} per mile</strong>
@@ -679,7 +882,13 @@ const CalculationPage = () => {
                   "& .MuiOutlinedInput-root": { borderRadius: 2 },
                 }}
               >
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: theme.currentPalette.primary }}>
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: theme.currentPalette.primary,
+                  }}
+                >
                   Route Planning
                 </Typography>
 
@@ -688,7 +897,11 @@ const CalculationPage = () => {
                     <MetricBox
                       title="DHO to Origin"
                       icon={<RouteIcon fontSize="small" />}
-                      value={dhoToOriginDistance ? `${dhoToOriginDistance.toFixed(1)} miles` : "—"}
+                      value={
+                        dhoToOriginDistance
+                          ? `${dhoToOriginDistance.toFixed(1)} miles`
+                          : "—"
+                      }
                       sub={dhoToOriginTime ? formatTime(dhoToOriginTime) : ""}
                     />
                   </Grid>
@@ -696,8 +909,12 @@ const CalculationPage = () => {
                   <Grid size={{ xs: 12, md: 6 }}>
                     <MetricBox
                       title="Total Route"
-                      icon={<DirectionsCar fontSize="small" />}
-                      value={totalDistance ? `${totalDistance.toFixed(1)} miles` : "—"}
+                      icon={<Truck fontSize="small" />}
+                      value={
+                        totalDistance
+                          ? `${totalDistance.toFixed(1)} miles`
+                          : "—"
+                      }
                       sub={
                         totalTime
                           ? formatTime(totalTime)
@@ -712,33 +929,61 @@ const CalculationPage = () => {
                 <Stack spacing={2} sx={{ mt: 2 }}>
                   <LocationAutocomplete
                     key={`dho-${resetKey}`}
-                    label="DHO(Driver Home Origin) *"
+                    label="DHO(Driver Home Origin)"
                     value={dho}
                     setValue={setDho}
+                    required
                     placeholder="e.g. FixIt Auto Center"
-                    showZipCode={true}
-                    startAdornment={<MapPinHouse size={18} color={theme.currentPalette.primary} />}
+                    startAdornment={
+                      <MapPinHouse
+                        size={18}
+                        color={theme.currentPalette.primary}
+                      />
+                    }
+                    // onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                   />
 
                   <LocationAutocomplete
                     key={`origin-${resetKey}`}
-                    label="Pick Up (Origin) *"
+                    label="Pick Up (Origin)"
                     value={origin}
+                    required
                     setValue={setOrigin}
                     placeholder="e.g. FixIt Auto Center"
-                    showZipCode={true}
-                    startAdornment={<MapPinCheck size={18} color={theme.currentPalette.primary} />}
+                    startAdornment={
+                      <MapPinCheck
+                        size={18}
+                        color={theme.currentPalette.primary}
+                      />
+                    }
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                   />
 
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography sx={{ fontSize: 18, fontWeight: 800, color: theme.currentPalette.primary }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: theme.currentPalette.primary,
+                      }}
+                    >
                       Destinations
                     </Typography>
 
                     <div className="flex gap-2">
                       <Tooltip title="Clear all routes">
                         <span>
-                          <IconButton sx={iconBtnSx(theme)} onClick={clearAllRoutes} size="small">
+                          <IconButton
+                            sx={iconBtnSx(theme)}
+                            onClick={clearAllRoutes}
+                            size="small"
+                          >
                             <MapPinMinus />
                           </IconButton>
                         </span>
@@ -746,7 +991,11 @@ const CalculationPage = () => {
 
                       <Tooltip title="Add destination">
                         <span>
-                          <IconButton sx={iconBtnSx(theme)} onClick={handleAddDestination} size="small">
+                          <IconButton
+                            sx={iconBtnSx(theme)}
+                            onClick={handleAddDestination}
+                            size="small"
+                          >
                             <MapPinPlus />
                           </IconButton>
                         </span>
@@ -755,22 +1004,42 @@ const CalculationPage = () => {
                   </Stack>
 
                   {destinations.map((destination, index) => (
-                    <Stack key={`dest-${index}-${resetKey}`} direction="row" spacing={1} alignItems="flex-end">
+                    <Stack
+                      key={`dest-${index}-${resetKey}`}
+                      direction="row"
+                      spacing={1}
+                      alignItems="flex-end"
+                    >
                       <Box sx={{ flex: 1 }}>
                         <LocationAutocomplete
-                          label={`Destination ${index + 1} *`}
+                          label={`Destination ${index + 1}`}
                           value={destination}
-                          setValue={(place) => handleUpdateDestination(index, place)}
+                          setValue={(place) =>
+                            handleUpdateDestination(index, place)
+                          }
+                          required
                           placeholder="e.g. FixIt Auto Center"
-                          showZipCode={true}
-                          startAdornment={<MapPinned size={18} color={theme.currentPalette.primary} />}
+                          startAdornment={
+                            <MapPinned
+                              size={18}
+                              color={theme.currentPalette.primary}
+                            />
+                          }
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         />
                       </Box>
 
                       {destinations.length > 1 && (
                         <Tooltip title="Remove destination">
-                          <IconButton onClick={() => handleRemoveDestination(index)} size="small" sx={{ mb: 0.5 }}>
-                            <span style={{ display: "flex", alignItems: "center" }}>
+                          <IconButton
+                            onClick={() => handleRemoveDestination(index)}
+                            size="small"
+                            sx={{ mb: 0.5 }}
+                          >
+                            <span
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
                               <Trash2 size={18} color="red" />
                             </span>
                           </IconButton>
@@ -780,7 +1049,13 @@ const CalculationPage = () => {
                   ))}
 
                   <Box>
-                    <Typography sx={{ fontSize: 18, fontWeight: 800, color: theme.currentPalette.primary }}>
+                    <Typography
+                      sx={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: theme.currentPalette.primary,
+                      }}
+                    >
                       Load Details
                     </Typography>
 
@@ -790,10 +1065,19 @@ const CalculationPage = () => {
                       placeholder="Add any additional information here..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       fullWidth
                       multiline
                       minRows={4}
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{
+                        onKeyDown: (e) => {
+                          if (e.key === "Tab" || e.key.startsWith("Arrow")) {
+                            return;
+                          }
+                        },
+                      }}
                     />
                   </Box>
                 </Stack>
@@ -814,25 +1098,47 @@ const CalculationPage = () => {
                 minHeight: 650,
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: theme.currentPalette.primary }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 2 }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: theme.currentPalette.primary,
+                  }}
+                >
                   Route Map
                 </Typography>
 
-                <Chip icon={<RouteIcon />} label={`${validDestinationsCount} Stops`} variant="outlined" />
+                <Chip
+                  label={`${validDestinationsCount} Stops`}
+                  variant="outlined"
+                  sx={{
+                    color: theme.currentPalette.primary,
+                    backgroundColor: alpha(theme.currentPalette.primary, 0.02),
+                  }}
+                />
               </Stack>
 
               <Suspense fallback={<MapFallback />}>
                 <LazyGoogleMapsLoader
                   onLoad={() => console.log("Maps loaded successfully")}
-                  onError={(error) => console.error("Failed to load maps:", error)}
+                  onError={(error) =>
+                    console.error("Failed to load maps:", error)
+                  }
                 >
                   <LazyMapWithRoute
                     dho={dho}
                     origin={origin}
                     destinations={destinations}
-                    height="520px"
-                    onLocationChange={handleMapLocationChange}
+                    height="500px"
+                    {...{
+                      onLocationChange: handleMapLocationChange,
+                    }}
                   />
                 </LazyGoogleMapsLoader>
               </Suspense>
@@ -841,15 +1147,32 @@ const CalculationPage = () => {
         </Grid>
       </Container>
 
-      <Dialog open={shareOpen} onClose={closeShare} maxWidth="xs" fullWidth>
+      <Dialog
+        open={shareOpen}
+        onClose={closeShare}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          position: "absolute",
+          left: "75%",
+          top: "2%",
+          width: isMobile ? 300 : 380,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Box sx={{ p: 0 }}>
           <Box sx={{ px: 3, py: 2 }}>
-            <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#0F172A" }}>
+            <Typography
+              sx={{ fontSize: 18, fontWeight: 800, color: "#0F172A" }}
+            >
               Share Calculations to chat
             </Typography>
 
             {selectedUserIds.length > 0 && (
-              <Typography sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}>
+              <Typography
+                sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}
+              >
                 Selected: {selectedUserIds.length}
               </Typography>
             )}
@@ -879,16 +1202,7 @@ const CalculationPage = () => {
               }}
             />
 
-            <Box
-              sx={{
-                mt: 2,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: alpha(theme.currentPalette.primary, 0.35),
-                overflow: "hidden",
-                bgcolor: "#fff",
-              }}
-            >
+            <Box>
               <Box sx={{ maxHeight: 260, overflow: "auto" }}>
                 <UsersList
                   searchQuery={shareSearch}
@@ -898,7 +1212,14 @@ const CalculationPage = () => {
               </Box>
             </Box>
 
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                mt: 3,
+                gap: 1,
+              }}
+            >
               <Button
                 variant="outlined"
                 onClick={closeShare}
@@ -918,10 +1239,14 @@ const CalculationPage = () => {
                   fontWeight: 700,
                   bgcolor: theme.currentPalette.primary,
                   textTransform: "none",
-                  "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.9) },
+                  "&:hover": {
+                    bgcolor: alpha(theme.currentPalette.primary, 0.9),
+                  },
                 }}
               >
-                {isCreatingConversation || isSendingMessage ? "Sharing..." : "Share"}
+                {isCreatingConversation || isSendingMessage
+                  ? "Sharing..."
+                  : "Share"}
               </Button>
             </Box>
           </Box>
