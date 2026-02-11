@@ -274,12 +274,12 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         dispatch(
           setDho(
             dhoCoords ||
-              ({
-                display_name: loadItem.DHO,
-                lat: "0",
-                lon: "0",
-                place_id: `temp_${Date.now()}_dho`,
-              } as TPlace),
+            ({
+              display_name: loadItem.DHO,
+              lat: "0",
+              lon: "0",
+              place_id: `temp_${Date.now()}_dho`,
+            } as TPlace),
           ),
         );
       } else {
@@ -292,12 +292,12 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         dispatch(
           setOrigin(
             originCoords ||
-              ({
-                display_name: loadItem.origin,
-                lat: "0",
-                lon: "0",
-                place_id: `temp_${Date.now()}_origin`,
-              } as TPlace),
+            ({
+              display_name: loadItem.origin,
+              lat: "0",
+              lon: "0",
+              place_id: `temp_${Date.now()}_origin`,
+            } as TPlace),
           ),
         );
       } else {
@@ -1021,7 +1021,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                                 Total distance:
                               </p>
                               {destinations.filter((d) => d !== null).length >
-                              0 ? (
+                                0 ? (
                                 <p style={{ color: theme.currentPalette.text }}>
                                   {
                                     destinations.filter((d) => d !== null)
@@ -1198,9 +1198,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                                   setValue={(place) =>
                                     handleUpdateDestination(index, place)
                                   }
-                                  placeholder={`Enter destination ${
-                                    index + 1
-                                  } address`}
+                                  placeholder={`Enter destination ${index + 1
+                                    } address`}
                                   // googleMapsApiKey={googleMapsApiKey!}
                                   showZipCode={true}
                                 />
@@ -1274,6 +1273,11 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                       sx={{
                         bgcolor: theme.currentPalette.primary,
                         color: theme.currentPalette.background,
+                        "&.Mui-disabled": {
+                          bgcolor: alpha(theme.currentPalette.primary, 0.4),
+                          color: "white",
+                          cursor: "not-allowed",
+                        },
                       }}
                       type="button"
                       onClick={() => dispatch(setActiveTab(2))}

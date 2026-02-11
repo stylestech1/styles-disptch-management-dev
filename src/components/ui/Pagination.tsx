@@ -1,7 +1,7 @@
 "use client";
 
 import { RootState, useAppSelector } from "@/redux/store";
-import { Button, Typography } from "@mui/material";
+import { alpha, Button, Typography } from "@mui/material";
 
 interface PaginationProps {
   pagination: {
@@ -42,7 +42,7 @@ const Pagination = ({
             ← Prev
           </Button>
 
-          <Typography className="px-3 py-2 text-sm" sx={{color:theme.currentPalette.primary}}>
+          <Typography className="px-3 py-2 text-sm" sx={{ color: theme.currentPalette.primary }}>
             {currentPage} / {totalPages}
           </Typography>
 
@@ -68,15 +68,21 @@ const Pagination = ({
           sx={{
             bgcolor: theme.currentPalette.primary,
             color: theme.currentPalette.background,
+            "&.Mui-disabled": {
+              bgcolor: alpha(theme.currentPalette.primary, 0.4),
+              color: "white", 
+              cursor: "not-allowed",
+            },
           }}
           disabled={page <= 1}
           onClick={() => setPage(Math.max(1, page - 1))}
-          className="flex items-center gap-1 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium transition-colors"
         >
           Previous
         </Button>
 
-        <Typography className="px-3 py-2 text-sm" sx={{color:theme.currentPalette.primary}}>
+
+        <Typography className="px-3 py-2 text-sm" sx={{ color: theme.currentPalette.primary }}>
           Page {currentPage} of {totalPages}
         </Typography>
 
