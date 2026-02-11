@@ -10,8 +10,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 interface UsersListProps {
   searchQuery: string;
-  selectedUserIds: string[];
-  onToggleUser: (userId: string) => void;
+  selectedUserIds?: string[];
+  onToggleUser?: (userId: string) => void;
 }
 
 export const UsersList = ({
@@ -72,12 +72,12 @@ export const UsersList = ({
         const userPresence = presenceList[user.id];
         const isUserOnline = userPresence?.isOnline ?? false;
 
-        const isSelected = selectedUserIds.includes(user.id);
+        const isSelected = selectedUserIds?.includes(user.id);
 
         return (
           <Box
             key={user.id}
-            onClick={() => onToggleUser(user.id)}
+            onClick={() => onToggleUser && onToggleUser(user.id)}
             sx={{
               display: "flex",
               alignItems: "center",
