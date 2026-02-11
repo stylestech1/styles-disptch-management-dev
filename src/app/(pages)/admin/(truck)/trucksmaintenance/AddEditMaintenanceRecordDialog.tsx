@@ -134,7 +134,7 @@ export default function AddEditMaintenanceRecordDialog({
     const [remindBeforeDays, setRemindBeforeDays] = useState("");
     const actionBtnSx = {
         height: 52,
-        minWidth: 200,
+        minWidth: 190,
         borderRadius: 3,
         textTransform: "none",
         fontWeight: 700,
@@ -716,7 +716,7 @@ export default function AddEditMaintenanceRecordDialog({
                                             sx={{
                                                 px: 1,
                                                 minHeight: 52,
-                                                bgcolor: alpha(primaryColor, 0.04),
+                                                // bgcolor: alpha(primaryColor, 0.04),
                                                 "& .MuiAccordionSummary-content": { alignItems: "center", my: 0 },
                                             }}
                                         >

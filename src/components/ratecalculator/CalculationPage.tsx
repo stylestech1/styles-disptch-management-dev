@@ -745,6 +745,12 @@ const CalculationPage = () => {
                       fullWidth
                       label="Rate"
                       placeholder="e.g. 50"
+                      required
+                      sx={{
+                        "& .MuiFormLabel-asterisk": {
+                          color: "red",
+                        },
+                      }}
                       value={rate}
                       onChange={(e) =>
                         setRate(e.target.value ? Number(e.target.value) : "")
