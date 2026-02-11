@@ -70,7 +70,7 @@ const Pagination = ({
             color: theme.currentPalette.background,
             "&.Mui-disabled": {
               bgcolor: alpha(theme.currentPalette.primary, 0.4),
-              color: "white", 
+              color: "white",
               cursor: "not-allowed",
             },
           }}
@@ -90,6 +90,11 @@ const Pagination = ({
           sx={{
             bgcolor: theme.currentPalette.primary,
             color: theme.currentPalette.background,
+            "&.Mui-disabled": {
+              bgcolor: alpha(theme.currentPalette.primary, 0.4),
+              color: "white",
+              cursor: "not-allowed",
+            },
           }}
           disabled={page >= totalPages}
           onClick={() => setPage(Math.min(totalPages, page + 1))}
