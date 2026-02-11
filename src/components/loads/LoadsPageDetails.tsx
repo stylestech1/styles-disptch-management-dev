@@ -520,7 +520,7 @@ const LoadsPageDetails = () => {
             variant="body2"
             sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
           >
-            Ckeck list of all loads
+            Check list of all loads
           </Typography>
         </Box>
 
