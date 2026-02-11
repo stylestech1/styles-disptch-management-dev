@@ -4,11 +4,9 @@
 import { useRef } from "react";
 import { Avatar } from "./ui/Avatar";
 import { useUsersInfinite } from "@/hook/chatSys/useUsersInfinite";
-import { RootState, useAppDispatch, useAppSelector } from "@/redux/store";
+import { RootState, useAppSelector } from "@/redux/store";
 import { alpha, Chip, Box, Typography } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useCreateOrGetConversationMutation } from "@/redux/slices/apiSlice";
-import { setSelectedConversation } from "@/redux/slices/chatSlice";
 
 interface UsersListProps {
   searchQuery: string;
@@ -16,10 +14,9 @@ interface UsersListProps {
   onToggleUser?: (userId: string) => void;
 }
 
-
-export const UsersList = ({
+export const UserChat = ({
   searchQuery,
-  selectedUserIds = [],
+  selectedUserIds,
   onToggleUser,
 }: UsersListProps) => {
   const theme = useAppSelector((state: RootState) => state.palette);
@@ -33,10 +30,6 @@ export const UsersList = ({
   const presenceList = useAppSelector(
     (state: RootState) => state.chat.presence
   );
-  const [createOrGetConversation, { isLoading }] =
-    useCreateOrGetConversationMutation();
-
-  const dispatch = useAppDispatch();
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -50,16 +43,6 @@ export const UsersList = ({
 
   const q = searchQuery.trim().toLowerCase();
 
-  const handleUserClick = async (userId: string) => {
-    try {
-      const conversation = await createOrGetConversation({
-        userId,
-      }).unwrap();
-      dispatch(setSelectedConversation(conversation.id));
-    } catch (error) {
-      console.error("Failed to start conversation", error);
-    }
-  };
   const filteredUsers = users.filter((user: any) => {
     if (!user?.id) return false;
     if (user.id === currentUserId) return false;
@@ -89,12 +72,12 @@ export const UsersList = ({
         const userPresence = presenceList[user.id];
         const isUserOnline = userPresence?.isOnline ?? false;
 
-        const isSelected = selectedUserIds.includes(user.id);
+        const isSelected = selectedUserIds?.includes(user.id) ?? false;
 
         return (
           <Box
             key={user.id}
-            onClick={() => handleUserClick(user.id)}
+            onClick={() => onToggleUser && onToggleUser(user.id)}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -166,9 +149,7 @@ export const UsersList = ({
       )}
 
       {!hasMore && filteredUsers.length > 0 && (
-        <Typography
-          sx={{ p: 2, textAlign: "center", fontSize: 12, opacity: 0.6 }}
-        >
+        <Typography sx={{ p: 2, textAlign: "center", fontSize: 12, opacity: 0.6 }}>
           No more users
         </Typography>
       )}

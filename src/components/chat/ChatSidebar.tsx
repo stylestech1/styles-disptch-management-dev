@@ -1,15 +1,18 @@
 "use client";
-import { useState } from "react";
+
+import { useMemo, useState } from "react";
 import { SearchBar } from "./SearchBar";
 import { ConversationList } from "./ConversationList";
 import { useConversations } from "@/hook/chatSys/useConversations";
 import { TTabs } from "@/types/chatType";
 import { UsersList } from "./UsersList";
 import { alpha, Box, Tab, Tabs, Typography } from "@mui/material";
-import { RootState, useAppSelector } from "@/redux/store";
+import { RootState, useAppSelector, useAppDispatch } from "@/redux/store";
 import { MessageCircle, Users } from "lucide-react";
 
+
 export const ChatSidebar = () => {
+  const dispatch = useAppDispatch();
   const theme = useAppSelector((state: RootState) => state.palette);
   const user = useAppSelector((state) => state.auth.user);
 
@@ -18,10 +21,14 @@ export const ChatSidebar = () => {
 
   const { conversations, isLoading, isError } = useConversations();
 
-  const filteredConversations = conversations.filter((conv) => {
-    const memberNames = conv.members.map((m) => m.name || "").join(" ");
-    return memberNames.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((conv) => {
+      const memberNames = conv.members.map((m) => m.name || "").join(" ");
+      return memberNames.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [conversations, searchQuery]);
+
+
 
   if (isLoading) {
     return (
@@ -102,18 +109,15 @@ export const ChatSidebar = () => {
           {user?.name || "unknown user"} Messages
         </Typography>
 
-        {/* Search Bar */}
         <Box>
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
         </Box>
       </Box>
 
-      {/* Tabs */}
       <Box
         sx={{
-          borderBottom: `1px solid ${
-            alpha(theme.currentPalette.text, 0.1) || "#e0e0e0"
-          }`,
+          borderBottom: `1px solid ${alpha(theme.currentPalette.text, 0.1) || "#e0e0e0"
+            }`,
           bgcolor: theme.currentPalette.background,
         }}
       >
@@ -147,8 +151,10 @@ export const ChatSidebar = () => {
         </Tabs>
       </Box>
 
-      {/* Content */}
-      <Box className="flex-1 overflow-hidden" sx={{bgcolor: theme.currentPalette.background}}>
+      <Box
+        className="flex-1 overflow-hidden"
+        sx={{ bgcolor: theme.currentPalette.background }}
+      >
         {activeTab === "conversations" ? (
           <>
             <div className="flex items-center gap-2 p-4">
@@ -165,6 +171,7 @@ export const ChatSidebar = () => {
                 All Messages
               </Typography>
             </div>
+
             <ConversationList conversations={filteredConversations} />
           </>
         ) : (
@@ -183,6 +190,7 @@ export const ChatSidebar = () => {
                 All Users
               </Typography>
             </div>
+
             <UsersList searchQuery={searchQuery} />
           </>
         )}

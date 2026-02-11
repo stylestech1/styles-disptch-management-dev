@@ -58,11 +58,11 @@ import {
   Trash2,
   Truck,
 } from "lucide-react";
-import { UsersList } from "@/components/chat/UsersList";
 import {
   useAddMessageMutation,
   useCreateOrGetConversationMutation,
 } from "@/redux/slices/apiSlice";
+import { UserChat } from "../chat/UserChats";
 
 // Lazy load the map components
 const LazyGoogleMapsLoader = lazy(
@@ -1136,7 +1136,7 @@ const CalculationPage = () => {
               }}
             >
               <Box sx={{ maxHeight: 260, overflow: "auto" }}>
-                <UsersList
+                <UserChat
                   searchQuery={shareSearch}
                   selectedUserIds={selectedUserIds}
                   onToggleUser={toggleUser}
