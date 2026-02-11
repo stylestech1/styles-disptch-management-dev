@@ -284,7 +284,7 @@ export default function AdminLayout({
                               justifyContent: "center",
                             }}
                           >
-                            {tab.icon}
+                            {/* {tab.icon} */}
                           </ListItemIcon>
 
                           <ListItemText primary={child.label} />

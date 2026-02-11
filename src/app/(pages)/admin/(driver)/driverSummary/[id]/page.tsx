@@ -41,6 +41,7 @@ import {
   Phone,
 } from "lucide-react";
 import { useFilter } from "@/providers/FilterProvider";
+import DriverAttachments from "./DriverAttachments";
 
 const DriverSummary = () => {
   const { id } = useParams();
@@ -59,8 +60,8 @@ const DriverSummary = () => {
   const earningsRef = useRef(null);
 
   // ✅ Lazy Query for filtered data with refetch capability
-  const { 
-    data: driverSummaryData, 
+  const {
+    data: driverSummaryData,
     error: summaryError,
     refetch: refetchFilteredSummary  // Add refetch capability
   } = useGetDriverSummaryWithFilterQuery({
@@ -574,6 +575,18 @@ const DriverSummary = () => {
           </Box>
         </div>
       </Box>
+
+      <DriverAttachments
+        // attachments={profile?.documents ?? []} // عدّليها حسب شكل الداتا عندك
+        // onUpload={async (files) => {
+   
+        //   toast.success("Uploaded successfully ✅");
+        // }}
+        // onDelete={async (docId) => {
+ 
+        //   toast.success("Deleted ✅");
+        // }}
+      />
 
       <Box sx={searchFilterContainerSx}>
         <Typography

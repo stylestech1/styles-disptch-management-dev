@@ -983,7 +983,6 @@ const CalculationPage = () => {
           </Grid>
 
           {/* RIGHT */}
-          {/* RIGHT */}
           <Grid size={{ xs: 12, lg: 6 }} sx={{ minWidth: 0, display: "flex" }}>
             <Paper
               elevation={0}

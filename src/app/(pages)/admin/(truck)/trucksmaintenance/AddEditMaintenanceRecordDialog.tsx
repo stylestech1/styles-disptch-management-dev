@@ -34,6 +34,7 @@ import {
     LandPlot,
     CalendarFold,
     Trash,
+    Truck,
 } from "lucide-react";
 
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -58,9 +59,7 @@ type TruckRow = {
 export type AddEditMaintenancePayload = {
     type: string;
     repeatBy: RepeatBy;
-
-    maintenanceCenterId?: string;
-
+    serviceCenter?: string;
     intervalMile?: number;
     remindBeforeMile?: number;
     intervalDays?: number;
@@ -86,7 +85,7 @@ type Props = {
 
     initialValues?: {
         type?: string;
-        maintenanceCenterId?: string;
+        serviceCenter?: string;
 
         intervalMile?: number;
         remindBeforeMile?: number;
@@ -127,19 +126,25 @@ export default function AddEditMaintenanceRecordDialog({
 
     // Step 1 fields
     const [type, setType] = useState("");
-    const [maintenanceCenterId, setMaintenanceCenterId] = useState("");
+    const [serviceCenter, setServiceCenter] = useState<string>("");
 
     const [intervalMile, setIntervalMile] = useState("");
     const [remindBeforeMile, setRemindBeforeMile] = useState("");
     const [intervalDays, setIntervalDays] = useState("");
     const [remindBeforeDays, setRemindBeforeDays] = useState("");
+    const actionBtnSx = {
+        height: 52,
+        minWidth: 200,
+        borderRadius: 3,
+        textTransform: "none",
+        fontWeight: 700,
+        fontSize: 16,
+    };
 
     // Step 2 rows
     const [rows, setRows] = useState<TruckRow[]>([
         { rowId: uid(), truckId: "", lastDoneMile: "", lastDoneAt: "" },
     ]);
-
-    // ===== unified input design (TextField + Select + DatePicker) =====
     const textFieldSx = useMemo(
         () => ({
             "& .MuiInputLabel-root": {
@@ -191,7 +196,7 @@ export default function AddEditMaintenanceRecordDialog({
         setActiveStep(0);
 
         setType(initialValues?.type ?? "");
-        setMaintenanceCenterId(initialValues?.maintenanceCenterId ?? "");
+        setServiceCenter(initialValues?.serviceCenter ?? "");
 
         setIntervalMile(
             initialValues?.intervalMile !== undefined
@@ -305,7 +310,7 @@ export default function AddEditMaintenanceRecordDialog({
                 ? {
                     type: type.trim(),
                     repeatBy,
-                    maintenanceCenterId: maintenanceCenterId || undefined,
+                    serviceCenter: String(serviceCenter),
                     intervalMile: Number(intervalMile),
                     remindBeforeMile: Number(remindBeforeMile),
                     statusPerTruck,
@@ -313,7 +318,7 @@ export default function AddEditMaintenanceRecordDialog({
                 : {
                     type: type.trim(),
                     repeatBy,
-                    maintenanceCenterId: maintenanceCenterId || undefined,
+                    serviceCenter: String(serviceCenter),
                     intervalDays: Number(intervalDays),
                     remindBeforeDays: Number(remindBeforeDays),
                     statusPerTruck,
@@ -335,7 +340,7 @@ export default function AddEditMaintenanceRecordDialog({
             : `Edit ${repeatBy === "mile" ? "mile" : "time"} - based maintenance`;
 
     const centerName =
-        maintenanceCenters.find((c) => c.id === maintenanceCenterId)?.name ?? "";
+        maintenanceCenters.find((c) => String(c.id) === String(serviceCenter))?.name ?? "";
 
     return (
         <Dialog
@@ -522,8 +527,8 @@ export default function AddEditMaintenanceRecordDialog({
                                 fullWidth
                                 select
                                 label="Maintenance Center"
-                                value={maintenanceCenterId}
-                                onChange={(e) => setMaintenanceCenterId(String(e.target.value))}
+                                value={serviceCenter}
+                                onChange={(e) => setServiceCenter(String(e.target.value))}
                                 sx={selectSx}
                                 SelectProps={{
                                     displayEmpty: true,
@@ -552,6 +557,7 @@ export default function AddEditMaintenanceRecordDialog({
                                     </MenuItem>
                                 ))}
                             </TextField>
+
 
                             <Box sx={{ height: 16 }} />
 
@@ -701,20 +707,40 @@ export default function AddEditMaintenanceRecordDialog({
                                             boxShadow: "none",
                                             "&:before": { display: "none" },
                                             overflow: "hidden",
+                                            gap: 1,
+
                                         }}
                                     >
                                         <AccordionSummary
                                             expandIcon={<ChevronDown size={18} />}
                                             sx={{
-                                                px: 2,
+                                                px: 1,
                                                 minHeight: 52,
                                                 bgcolor: alpha(primaryColor, 0.04),
                                                 "& .MuiAccordionSummary-content": { alignItems: "center", my: 0 },
                                             }}
                                         >
-                                            <Typography sx={{ fontWeight: 900, color: primaryColor }}>
-                                                Truck {idx + 1}
-                                            </Typography>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                                                <Box
+                                                    sx={{
+                                                        width: 30,
+                                                        height: 30,
+                                                        borderRadius: "50%",
+                                                        bgcolor: alpha(primaryColor, 0.12),
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    <Truck size={16} color={primaryColor} />
+                                                </Box>
+
+                                                <Typography sx={{  color: primaryColor, fontSize: 18, lineHeight: 1 }}>
+                                                    Truck {idx + 1}
+                                                </Typography>
+                                            </Box>
+
                                             <Box sx={{ flex: 1 }} />
 
                                             {rows.length > 1 && (
@@ -725,11 +751,13 @@ export default function AddEditMaintenanceRecordDialog({
                                                     }}
                                                     sx={{
                                                         borderRadius: 2,
-                                                        bgcolor: alpha(theme.currentPalette.text, 0.05),
+                                                        px: 2,
+                                                        // bgcolor: alpha(theme.currentPalette.text, 0.05),
                                                         "&:hover": { bgcolor: alpha(theme.currentPalette.text, 0.08) },
+
                                                     }}
                                                 >
-                                                    <Trash size={16}  color="#EF4444"/>
+                                                    <Trash size={16} color="#EF4444" />
                                                 </IconButton>
                                             )}
                                         </AccordionSummary>
@@ -838,45 +866,52 @@ export default function AddEditMaintenanceRecordDialog({
                                 ))}
                             </Box>
 
-                            <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between", mt: 3 }}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    gap: 3,
+                                    justifyContent: "center",
+                                    mt: 3,
+                                }}
+                            >
                                 <Button
                                     variant="outlined"
                                     onClick={() => setActiveStep(0)}
                                     sx={{
-                                        borderRadius: 2,
-                                        px: 4,
-                                        height: 48,
-                                        textTransform: "none",
-                                        fontWeight: 900,
-                                        borderColor: alpha(primaryColor, 0.45),
+                                        ...actionBtnSx,
+                                        borderColor: alpha(primaryColor, 0.55),
                                         color: primaryColor,
-                                        "&:hover": { borderColor: primaryColor, bgcolor: alpha(primaryColor, 0.08) },
+                                        bgcolor: "#fff",
+                                        "&:hover": {
+                                            borderColor: primaryColor,
+                                            bgcolor: alpha(primaryColor, 0.06),
+                                        },
                                     }}
                                 >
-                                    Back
+                                    CANCEL
                                 </Button>
 
                                 <Button
                                     variant="contained"
-                                    startIcon={<Save size={18} />}
                                     disabled={!canSave || !!isSubmitting}
                                     onClick={handleSubmit}
                                     sx={{
-                                        borderRadius: 2,
-                                        px: 6,
-                                        height: 48,
-                                        textTransform: "none",
-                                        fontWeight: 900,
+                                        ...actionBtnSx,
                                         bgcolor: primaryColor,
-                                        "&:hover": { bgcolor: primaryColor },
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                            bgcolor: primaryColor,
+                                            boxShadow: "none",
+                                        },
                                         "&.Mui-disabled": {
-                                            bgcolor: alpha(primaryColor, 0.22),
-                                            color: alpha(theme.currentPalette.background, 0.95),
+                                            bgcolor: alpha(primaryColor, 0.25),
+                                            color: "#fff",
                                         },
                                     }}
                                 >
                                     {isSubmitting ? "Saving..." : "Save"}
                                 </Button>
+
                             </Box>
                         </Box>
                     )}
