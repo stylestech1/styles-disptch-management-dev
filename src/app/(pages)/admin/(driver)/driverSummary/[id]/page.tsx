@@ -34,6 +34,7 @@ import {
   SxProps,
   TableRow,
   Typography,
+  Collapse,
 } from "@mui/material";
 import { RootState, useAppSelector } from "@/redux/store";
 import Breadcrumb from "@/components/ui/Breadcrumb";
@@ -51,7 +52,9 @@ import {
   Phone,
   Trash2,
   Upload,
+  ChevronDown, ChevronUp
 } from "lucide-react";
+
 import { IoClose } from "react-icons/io5";
 import { MdError, MdOutlineAttachFile } from "react-icons/md";
 import { useFilter } from "@/providers/FilterProvider";
@@ -156,6 +159,8 @@ const DriverSummary = () => {
   const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [attachmentsOpen, setAttachmentsOpen] = useState(false);
+  const toggleAttachments = () => setAttachmentsOpen((v) => !v);
 
   const profile = profileData?.data as any;
   const summaryData = isFiltered ? driverSummaryData?.data : specificDriverSummaryData?.data;
@@ -649,6 +654,12 @@ const DriverSummary = () => {
       >
         {/* Header */}
         <Box
+          onClick={toggleAttachments}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") toggleAttachments();
+          }}
           sx={{
             px: 2.5,
             py: 2,
@@ -656,72 +667,103 @@ const DriverSummary = () => {
             alignItems: "center",
             justifyContent: "space-between",
             gap: 2,
+            cursor: "pointer",
+            userSelect: "none",
+            "&:hover": {
+              backgroundColor: alpha(theme.currentPalette.primary, 0.04),
+            },
           }}
         >
-          <Box>
-            <Typography sx={{ fontWeight: 800, color: theme.currentPalette.primary }}>
-              Driver Attachments
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.7) }}>
-              Upload documents of drivers
-            </Typography>
-          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 800, color: theme.currentPalette.primary }}>
+                Driver Attachments
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.7) }}>
+                Upload documents of drivers
+              </Typography>
+            </Box>
 
-          <Button
-            onClick={openUploadDialog}
-            variant="contained"
-            sx={{
-              textTransform: "none",
-              fontWeight: 800,
-              borderRadius: 1.5,
-              px: 2.5,
-              backgroundColor: theme.currentPalette.primary,
-              color: theme.currentPalette.background,
-              "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
-            }}
-          >
-            Add Document
-          </Button>
+
+          </Box>
+          <div className="flex items-center gap-2">
+
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                openUploadDialog();
+              }}
+              variant="contained"
+              sx={{
+                textTransform: "none",
+                fontWeight: 800,
+                borderRadius: 1.5,
+                px: 2.5,
+                backgroundColor: theme.currentPalette.primary,
+                color: theme.currentPalette.background,
+                "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
+              }}
+            >
+              Add Document
+            </Button>
+            {/* Arrow */}
+            <Box
+              sx={{
+                // width: 34,
+                // height: 34,
+                // borderRadius: 1.5,
+                display: "grid",
+                placeItems: "center",
+                // border: `1px solid ${alpha(theme.currentPalette.primary, 0.18)}`,
+                // backgroundColor: theme.currentPalette.background,
+                color: alpha(theme.currentPalette.primary, 0.9),
+                flexShrink: 0,
+              }}
+            >
+              {attachmentsOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </Box>
+          </div>
         </Box>
+
 
         <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.15) }} />
 
-        {/* List */}
-        <Box sx={{ p: 2 }}>
-          {docsLabel.length ? (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {docsLabel.map((doc) => (
-                <Box
-                  key={doc.id}
-                  sx={{
-                    border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1.5,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: theme.currentPalette.background,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, minWidth: 0 }}>
-                    <FileText size={18} color={alpha(theme.currentPalette.primary, 0.9)} />
-                    <Typography
-                      sx={{
-                        fontWeight: 800,
-                        color: theme.currentPalette.primary,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: { xs: 220, sm: 420 },
-                      }}
-                      title={doc.displayName}
-                    >
-                      {doc.displayName}
-                    </Typography>
-                  </Box>
-
-                  {/* <IconButton
+        <Collapse in={attachmentsOpen} timeout={180} unmountOnExit>
+          {/* List */}
+          <Box sx={{ p: 2 }}>
+            {docsLabel.length ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {docsLabel.map((doc) => (
+                  <Box
+                    key={doc.id}
+                    sx={{
+                      border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1.5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      backgroundColor: theme.currentPalette.background,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, minWidth: 0 }}>
+                      <FileText size={18} color={alpha(theme.currentPalette.primary, 0.9)} />
+                      <Typography
+                        sx={{
+                          fontWeight: 800,
+                          color: theme.currentPalette.primary,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: { xs: 220, sm: 420 },
+                        }}
+                        title={doc.displayName}
+                      >
+                        {doc.displayName}
+                      </Typography>
+                    </Box>
+                    {/* <IconButton
                     onClick={() => handleDeleteDoc(doc.id)}
                     sx={{
                       color: "#DC2626",
@@ -730,23 +772,25 @@ const DriverSummary = () => {
                   >
                     <Trash2 size={18} />
                   </IconButton> */}
-                </Box>
-              ))}
-            </Box>
-          ) : (
-            <Box sx={{ px: 1, py: 2 }}>
-              <Typography
-                sx={{
-                  color: alpha(theme.currentPalette.text, 0.75),
-                  fontSize: 13,
-                  textAlign: "center",
-                }}
-              >
-                No documents yet.
-              </Typography>
-            </Box>
-          )}
-        </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ px: 1, py: 2 }}>
+                <Typography
+                  sx={{
+                    color: alpha(theme.currentPalette.text, 0.75),
+                    fontSize: 13,
+                    textAlign: "center",
+                  }}
+                >
+                  No documents yet.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Collapse>
+
 
         {/* Upload Dialog */}
         <Dialog open={openUpload} onClose={closeUploadDialog} maxWidth="sm" fullWidth>
