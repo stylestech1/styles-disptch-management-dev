@@ -595,7 +595,7 @@ const DriverSummary = () => {
                   <span>+${Number(summaryData?.earnings?.totalDetention).toFixed(2) || "0.00"}</span>
                 </Typography>
                 <Typography sx={{ display: "flex", justifyContent: "space-between", color: "#B3261E" }}>
-                  <span>Deduction (15% toggle)</span>
+                  <span>Deduction</span>
                   <span>-${Number(summaryData?.earnings?.totalDeduction).toFixed(2) || "0.00"}</span>
                 </Typography>
               </Stack>
