@@ -64,6 +64,8 @@ const loadsFormSlice = createSlice({
 
     removeDestination: (state, action: PayloadAction<number>) => {
       const index = action.payload;
+      if (state.destinations.length <= 1) return;
+
       if (index >= 0 && index < state.destinations.length) {
         state.destinations.splice(index, 1);
       }
@@ -141,7 +143,7 @@ const loadsFormSlice = createSlice({
       // Location Tab
       state.dho = null;
       state.origin = null;
-      state.destinations = [];
+      state.destinations = [null];
 
       // Load Details Tab
       state.price = "";

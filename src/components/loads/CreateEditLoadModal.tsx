@@ -1097,6 +1097,65 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           showZipCode={true}
                         />
 
+                        {/* Destinations Section */}
+                        <div className="space-y-4">
+                          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+                            <Typography
+                              sx={{
+                                color: theme.currentPalette.primary,
+                                fontSize: "14px",
+                                fontWeight: "bold",
+                                display: "block",
+                                mb: 1,
+                              }}
+                            >
+                              Destinations
+                            </Typography>
+                            <Button
+                              variant="contained"
+                              type="button"
+                              onClick={handleAddDestination}
+                              className="flex items-center w-full md:w-fit gap-2 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              <IoAdd size={16} />
+                              Add Destination
+                            </Button>
+                          </div>
+
+                          {destinations.map((destination, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3"
+                            >
+                              <div className="flex-1">
+                           
+
+                                  <LocationAutocomplete
+                                    label={`Destination ${index + 1}`}
+                                    value={destination}
+                                    setValue={(place) =>
+                                      handleUpdateDestination(index, place)
+                                    }
+                                    placeholder={`Enter destination ${index + 1
+                                      } address`}
+                                    // googleMapsApiKey={googleMapsApiKey!}
+                                    showZipCode={true}
+                                  />
+                           
+                              </div>
+
+                              {destinations.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDestination(index)}
+                                  className="mt-6 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <IoClose size={20} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <Typography
@@ -1161,80 +1220,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           </div>
                         </div>
 
-                        {/* Destinations Section */}
-                        <div className="space-y-4">
-                          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-                            <Typography
-                              sx={{
-                                color: theme.currentPalette.primary,
-                                fontSize: "14px",
-                                fontWeight: "bold",
-                                display: "block",
-                                mb: 1,
-                              }}
-                            >
-                              Destinations
-                            </Typography>
-                            <Button
-                              variant="contained"
-                              type="button"
-                              onClick={handleAddDestination}
-                              className="flex items-center w-full md:w-fit gap-2 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              <IoAdd size={16} />
-                              Add Destination
-                            </Button>
-                          </div>
 
-                          {destinations.map((destination, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-3"
-                            >
-                              <div className="flex-1">
-                                <LocationAutocomplete
-                                  label={`Destination ${index + 1}`}
-                                  value={destination}
-                                  setValue={(place) =>
-                                    handleUpdateDestination(index, place)
-                                  }
-                                  placeholder={`Enter destination ${index + 1
-                                    } address`}
-                                  // googleMapsApiKey={googleMapsApiKey!}
-                                  showZipCode={true}
-                                />
-                              </div>
-
-                              {destinations.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveDestination(index)}
-                                  className="mt-6 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <IoClose size={20} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-
-                          {destinations.length === 0 && (
-                            <Box
-                              sx={{
-                                bgcolor: theme.currentPalette.background,
-                                color: theme.currentPalette.primary,
-                              }}
-                              className="text-center py-6 border-2 border-dashed rounded-lg"
-                            >
-                              <p className="font-medium">
-                                No destinations added yet
-                              </p>
-                              <p className="text-sm px-3 mt-1">
-                                You must add at least one destination to
-                                continue
-                              </p>
-                            </Box>
-                          )}
-                        </div>
                       </div>
                     </div>
 

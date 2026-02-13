@@ -1,463 +1,604 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+// /* ===========================
+//    DriverAttachments.tsx
+// =========================== */
+// /* eslint-disable @typescript-eslint/no-explicit-any */
+// "use client";
 
-import React, { useMemo, useRef, useState } from "react";
-import {
-    alpha,
-    Box,
-    Button,
-    Dialog,
-    DialogContent,
-    Divider,
-    IconButton,
-    Typography,
-} from "@mui/material";
-import { IoClose } from "react-icons/io5";
-import { MdOutlineAttachFile, MdError, MdPictureAsPdf } from "react-icons/md";
-import { Trash2, Upload } from "lucide-react";
-import { RootState, useAppSelector } from "@/redux/store";
+// import React, { useMemo, useRef, useState } from "react";
+// import {
+//     alpha,
+//     Box,
+//     Button,
+//     Dialog,
+//     DialogContent,
+//     Divider,
+//     IconButton,
+//     Typography,
+//     CircularProgress,
+// } from "@mui/material";
+// import { IoClose } from "react-icons/io5";
+// import { MdOutlineAttachFile, MdError } from "react-icons/md";
+// import { Trash2, Upload, Check, FileText } from "lucide-react";
+// import { RootState, useAppSelector } from "@/redux/store";
+// import {
+//     useGetDriverByDriverIdQuery,
+//     useUpdateDriverMutation,
+// } from "@/redux/slices/apiSlice";
 
-type AttachmentItem = {
-    id: string;
-    name: string;
-    size?: number;
-    url?: string;
-};
+// export type AttachmentItem = {
+//     id: string;
+//     name: string;
+//     size?: number;
+//     url?: string;
+// };
 
-type Props = {
-    attachments?: AttachmentItem[];
-    onUpload?: (files: File[]) => Promise<void> | void;
-    onDelete?: (id: string) => Promise<void> | void;
-};
+// type Props = {
+//     driverId: string; // ✅ driverId (query param)
+//     onDelete?: (id: string) => Promise<void> | void; // optional (لو عندك endpoint delete)
+// };
 
-export default function DriverAttachments({
-    attachments = [],
-    onUpload,
-    onDelete,
-}: Props) {
-    const theme = useAppSelector((state: RootState) => state.palette);
+// const MAX_FILES = 2;
+// const FIELD_NAME = "documents";
+// const formatKB = (bytes: number) => `${(bytes / 1024).toFixed(2)} KB`;
 
-    const [open, setOpen] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const [uploadError, setUploadError] = useState<string>("");
-    const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
-    const [isUploading, setIsUploading] = useState(false);
+// const isValidAttachment = (a?: AttachmentItem | null) => {
+//     if (!a) return false;
+//     const hasId = !!String(a.id ?? "").trim();
+//     const hasName = !!String(a.name ?? "").trim();
+//     const hasUrl = !!String(a.url ?? "").trim();
+//     return hasId && (hasName || hasUrl);
+// };
 
-    const inputRef = useRef<HTMLInputElement | null>(null);
+// const dedupeFiles = (files: File[]) => {
+//     const map = new Map<string, File>();
+//     for (const f of files) {
+//         const key = `${f.name}-${f.size}-${f.lastModified}`;
+//         if (!map.has(key)) map.set(key, f);
+//     }
+//     return Array.from(map.values());
+// };
 
-    const docsCountLabel = useMemo(() => {
-        return attachments.map((a, idx) => ({
-            ...a,
-            displayName: `Document ${idx + 1}`,
-        }));
-    }, [attachments]);
+// const sanitizeAttachments = (docs: any[]): AttachmentItem[] => {
+//     if (!Array.isArray(docs)) return [];
+//     return docs
+//         .filter(Boolean)
+//         .map((d: any) => ({
+//             id: String(d?.id ?? d?._id ?? "").trim(),
+//             name: String(d?.name ?? d?.fileName ?? d?.filename ?? "Document").trim(),
+//             url: d?.url ? String(d.url).trim() : undefined,
+//             size: typeof d?.size === "number" ? d.size : undefined,
+//         }))
+//         .filter((d: AttachmentItem) => !!d.id && (!!d.name || !!d.url));
+// };
 
-    const resetDialog = () => {
-        setSelectedDocuments([]);
-        setUploadError("");
-        setIsDragging(false);
-    };
+// export default function DriverAttachments({ driverId, onDelete }: Props) {
+//     const theme = useAppSelector((state: RootState) => state.palette);
 
-    const openDialog = () => {
-        setOpen(true);
-        resetDialog();
-    };
+//     // ✅ query: /api/v1/drivers?driverId=...
+//     const {
+//         data: driverRes,
+//         isFetching,
+//         refetch,
+//         isLoading,
+//     } = useGetDriverByDriverIdQuery(String(driverId), {
+//         skip: !driverId,
+//         refetchOnFocus: false,
+//         refetchOnReconnect: true,
+//         refetchOnMountOrArgChange: true,
+//     });
 
-    const closeDialog = () => {
-        setOpen(false);
-        resetDialog();
-    };
+//     // ✅ mutation for upload (PATCH)
+//     const [updateDriver] = useUpdateDriverMutation();
 
-    const validateFiles = (files: File[]) => {
-        const onlyPdf = files.every(
-            (f) =>
-                f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"),
-        );
-        if (!onlyPdf) return "Only PDF files are allowed";
-        return "";
-    };
-    // const validateFiles = (files: File[]) => {
-    //     const allowedTypes = [
-    //         "application/pdf",
-    //         "image/jpeg",
-    //         "image/png",
-    //         "image/webp",
-    //     ];
+//     const [open, setOpen] = useState(false);
+//     const [isDragging, setIsDragging] = useState(false);
+//     const [uploadError, setUploadError] = useState<string>("");
+//     const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
+//     const [isUploading, setIsUploading] = useState(false);
 
-    //     const isValid = files.every(
-    //         (f) =>
-    //             allowedTypes.includes(f.type) ||
-    //             /\.(pdf|jpg|jpeg|png|webp)$/i.test(f.name)
-    //     );
+//     const inputRef = useRef<HTMLInputElement | null>(null);
 
-    //     if (!isValid) {
-    //         return "Only PDF or image files (JPG, PNG, WEBP) are allowed";
-    //     }
+//     // 👇 driver object is in driverRes.data
+//     const attachments = useMemo(() => {
+//         const raw = (driverRes?.data ?? null) as any;
+//         const docsRaw = (raw?.documents ?? raw?.attachments ?? []) as any[];
+//         return sanitizeAttachments(docsRaw);
+//     }, [driverRes]);
 
-    //     return "";
-    // };
+//     const docsLabel = useMemo(() => {
+//         return (attachments ?? [])
+//             .filter(isValidAttachment)
+//             .map((a) => ({
+//                 ...a,
+//                 displayName: (a.name?.trim() || "Document").trim(),
+//             }));
+//     }, [attachments]);
 
-    const addFiles = (files: File[]) => {
-        const merged = [...selectedDocuments, ...files]; // ✅ no slice, unlimited
-        const errorMsg = validateFiles(merged);
-        if (errorMsg) {
-            setUploadError(errorMsg);
-            return;
-        }
-        setUploadError("");
-        setSelectedDocuments(merged);
-    };
+//     const canAddMore = selectedDocuments.length < MAX_FILES;
 
-    const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files ?? []);
-        if (!files.length) return;
-        addFiles(files);
-        e.target.value = "";
-    };
+//     const resetDialog = () => {
+//         setSelectedDocuments([]);
+//         setUploadError("");
+//         setIsDragging(false);
+//     };
 
-    const onRemoveFile = (idx: number) => {
-        setSelectedDocuments((prev) => prev.filter((_, i) => i !== idx));
-    };
+//     const openDialog = () => {
+//         setOpen(true);
+//         resetDialog();
+//     };
 
-    const onDragEnter = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-    };
-    const onDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-    };
-    const onDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-    };
-    const onDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-        const files = Array.from(e.dataTransfer.files ?? []);
-        if (!files.length) return;
-        addFiles(files);
-    };
+//     const closeDialog = () => {
+//         setOpen(false);
+//         resetDialog();
+//     };
 
-    const handleUpload = async () => {
-        if (!selectedDocuments.length) return;
+//     const validatePdfOnly = (files: File[]) => {
+//         const onlyPdf = files.every(
+//             (f) =>
+//                 f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+//         );
+//         if (!onlyPdf) return "Only PDF files are allowed";
+//         return "";
+//     };
 
-        const err = validateFiles(selectedDocuments);
-        if (err) {
-            setUploadError(err);
-            return;
-        }
+//     const addFiles = (files: File[]) => {
+//         if (!canAddMore) {
+//             setUploadError(`You can upload up to ${MAX_FILES} PDF files only`);
+//             return;
+//         }
 
-        try {
-            setIsUploading(true);
-            await onUpload?.(selectedDocuments);
-            closeDialog();
-        } catch (e: any) {
-            setUploadError(e?.message ?? "Upload failed");
-        } finally {
-            setIsUploading(false);
-        }
-    };
+//         const pdfError = validatePdfOnly(files);
+//         if (pdfError) {
+//             setUploadError(pdfError);
+//             return;
+//         }
 
-    return (
-        <Box
-            sx={{
-                border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
-                borderRadius: 2,
-                backgroundColor: theme.currentPalette.background,
-                overflow: "hidden",
-                mt: 3,
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={{
-                    px: 2.5,
-                    py: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 2,
+//         setSelectedDocuments((prev) => {
+//             const merged = dedupeFiles([...prev, ...files]);
+//             if (merged.length > MAX_FILES) {
+//                 setUploadError(`You can upload up to ${MAX_FILES} PDF files only`);
+//                 return merged.slice(0, MAX_FILES);
+//             }
+//             setUploadError("");
+//             return merged;
+//         });
+//     };
 
-                }}
-            >
-                <Box>
-                    <Typography sx={{ fontWeight: 800, color: theme.currentPalette.primary }}>
-                        Driver Attachments
-                    </Typography>
-                    <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.7) }}>
-                        Upload documents of drivers
-                    </Typography>
-                </Box>
+//     const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+//         const files = Array.from(e.target.files ?? []);
+//         if (!files.length) return;
+//         addFiles(files);
+//         e.target.value = "";
+//     };
 
-                <Button
-                    onClick={openDialog}
-                    variant="contained"
-                    sx={{
-                        textTransform: "none",
-                        fontWeight: 800,
-                        borderRadius: 1.5,
-                        px: 2.5,
-                        backgroundColor: theme.currentPalette.primary,
-                        color: theme.currentPalette.background,
-                        "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
-                    }}
-                >
-                    Add Document
-                </Button>
-            </Box>
+//     const onRemoveFile = (idx: number) => {
+//         setSelectedDocuments((prev) => prev.filter((_, i) => i !== idx));
+//         setUploadError("");
+//     };
 
-            <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.15) }} />
+//     const onDragEnter = (e: React.DragEvent) => {
+//         e.preventDefault();
+//         e.stopPropagation();
+//         if (!canAddMore) return;
+//         setIsDragging(true);
+//     };
+//     const onDragLeave = (e: React.DragEvent) => {
+//         e.preventDefault();
+//         e.stopPropagation();
+//         setIsDragging(false);
+//     };
+//     const onDragOver = (e: React.DragEvent) => {
+//         e.preventDefault();
+//         e.stopPropagation();
+//         if (!canAddMore) return;
+//         setIsDragging(true);
+//     };
+//     const onDrop = (e: React.DragEvent) => {
+//         e.preventDefault();
+//         e.stopPropagation();
+//         setIsDragging(false);
 
-            {/* List */}
-            <Box sx={{ p: 2 }}>
-                {docsCountLabel.length ? (
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                        {docsCountLabel.map((doc) => (
-                            <Box
-                                key={doc.id}
-                                sx={{
-                                    border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
-                                    borderRadius: 2,
-                                    px: 2,
-                                    py: 1.5,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    backgroundColor: theme.currentPalette.background,
-                                }}
-                            >
-                                <Typography sx={{ fontWeight: 800, color: theme.currentPalette.primary }}>
-                                    {doc.displayName}
-                                </Typography>
+//         if (!canAddMore) {
+//             setUploadError(`You can upload up to ${MAX_FILES} PDF files only`);
+//             return;
+//         }
 
-                                <IconButton
-                                    onClick={() => onDelete?.(doc.id)}
-                                    sx={{
-                                        color: "#DC2626",
-                                        "&:hover": { backgroundColor: alpha("#DC2626", 0.08) },
-                                    }}
-                                >
-                                    <Trash2 size={18} />
-                                </IconButton>
-                            </Box>
-                        ))}
-                    </Box>
-                ) : (
-                    <Box sx={{ px: 1, py: 2 }}>
-                        <Typography sx={{ color: alpha(theme.currentPalette.text, 0.75), fontSize: 13, textAlign: "center" }}>
-                            No documents yet.
-                        </Typography>
-                    </Box>
-                )}
-            </Box>
+//         const files = Array.from(e.dataTransfer.files ?? []);
+//         if (!files.length) return;
+//         addFiles(files);
+//     };
 
-            {/* Upload Dialog */}
-            <Dialog open={open} onClose={closeDialog} maxWidth="sm" fullWidth>
-                <DialogContent sx={{ p: 0 }}>
-                    {/* Header */}
-                    <Box
-                        sx={{
-                            px: 2.5,
-                            py: 2,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                        }}
-                    >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                            <Box
-                                sx={{
-                                    width: 34,
-                                    height: 34,
-                                    borderRadius: "50%",
-                                    display: "grid",
-                                    placeItems: "center",
-                                    backgroundColor: alpha(theme.currentPalette.primary, 0.12),
-                                    color: theme.currentPalette.primary,
-                                }}
-                            >
-                                <MdOutlineAttachFile size={18} />
-                            </Box>
-                            <Typography sx={{ fontWeight: 900, color: "#0F172A" }}>
-                                Upload Driver Documents
-                            </Typography>
-                        </Box>
+//     // ✅ upload + refetch driver => attachments تظهر فوراً
+//     const handleConfirmUpload = async () => {
+//         if (isUploading) return;
+//         if (!selectedDocuments.length) return;
 
-                        <IconButton onClick={closeDialog}>
-                            <IoClose />
-                        </IconButton>
-                    </Box>
+//         const err = validatePdfOnly(selectedDocuments);
+//         if (err) {
+//             setUploadError(err);
+//             return;
+//         }
 
-                    <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.12) }} />
+//         try {
+//             setIsUploading(true);
 
-                    {/* Dropzone */}
-                    <Box sx={{ p: 2.5 }}>
-                        <Box
-                            onDragEnter={onDragEnter}
-                            onDragLeave={onDragLeave}
-                            onDragOver={onDragOver}
-                            onDrop={onDrop}
-                            sx={{
-                                border: `2px solid ${isDragging ? theme.currentPalette.primary : alpha(theme.currentPalette.primary, 0.25)
-                                    }`,
-                                borderRadius: 2,
-                                p: 3,
-                                textAlign: "center",
-                                backgroundColor: isDragging
-                                    ? alpha(theme.currentPalette.primary, 0.08)
-                                    : theme.currentPalette.background,
-                                transition: "all .15s ease",
-                            }}
-                        >
-                            <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
-                                <Upload color={alpha(theme.currentPalette.primary, 0.75)} />
-                            </Box>
+//             const form = new FormData();
+//             selectedDocuments.slice(0, MAX_FILES).forEach((f) => {
+//                 form.append(FIELD_NAME, f);
+//             });
 
-                            <input
-                                ref={inputRef}
-                                type="file"
-                                accept=".pdf,application/pdf"
-                                multiple
-                                onChange={onFileSelect}
-                                style={{ display: "none" }}
-                            />
-                            
-                            {/* <input
-                                ref={inputRef}
-                                type="file"
-                                multiple
-                                accept=".pdf,image/*"
-                                onChange={onFileSelect}
-                                style={{ display: "none" }}
-                            /> */}
+//             // 👇 لو الباك محتاج driverId في body
+//             form.append("driverId", String(driverId));
 
-                            <Button
-                                onClick={() => inputRef.current?.click()}
-                                variant="contained"
-                                sx={{
-                                    textTransform: "none",
-                                    fontWeight: 800,
-                                    borderRadius: 2,
-                                    px: 3,
-                                    backgroundColor: theme.currentPalette.primary,
-                                    "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
-                                }}
-                            >
-                                Select Files
-                            </Button>
+//             await updateDriver({
+//                 id: String(driverId), // ⚠️ لو updateDriver عندك بياخد id مختلف (mongo _id) قولي وهعدلها
+//                 body: form,
+//             } as any).unwrap();
 
-                            <Typography sx={{ mt: 1.5, fontSize: 13, color: alpha("#0F172A", 0.65) }}>
-                                Select one or more files to upload <br /> or drag and drop files here
-                            </Typography>
+//             await refetch(); // ✅ يجيب attachments من endpoint ويعمل map
 
-                            {uploadError && (
-                                <Box
-                                    sx={{
-                                        mt: 2,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        gap: 1,
-                                        color: "#DC2626",
-                                        fontSize: 13,
-                                    }}
-                                >
-                                    <MdError size={16} />
-                                    <span>{uploadError}</span>
-                                </Box>
-                            )}
+//             closeDialog();
+//         } catch (e: any) {
+//             setUploadError(e?.data?.message ?? e?.message ?? "Upload failed");
+//         } finally {
+//             setIsUploading(false);
+//         }
+//     };
 
-                            {/* Preview */}
-                            {selectedDocuments.length > 0 && (
-                                <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-                                    {selectedDocuments.map((f, idx) => (
-                                        <Box
-                                            key={`${f.name}-${idx}`}
-                                            sx={{
-                                                border: `1px solid ${alpha("#0F172A", 0.12)}`,
-                                                borderRadius: 2,
-                                                px: 1.5,
-                                                py: 1,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                backgroundColor: "#fff",
-                                            }}
-                                        >
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <MdPictureAsPdf size={18} color="#DC2626" />
-                                                <Box sx={{ textAlign: "left" }}>
-                                                    <Typography sx={{ fontSize: 13, fontWeight: 800, color: "#0F172A" }}>
-                                                        {f.name}
-                                                    </Typography>
-                                                    <Typography sx={{ fontSize: 12, color: alpha("#0F172A", 0.6) }}>
-                                                        {Math.round((f.size / 1024) * 100) / 100} KB
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
+//     const handleDelete = async (docId: string) => {
+//         // لو عندك endpoint delete حقيقي، استدعيه هنا وبعدين refetch()
+//         // حالياً هنستدعي onDelete لو موجودة وبعدين refetch
+//         try {
+//             await onDelete?.(docId);
+//             await refetch();
+//         } catch (e) {
+//             // optional: show toast/error
+//         }
+//     };
 
-                                            <IconButton
-                                                onClick={() => onRemoveFile(idx)}
-                                                sx={{
-                                                    color: "#DC2626",
-                                                    "&:hover": { backgroundColor: alpha("#DC2626", 0.08) },
-                                                }}
-                                            >
-                                                <IoClose />
-                                            </IconButton>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
+//     const isBusy = isLoading || isFetching;
 
-                        {/* Footer */}
-                        <Box sx={{ display: "flex", gap: 2, mt: 2.5 }}>
-                            <Button
-                                fullWidth
-                                onClick={closeDialog}
-                                sx={{
-                                    textTransform: "none",
-                                    fontWeight: 800,
-                                    borderRadius: 2,
-                                    backgroundColor: alpha("#94A3B8", 0.15),
-                                    color: "#0F172A",
-                                    py: 1.2,
-                                    "&:hover": { backgroundColor: alpha("#94A3B8", 0.22) },
-                                }}
-                            >
-                                Cancel
-                            </Button>
+//     return (
+//         <Box
+//             sx={{
+//                 border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
+//                 borderRadius: 2,
+//                 backgroundColor: theme.currentPalette.background,
+//                 overflow: "hidden",
+//                 mt: 3,
+//             }}
+//         >
+//             {/* Header */}
+//             <Box
+//                 sx={{
+//                     px: 2.5,
+//                     py: 2,
+//                     display: "flex",
+//                     alignItems: "center",
+//                     justifyContent: "space-between",
+//                     gap: 2,
+//                 }}
+//             >
+//                 <Box>
+//                     <Typography sx={{ fontWeight: 800, color: theme.currentPalette.primary }}>
+//                         Driver Attachments
+//                     </Typography>
+//                     <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.7) }}>
+//                         Upload documents of drivers
+//                     </Typography>
+//                 </Box>
 
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                onClick={handleUpload}
-                                disabled={!selectedDocuments.length || isUploading}
-                                sx={{
-                                    textTransform: "none",
-                                    fontWeight: 900,
-                                    borderRadius: 2,
-                                    py: 1.2,
-                                    backgroundColor: alpha(theme.currentPalette.primary, 0.55),
-                                    "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.75) },
-                                    "&.Mui-disabled": {
-                                        backgroundColor: alpha(theme.currentPalette.primary, 0.35),
-                                        color: alpha("#fff", 0.8),
-                                    },
-                                }}
-                            >
-                                {isUploading ? "Uploading..." : "Upload"}
-                            </Button>
-                        </Box>
-                    </Box>
-                </DialogContent>
-            </Dialog>
-        </Box>
-    );
-}
+//                 <Button
+//                     onClick={openDialog}
+//                     variant="contained"
+//                     sx={{
+//                         textTransform: "none",
+//                         fontWeight: 800,
+//                         borderRadius: 1.5,
+//                         px: 2.5,
+//                         backgroundColor: theme.currentPalette.primary,
+//                         color: theme.currentPalette.background,
+//                         "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
+//                     }}
+//                     disabled={!driverId}
+//                 >
+//                     Add Document
+//                 </Button>
+//             </Box>
+
+//             <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.15) }} />
+
+//             {/* List */}
+//             <Box sx={{ p: 2 }}>
+//                 {isBusy ? (
+//                     <Typography sx={{ fontSize: 13, textAlign: "center", color: alpha(theme.currentPalette.text, 0.7) }}>
+//                         Loading documents...
+//                     </Typography>
+//                 ) : docsLabel.length ? (
+//                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+//                         {docsLabel.map((doc) => (
+//                             <Box
+//                                 key={doc.id}
+//                                 sx={{
+//                                     border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
+//                                     borderRadius: 2,
+//                                     px: 2,
+//                                     py: 1.5,
+//                                     display: "flex",
+//                                     alignItems: "center",
+//                                     justifyContent: "space-between",
+//                                     backgroundColor: theme.currentPalette.background,
+//                                 }}
+//                             >
+//                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, minWidth: 0 }}>
+//                                     <FileText size={18} color={alpha(theme.currentPalette.primary, 0.9)} />
+//                                     <Typography
+//                                         sx={{
+//                                             fontWeight: 800,
+//                                             color: theme.currentPalette.primary,
+//                                             whiteSpace: "nowrap",
+//                                             overflow: "hidden",
+//                                             textOverflow: "ellipsis",
+//                                             maxWidth: { xs: 220, sm: 420 },
+//                                         }}
+//                                         title={doc.displayName}
+//                                     >
+//                                         {doc.displayName}
+//                                     </Typography>
+//                                 </Box>
+
+//                                 <IconButton
+//                                     onClick={() => handleDelete(doc.id)}
+//                                     sx={{
+//                                         color: "#DC2626",
+//                                         "&:hover": { backgroundColor: alpha("#DC2626", 0.08) },
+//                                     }}
+//                                 >
+//                                     <Trash2 size={18} />
+//                                 </IconButton>
+//                             </Box>
+//                         ))}
+//                     </Box>
+//                 ) : (
+//                     <Box sx={{ px: 1, py: 2 }}>
+//                         <Typography
+//                             sx={{
+//                                 color: alpha(theme.currentPalette.text, 0.75),
+//                                 fontSize: 13,
+//                                 textAlign: "center",
+//                             }}
+//                         >
+//                             No documents yet.
+//                         </Typography>
+//                     </Box>
+//                 )}
+//             </Box>
+
+//             {/* Upload Dialog */}
+//             <Dialog open={open} onClose={closeDialog} maxWidth="sm" fullWidth>
+//                 <DialogContent sx={{ p: 0 }}>
+//                     {/* Header */}
+//                     <Box
+//                         sx={{
+//                             px: 2.5,
+//                             py: 2,
+//                             display: "flex",
+//                             alignItems: "center",
+//                             justifyContent: "space-between",
+//                         }}
+//                     >
+//                         <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
+//                             <Box
+//                                 sx={{
+//                                     width: 34,
+//                                     height: 34,
+//                                     borderRadius: "50%",
+//                                     display: "grid",
+//                                     placeItems: "center",
+//                                     backgroundColor: alpha(theme.currentPalette.primary, 0.12),
+//                                     color: theme.currentPalette.primary,
+//                                 }}
+//                             >
+//                                 <MdOutlineAttachFile size={18} />
+//                             </Box>
+//                             <Typography sx={{ fontWeight: 900, color: "#0F172A", fontSize: 18 }}>
+//                                 Upload Driver Documents
+//                             </Typography>
+//                         </Box>
+
+//                         <IconButton onClick={closeDialog} disabled={isUploading}>
+//                             <IoClose />
+//                         </IconButton>
+//                     </Box>
+
+//                     <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.12) }} />
+
+//                     <Box sx={{ p: 2.5 }}>
+//                         {/* Dropzone */}
+//                         <Box
+//                             onDragEnter={onDragEnter}
+//                             onDragLeave={onDragLeave}
+//                             onDragOver={onDragOver}
+//                             onDrop={onDrop}
+//                             sx={{
+//                                 border: `2px solid ${isDragging
+//                                         ? alpha(theme.currentPalette.primary, 0.9)
+//                                         : alpha(theme.currentPalette.primary, 0.35)
+//                                     }`,
+//                                 borderRadius: 2,
+//                                 p: 3,
+//                                 textAlign: "center",
+//                                 backgroundColor: "#fff",
+//                                 transition: "all .15s ease",
+//                                 opacity: canAddMore ? 1 : 0.6,
+//                                 pointerEvents: canAddMore ? "auto" : "none",
+//                             }}
+//                         >
+//                             <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
+//                                 <Upload size={40} color={alpha(theme.currentPalette.primary, 0.8)} />
+//                             </Box>
+
+//                             <input
+//                                 ref={inputRef}
+//                                 type="file"
+//                                 accept=".pdf,application/pdf"
+//                                 multiple
+//                                 onChange={onFileSelect}
+//                                 style={{ display: "none" }}
+//                                 disabled={!canAddMore}
+//                             />
+
+//                             <Button
+//                                 onClick={() => inputRef.current?.click()}
+//                                 variant="contained"
+//                                 disabled={!canAddMore}
+//                                 sx={{
+//                                     textTransform: "none",
+//                                     fontWeight: 800,
+//                                     borderRadius: 2,
+//                                     px: 3.5,
+//                                     backgroundColor: theme.currentPalette.primary,
+//                                     "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
+//                                     "&.Mui-disabled": {
+//                                         backgroundColor: alpha(theme.currentPalette.primary, 0.35),
+//                                         color: alpha("#fff", 0.85),
+//                                     },
+//                                 }}
+//                             >
+//                                 Select Files
+//                             </Button>
+
+//                             <Typography sx={{ mt: 1.5, fontSize: 13, color: alpha("#0F172A", 0.6) }}>
+//                                 Select one or more files to upload <br /> or drag and drop files here
+//                             </Typography>
+//                         </Box>
+
+//                         {/* Error */}
+//                         {uploadError && (
+//                             <Box
+//                                 sx={{
+//                                     mt: 1.5,
+//                                     display: "flex",
+//                                     alignItems: "center",
+//                                     gap: 1,
+//                                     color: "#DC2626",
+//                                     fontSize: 13,
+//                                 }}
+//                             >
+//                                 <MdError size={16} />
+//                                 <span>{uploadError}</span>
+//                             </Box>
+//                         )}
+
+//                         {/* Preview */}
+//                         {selectedDocuments.length > 0 && (
+//                             <Box sx={{ mt: 2 }}>
+//                                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+//                                     {selectedDocuments.map((file, index) => (
+//                                         <Box
+//                                             key={`${file.name}-${file.lastModified}-${index}`}
+//                                             sx={{
+//                                                 display: "flex",
+//                                                 alignItems: "center",
+//                                                 justifyContent: "space-between",
+//                                                 px: 2,
+//                                                 py: 1.6,
+//                                                 borderRadius: 2,
+//                                                 border: `1px solid ${alpha(theme.currentPalette.primary, 0.18)}`,
+//                                                 backgroundColor: alpha(theme.currentPalette.primary, 0.08),
+//                                             }}
+//                                         >
+//                                             <Box sx={{ display: "flex", alignItems: "center", gap: 1.6, minWidth: 0 }}>
+//                                                 <FileText size={18} color={alpha(theme.currentPalette.primary, 0.9)} />
+//                                                 <Box sx={{ minWidth: 0 }}>
+//                                                     <Typography
+//                                                         sx={{
+//                                                             fontWeight: 800,
+//                                                             fontSize: 14,
+//                                                             color: theme.currentPalette.primary,
+//                                                             whiteSpace: "nowrap",
+//                                                             overflow: "hidden",
+//                                                             textOverflow: "ellipsis",
+//                                                             maxWidth: { xs: 220, sm: 360 },
+//                                                         }}
+//                                                         title={file.name}
+//                                                     >
+//                                                         {file.name}
+//                                                     </Typography>
+//                                                     <Typography sx={{ fontSize: 12.5, color: alpha("#0F172A", 0.55) }}>
+//                                                         {formatKB(file.size)}
+//                                                     </Typography>
+//                                                 </Box>
+//                                             </Box>
+
+//                                             <IconButton
+//                                                 onClick={() => onRemoveFile(index)}
+//                                                 sx={{
+//                                                     color: alpha("#0F172A", 0.45),
+//                                                     "&:hover": { backgroundColor: alpha("#0F172A", 0.06) },
+//                                                 }}
+//                                                 disabled={isUploading}
+//                                             >
+//                                                 <IoClose />
+//                                             </IconButton>
+//                                         </Box>
+//                                     ))}
+//                                 </Box>
+
+//                                 {!canAddMore && (
+//                                     <Typography sx={{ mt: 1.2, fontSize: 12.5, color: alpha("#0F172A", 0.6) }}>
+//                                         Max {MAX_FILES} files selected. File picker is disabled.
+//                                     </Typography>
+//                                 )}
+//                             </Box>
+//                         )}
+
+//                         {/* Footer */}
+//                         <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+//                             <Button
+//                                 fullWidth
+//                                 onClick={closeDialog}
+//                                 disabled={isUploading}
+//                                 sx={{
+//                                     textTransform: "none",
+//                                     fontWeight: 800,
+//                                     borderRadius: 2,
+//                                     backgroundColor: alpha("#94A3B8", 0.15),
+//                                     color: "#0F172A",
+//                                     py: 1.25,
+//                                     "&:hover": { backgroundColor: alpha("#94A3B8", 0.22) },
+//                                 }}
+//                             >
+//                                 Cancel
+//                             </Button>
+
+//                             <Button
+//                                 fullWidth
+//                                 variant="contained"
+//                                 onClick={handleConfirmUpload}
+//                                 disabled={!selectedDocuments.length || isUploading}
+//                                 startIcon={
+//                                     isUploading ? <CircularProgress size={18} /> : <Check size={18} />
+//                                 }
+//                                 sx={{
+//                                     textTransform: "none",
+//                                     fontWeight: 900,
+//                                     borderRadius: 2,
+//                                     py: 1.25,
+//                                     backgroundColor: theme.currentPalette.primary,
+//                                     "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
+//                                     "&.Mui-disabled": {
+//                                         backgroundColor: alpha(theme.currentPalette.primary, 0.35),
+//                                         color: alpha("#fff", 0.85),
+//                                     },
+//                                 }}
+//                             >
+//                                 {isUploading ? "Uploading..." : `Confirm (${selectedDocuments.length}/${MAX_FILES})`}
+//                             </Button>
+//                         </Box>
+//                     </Box>
+//                 </DialogContent>
+//             </Dialog>
+//         </Box>
+//     );
+// }

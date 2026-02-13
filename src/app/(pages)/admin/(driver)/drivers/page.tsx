@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
@@ -370,9 +371,12 @@ const DriversPage = () => {
 
     try {
       // Optimistic UI update - RTK Query will automatically refetch driver summary
+      const formData = new FormData();
+      formData.append("toggle", String(newToggleValue));
+      
       await updateDriver({
         id: driver.id,
-        body: { toggle: newToggleValue },
+        body: formData,
       }).unwrap();
 
       // 🔄 Refetch driver list to show updated toggle state
@@ -497,9 +501,16 @@ const DriversPage = () => {
     }
 
     try {
+      const formDataBody = new FormData();
+      Object.entries(changedFields).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formDataBody.append(key, String(value));
+        }
+      });
+
       await updateDriver({
         id: formData.id,
-        body: changedFields,
+        body: formDataBody,
       }).unwrap();
       toast.success("✅ Driver updated successfully!");
       setOpen(false);

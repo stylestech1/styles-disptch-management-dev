@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   TCustomer,
   TDriver,
@@ -182,6 +183,7 @@ export const apiSlice = api.injectEndpoints({
         { type: "Drivers", id: driverId },
       ],
     }),
+
     getDriverById: builder.query<{ data: TDriver }, string>({
       query: (id) => `/api/v1/drivers/${id}`,
       providesTags: ["Drivers"],
@@ -237,7 +239,7 @@ export const apiSlice = api.injectEndpoints({
     // 🔹 Update driver
     updateDriver: builder.mutation<
       { data: TDriver },
-      { id: string; body: Partial<TDriver> }
+      { id: string; body: FormData }
     >({
       query: ({ id, body }) => ({
         url: `/api/v1/drivers/${id}`,
@@ -246,7 +248,6 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["Drivers"],
     }),
-
     // 🔹 Delete driver
     deleteDriver: builder.mutation<{ message: string }, string>({
       query: (id) => ({
@@ -994,5 +995,4 @@ export const {
   useCreateServiceCenterMutation,
   useUpdateServiceCenterMutation,
   useDeleteServiceCenterMutation,
-
 } = apiSlice;
