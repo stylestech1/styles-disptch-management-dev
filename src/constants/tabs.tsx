@@ -2,6 +2,7 @@ import { FaCirclePlus } from "react-icons/fa6";
 import { TUserRole } from "@/types/globalTypes";
 import {
   Boxes,
+  Building,
   Building2,
   ChartNoAxesCombined,
   CircleDivide,
@@ -68,7 +69,6 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
         },
       ],
     },
-
     {
       label: "Drivers",
       subtitle: "Manage your driver team members and their access",
@@ -113,6 +113,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       label: "Driver Summary",
       subtitle: "Detailed overview of driver information and performance.",
     },
+    {
+      label: "Companies",
+      subtitle: "Manage your companies and their access",
+      icon: <Building />
+    }
   ],
   employee: [
     {
@@ -147,5 +152,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       subtitle: "Manage your dispatch team members and their access",
       icon: <FaCirclePlus />,
     },
+  ],
+  superAdmin: [
+    {
+      label: "companies",
+      subtitle: "Manage your companies and their access",
+      icon: <Building />
+    }
   ],
 };

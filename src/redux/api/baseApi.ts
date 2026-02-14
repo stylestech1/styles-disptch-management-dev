@@ -30,6 +30,7 @@ export const api = createApi({
     "Messages",
     "Conversations",
     "centermaintenance",
+    "companies",
   ],
   refetchOnFocus: false,
   refetchOnReconnect: false,
