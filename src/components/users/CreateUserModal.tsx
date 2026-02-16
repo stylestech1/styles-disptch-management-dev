@@ -85,6 +85,7 @@ const CreateUserModal = ({
   });
 
   const watchPassword = watch("password");
+  const role = watch("role");
 
   const onSubmitForm = async (data: UserFormData) => {
     try {
@@ -167,7 +168,7 @@ const CreateUserModal = ({
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-1">
             <IoAdd size={20} />
-            <Typography sx={{color: theme.currentPalette.primary, fontSize: '18px', fontWeight: 'bold'}}>Add New User</Typography>
+            <Typography sx={{ color: theme.currentPalette.primary, fontSize: '18px', fontWeight: 'bold' }}>Add New User</Typography>
           </h3>
           <Button
             onClick={handleClose}
@@ -204,9 +205,8 @@ const CreateUserModal = ({
                     message: "Name must be less least 50 characters",
                   },
                 })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                  errors.name ? "border-red-500" : "border-slate-300"
-                }`}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.name ? "border-red-500" : "border-slate-300"
+                  }`}
                 sx={{
                   bgcolor: theme.currentPalette.background,
                   width: "100%",
@@ -252,9 +252,8 @@ const CreateUserModal = ({
                     message: "Invalid email address",
                   },
                 })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                  errors.email ? "border-red-500" : "border-slate-300"
-                }`}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.email ? "border-red-500" : "border-slate-300"
+                  }`}
                 sx={{
                   bgcolor: theme.currentPalette.background,
                   width: "100%",
@@ -304,9 +303,8 @@ const CreateUserModal = ({
                     message: "Phone number must be at least 8 digits",
                   },
                 })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                  errors.phone ? "border-red-500" : "border-slate-300"
-                }`}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.phone ? "border-red-500" : "border-slate-300"
+                  }`}
                 sx={{
                   bgcolor: theme.currentPalette.background,
                   width: "100%",
@@ -354,9 +352,8 @@ const CreateUserModal = ({
                       displayEmpty
                       {...field}
                       value={field.value || ""}
-                      className={`block w-full border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                        errors.role ? "border-red-500" : "border-slate-300"
-                      }`}
+                      className={`block w-full border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.role ? "border-red-500" : "border-slate-300"
+                        }`}
                     >
                       <MenuItem value="" disabled>
                         <span className="text-slate-400">Select a role...</span>
@@ -374,43 +371,43 @@ const CreateUserModal = ({
                 </p>
               )}
             </div>
-
-            <div>
-              <Typography
-                sx={{
-                  color: theme.currentPalette.primary,
-                  fontSize: "14px",
-                  fontWeight: "bold",
-                  display: "block",
-                  mb: 1,
-                }}
-              >
-                Position
-              </Typography>
-              <TextField
-                type="text"
-                {...register("position", {
-                  required: "Position is required",
-                  minLength: {
-                    value: 2,
-                    message: "Position must be at least 2 characters",
-                  },
-                })}
-                className={`block w-full border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                  errors.position ? "border-red-500" : "border-slate-300"
-                }`}
-                sx={{
-                  bgcolor: theme.currentPalette.background,
-                  width: "100%",
-                }}
-                placeholder="Position"
-              />
-              {errors.position && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.position.message}
-                </p>
-              )}
-            </div>
+            {role === "employee" && (
+              <div>
+                <Typography
+                  sx={{
+                    color: theme.currentPalette.primary,
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    display: "block",
+                    mb: 1,
+                  }}
+                >
+                  Position
+                </Typography>
+                <TextField
+                  type="text"
+                  {...register("position", {
+                    // required: "Position is required",
+                    minLength: {
+                      value: 2,
+                      message: "Position must be at least 2 characters",
+                    },
+                  })}
+                  className={`block w-full border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.position ? "border-red-500" : "border-slate-300"
+                    }`}
+                  sx={{
+                    bgcolor: theme.currentPalette.background,
+                    width: "100%",
+                  }}
+                  placeholder="Position"
+                />
+                {/* {errors.position && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.position.message}
+                  </p>
+                )} */}
+              </div>
+            )}
           </div>
 
           <div>
@@ -435,9 +432,8 @@ const CreateUserModal = ({
                     message: "Password must be at least 6 characters",
                   },
                 })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                  errors.password ? "border-red-500" : "border-slate-300"
-                }`}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.password ? "border-red-500" : "border-slate-300"
+                  }`}
                 sx={{
                   bgcolor: theme.currentPalette.background,
                   width: "100%",
@@ -488,11 +484,10 @@ const CreateUserModal = ({
                   validate: (value: string) =>
                     value === watchPassword || "Passwords do not match",
                 })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
-                  errors.passwordConfirmation
-                    ? "border-red-500"
-                    : "border-slate-300"
-                }`}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.passwordConfirmation
+                  ? "border-red-500"
+                  : "border-slate-300"
+                  }`}
                 sx={{
                   bgcolor: theme.currentPalette.background,
                   width: "100%",

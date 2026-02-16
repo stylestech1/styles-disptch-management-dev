@@ -11,6 +11,7 @@ import {
   IoKey,
   IoSettingsOutline,
 } from "react-icons/io5";
+import { Key, UserPen, UserRoundPlus, UserRoundPlusIcon } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { TDispatcher } from "@/types/globalTypes";
 import useError from "@/hook/useError";
@@ -43,6 +44,7 @@ import {
 } from "@mui/material";
 import { setLoading } from "@/redux/slices/uiSlice";
 import SearchInput from "@/components/ui/SearchInput";
+import { CircleUserRound, ShieldUser, UsersRound } from "lucide-react";
 
 const Users = () => {
   const [page, setPage] = useState(1);
@@ -298,9 +300,9 @@ const Users = () => {
         {/* Name */}
         <td className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+            {/* <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
               <IoPerson size={14} className="text-slate-600" />
-            </div>
+            </div> */}
             <span className="font-medium text-slate-900">
               {dispatcher.name}
             </span>
@@ -315,28 +317,33 @@ const Users = () => {
 
         {/* Role */}
         <td className="p-4">
-          <span
-            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-              dispatcher.role === "admin"
-                ? "bg-purple-100 text-purple-800 border border-purple-200"
-                : "bg-slate-100 text-slate-800 border border-slate-200"
-            }`}
-          >
-            {dispatcher.role}
-          </span>
+          <div className="flex flex-col items-center gap-2">
+            <span
+              className={` px-3 py-1 rounded-xl`}
+              style={{ color: theme.currentPalette.primary, backgroundColor: alpha(theme.currentPalette.primary, 0.1) }}
+            >
+              {dispatcher.role}
+            </span>
+            {dispatcher.role?.toLowerCase() === "employee" &&
+              dispatcher.position && (
+                <span className="text-gray-500 text-sm">
+                  {dispatcher.position}
+                </span>
+              )}
+          </div>
         </td>
-
-        {/* Position */}
-        <td className="p-4 text-slate-700">{dispatcher.position}</td>
-
         {/* Status */}
         <td className="p-4 text-center">
           {dispatcher.active ? (
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"
+              style={{ backgroundColor: alpha(theme.currentPalette.primary, 0.1), color: theme.currentPalette.primary, borderColor: alpha(theme.currentPalette.primary, 0.3) }}
+            >
               Active
             </span>
           ) : (
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-gray-500"
+              style={{ borderColor: alpha(theme.currentPalette.primary, 0.1) }}
+            >
               Inactive
             </span>
           )}
@@ -346,10 +353,9 @@ const Users = () => {
         <td className="p-4">
           <button
             onClick={() => openSettingsPopup(dispatcher)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-800 hover:text-blue-200 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200  transition-colors"
           >
-            <IoSettingsOutline />
-            <span>view setting</span>
+            <UserPen />
           </button>
         </td>
       </TableRow>
@@ -397,30 +403,29 @@ const Users = () => {
       <Box sx={{ mt: 4, mb: 5 }}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Total Dispatchers"
+            title="Dispatchers"
             value={statsData.totalUsers}
-            icon={IoPerson}
+            icon={CircleUserRound}
             iconColor={theme.currentPalette.primary}
           />
 
           <StatsCard
             title="Drivers"
             value={statsData.drivers}
-            icon={IoBriefcase}
+            icon={ShieldUser}
+            iconColor={theme.currentPalette.primary}
+          />
+          <StatsCard
+            title="Employees"
+            value={statsData.employees}
+            icon={UsersRound}
             iconColor={theme.currentPalette.primary}
           />
 
           <StatsCard
             title="Admins"
             value={statsData.admins}
-            icon={IoKey}
-            iconColor={theme.currentPalette.primary}
-          />
-
-          <StatsCard
-            title="Employees"
-            value={statsData.employees}
-            icon={IoPerson}
+            icon={UserRoundPlusIcon}
             iconColor={theme.currentPalette.primary}
           />
         </div>
@@ -482,7 +487,7 @@ const Users = () => {
               startIcon={<IoAdd size={22} />}
               sx={newLoadButtonSx}
             >
-              New User
+              Add User
             </Button>
           </Box>
         </Box>
