@@ -64,7 +64,11 @@ const Login = () => {
 
       if (result.data.role === "admin") {
         router.push("/admin/loads");
-      } else {
+      } 
+      else if (result.data.role === "super-admin"){
+        router.push("/superAdmin/companies");
+      }
+      else {
         router.push(`/dispatchers/loads`);
       }
     } catch (error) {
