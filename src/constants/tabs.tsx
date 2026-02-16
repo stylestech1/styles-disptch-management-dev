@@ -113,11 +113,6 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       label: "Driver Summary",
       subtitle: "Detailed overview of driver information and performance.",
     },
-    {
-      label: "Companies",
-      subtitle: "Manage your companies and their access",
-      icon: <Building />
-    }
   ],
   employee: [
     {
@@ -153,7 +148,7 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <FaCirclePlus />,
     },
   ],
-  superAdmin: [
+  superadmin: [
     {
       label: "companies",
       subtitle: "Manage your companies and their access",
