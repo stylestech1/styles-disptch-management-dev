@@ -63,6 +63,8 @@ import {
   useCreateOrGetConversationMutation,
 } from "@/redux/slices/apiSlice";
 import { UserChat } from "../chat/UserChats";
+import { socketService } from "@/services/socketService";
+import { useChatSocket } from "@/hook/chatSys/useChatSocket";
 
 // Lazy load the map components
 const LazyGoogleMapsLoader = lazy(
@@ -329,6 +331,7 @@ const CalculationPage = () => {
   const [notes, setNotes] = useState("");
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const { isSocketReady } = useChatSocket();
 
 
   const toggleUser = (userId: string) => {
@@ -501,6 +504,18 @@ const CalculationPage = () => {
     }
   }, [buildShareMessage]);
 
+  const sendChatMessage = async (conversationId: string, text: string) => {
+    const clean = text.trim();
+    if (!clean) return;
+
+    if (isSocketReady) {
+      socketService.sendMessage(conversationId, clean);
+      return;
+    }
+
+    await addMessage({ conversationId, text: clean }).unwrap();
+  };
+
   const handleShare = useCallback(async () => {
     if (selectedUserIds.length === 0) {
       toast.error("Select at least one user");
@@ -514,10 +529,10 @@ const CalculationPage = () => {
     }
 
     try {
-      // send to all selected users
       for (const userId of selectedUserIds) {
         const conversation = await createOrGetConversation({ userId }).unwrap();
-        await addMessage({ conversationId: conversation.id, text }).unwrap();
+
+        await sendChatMessage(conversation.id, text);
       }
 
       toast.success("Sent successfully!");
@@ -526,7 +541,13 @@ const CalculationPage = () => {
       console.error(e);
       toast.error("Failed to send message");
     }
-  }, [selectedUserIds, buildShareMessage, createOrGetConversation, addMessage]);
+  }, [
+    selectedUserIds,
+    buildShareMessage,
+    createOrGetConversation,
+    addMessage,
+    isSocketReady,
+  ]);
 
   const resetAllBtn = useCallback(() => {
     setDho(null);

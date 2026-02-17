@@ -86,7 +86,7 @@ export const MessageInput = ({ conversationId }: MessageInputProps) => {
     }
   };
 
-  // -------------------- Showing Typying Indicator --------------------
+  // -------------------- ShisSocketReadyowing Typying Indicator --------------------
   const startTypingHandler = () => {
     if (!isSocketReady) {
       console.warn("⚠️ Socket not ready, cannot send typing event");
