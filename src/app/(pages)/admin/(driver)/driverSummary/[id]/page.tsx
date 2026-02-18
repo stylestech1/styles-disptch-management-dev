@@ -620,11 +620,11 @@ const DriverSummary = () => {
             className="flex flex-col justify-center"
           >
             <Typography sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-              <span style={{ color: theme.currentPalette.text }}>Avg Price/Mile</span>
+              <span style={{ color: theme.currentPalette.text }}>Price/Mile</span>
               <CircleDollarSign color={theme.currentPalette.primary} />
             </Typography>
             <Typography sx={{ fontSize: "30px", color: theme.currentPalette.text }}>
-              ${summaryData?.avgPricePerMile?.toFixed(2) || "0.00"}
+              ${summaryData?.pricePerMile?.toFixed(2) || "0.00"}
             </Typography>
           </Box>
 
