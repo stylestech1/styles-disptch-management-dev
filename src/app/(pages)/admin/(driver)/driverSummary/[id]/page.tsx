@@ -376,14 +376,14 @@ const DriverSummary = () => {
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">{l.loadId}</span>
         </td>
-        <td className="p-4 text-left">{l.truckId?.plateNumber}</td>
-        <td className="p-4 text-left">{l.deliveredAt ? l.deliveredAt.split("T")[0] : "-"}</td>
-        <td className="p-4 text-left max-w-10">
+        <td className="p-4 text-center">{l.truckId?.plateNumber}</td>
+        <td className="p-4 text-center">{l.deliveredAt ? l.deliveredAt.split("T")[0] : "-"}</td>
+        <td className="p-4 text-center max-w-10">
           <div className="truncate" title={l.origin}>
             {l.origin}
           </div>
         </td>
-        <td className="p-4 text-left max-w-10">
+        <td className="p-4 text-center max-w-10">
           <div
             className="truncate"
             title={Array.isArray(l.destination) ? l.destination.join(", ") : l.destination}
@@ -392,7 +392,7 @@ const DriverSummary = () => {
           </div>
         </td>
         <td className="p-4 text-center">{l.distanceMiles?.toLocaleString()}</td>
-        <td className="p-4 text-center">$ {l.pricePerMile?.toFixed(2)}</td>
+        {/* <td className="p-4 text-center">$ {l.pricePerMile?.toFixed(2)}</td> */}
         <td className="p-4 text-center">${l.totalPrice?.toLocaleString()}</td>
       </TableRow>
     );

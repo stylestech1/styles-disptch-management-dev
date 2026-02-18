@@ -7,6 +7,6 @@ export const driverSummaryColumns: Column[] = [
   { key: "origin", header: "Origin", align: "center" },
   { key: "destination", header: "Destination", align: "center" },
   { key: "miles", header: "Miles", align: "center" },
-  { key: "pricePerMile", header: "Price/Mile", align: "center" },
+  // { key: "pricePerMile", header: "Price/Mile", align: "center" },
   { key: "total", header: "Driver Pay", align: "center" },
 ];
