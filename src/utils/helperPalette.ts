@@ -31,14 +31,16 @@ export const TPaletteConfigToPalette = (p: TPaletteConfig | Palette): Palette =>
   
   const config = p as TPaletteConfig;
   return {
-    mode: config.mode,
-    customName: config.customName,
-    primary: config.primary?.main ?? '#000000',
-    secondary: config.secondary?.main ?? '#000000',
-    background: config.background?.default ?? '#ffffff',
-    text: config.text?.primary ?? '#333333',
-    title: config.title,
-    _id: config._id,
-    active: config.active ?? false,
-  };
+  mode: config.mode,
+  customName: config.customName,
+  primary: config.primary?.main ?? '#000000',
+  secondary: config.secondary?.main ?? '#000000',
+  background: config.background?.default ?? '#ffffff',
+  text: config.text?.primary ?? '#333333',
+  title: config.title,
+  _id: config._id,
+  active: config.active ?? false,
+  paper: "",
+
+};
 }

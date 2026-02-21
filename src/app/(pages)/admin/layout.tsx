@@ -67,7 +67,8 @@ export default function AdminLayout({
 
   if (!user) return null;
 
-  const tabs = TABS_CONFIG[user.role];
+  const roleKey = (user?.role || "").toLowerCase() as keyof typeof TABS_CONFIG;
+  const tabs = Array.isArray(TABS_CONFIG[roleKey]) ? TABS_CONFIG[roleKey] : [];
   const base = user.role === "admin" ? "/admin" : "/dispatchers";
 
   const handleLogout = () => {
@@ -123,7 +124,7 @@ export default function AdminLayout({
 
     // ✅ search root + children
     for (const tab of tabs) {
-      const tabKey = tab.label.replace(/\s+/g, "").toLowerCase();
+      const tabKey = tab?.label?.replace(/\s+/g, "").toLowerCase();
       if (tabKey === cleanedPath) return tab;
 
       if (tab.children?.length) {
@@ -227,7 +228,7 @@ export default function AdminLayout({
                   <ListItemIcon
                     sx={{
                       color: "inherit",
-                      minWidth: 36, 
+                      minWidth: 36,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

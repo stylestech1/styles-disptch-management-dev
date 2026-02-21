@@ -38,6 +38,7 @@ export default function Settings() {
     primary: "#1E56A0",
     secondary: "#266DCB",
     background: "#FBFDFE",
+    paper: "#FFFFFF",
     text: "#333333",
     title: "#1E56A0",
   });
@@ -214,6 +215,7 @@ export default function Settings() {
       background: custom.background,
       text: custom.text,
       title: custom.title,
+      paper: custom.paper,
     };
 
     const savedPalette = await savePaletteToBackend(newPalette, true);
@@ -226,6 +228,7 @@ export default function Settings() {
         primary: "#1E56A0",
         secondary: "#266DCB",
         background: "#FBFDFE",
+        paper: "#FFFFFF",
         text: "#333333",
         title: "#1E56A0",
       });
@@ -411,6 +414,7 @@ export default function Settings() {
                 customName: "",
                 primary: "#1E56A0",
                 secondary: "#266DCB",
+                paper: "#FFFFFF",
                 background: "#FBFDFE",
                 text: "#333333",
                 title: "#1E56A0",

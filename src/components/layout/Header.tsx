@@ -1,4 +1,5 @@
 "use client";
+
 import { RootState, useAppSelector } from "@/redux/store";
 import {
   alpha,
@@ -24,6 +25,12 @@ interface NavbarProps {
 export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
   const theme = useAppSelector((state: RootState) => state.palette);
   const pathname = usePathname();
+
+  const role = useAppSelector((state: RootState) => state.auth?.user?.role);
+
+  const isSuperAdmin =
+    String(role || "").toLowerCase() === "superadmin" ||
+    String(role || "").toLowerCase() === "super-admin";
 
   const shouldShowFilter = [
     "/admin/loads",
@@ -57,14 +64,8 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
         boxShadow: "none",
         top: 0,
         zIndex: 10,
-        width: {
-          xs: "100%",
-          md: "calc(100% - 300px)",
-        },
-        ml: {
-          xs: 0,
-          md: "300px",
-        },
+        width: { xs: "100%", md: "calc(100% - 300px)" },
+        ml: { xs: 0, md: "300px" },
       }}
     >
       <Toolbar
@@ -86,7 +87,6 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
             minWidth: 0,
           }}
         >
-          {/* Menu Button */}
           <IconButton
             edge="start"
             onClick={onMenuClick}
@@ -99,7 +99,6 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
             <IoMenu size={22} />
           </IconButton>
 
-          {/* Logo and Title */}
           <Box>
             <Typography
               variant="h1"
@@ -133,28 +132,22 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
         </Box>
 
         {/* Right Side */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: { xs: 0.5, sm: 1 },
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 } }}>
           {(pathname === "/admin/truckdashboard" || pathname === "/admin/trucksmaintenance") && (
             <div className="hidden sm:flex">
               <HeaderSourceTruckDashboard />
             </div>
           )}
 
-          {shouldShowFilter &&
-            pathname != "/admin/centermaintenance" && (
-              <Box sx={{ display: { xs: "none", sm: "block" } }}>
-                <GlobalFilter filterType={getFilterType()} />
-              </Box>
-            )}
-          <ChatBubble />
-          <NotificationProvider />
+          {shouldShowFilter && pathname !== "/admin/centermaintenance" && (
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+              <GlobalFilter filterType={getFilterType()} />
+            </Box>
+          )}
 
+          {!isSuperAdmin && <ChatBubble />}
+
+          <NotificationProvider />
         </Box>
       </Toolbar>
     </AppBar>

@@ -27,6 +27,7 @@ export interface TPaletteConfig {
 }
 
 export interface Palette {
+  paper: string;
   _id?: string
   mode: PaletteMode;
   customName: string; 

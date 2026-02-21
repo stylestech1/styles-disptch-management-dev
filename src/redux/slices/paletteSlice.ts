@@ -9,6 +9,7 @@ const defaultPalette: Palette = {
   primary: "#1E56A0",
   secondary: "#266DCB",
   background: "#FBFDFE",
+  paper: "#FFFFFF",
   text: "#333333",
   title: "#1E56A0",
 };

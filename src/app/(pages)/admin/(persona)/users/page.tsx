@@ -199,10 +199,9 @@ const Users = () => {
     }
   };
 
-  // FIXME: Update User Role
   const handleUpdateRole = async (
     userId: string,
-    newRole: "admin" | "employee" | "driver" | "superadmin"
+    newRole: "admin" | "employee" | "driver" | "superAdmin"
   ) => {
     if (!token) {
       router.replace("/");

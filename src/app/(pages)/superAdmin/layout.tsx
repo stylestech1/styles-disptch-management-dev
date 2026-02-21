@@ -33,8 +33,8 @@ const DRAWER_WIDTH = 300;
 
 function normalizeRole(role?: string) {
     const r = (role || "").trim().toLowerCase();
-    if (r === "super-admin" || r === "superadmin" || r === "super_admin")
-        return "superadmin";
+    if (r === "super-admin" || r === "superAdmin" || r === "super_admin")
+        return "superAdmin";
     if (r === "admin") return "admin";
     return r;
 }
@@ -60,12 +60,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // ✅ detect base from current route
     const base = useMemo(() => {
-        if (pathname.startsWith("/superadmin")) return "/superadmin";
+        if (pathname.startsWith("/superAdmin")) return "/superAdmin";
         if (pathname.startsWith("/admin")) return "/admin";
-        return "/superadmin";
+        return "/superAdmin";
     }, [pathname]);
 
-    const isSuperAdminRoute = pathname.startsWith("/superadmin");
+    const isSuperAdminRoute = pathname.startsWith("/superAdmin");
 
     // ✅ Show loader while redux/user hydrates (avoid blank screen)
     if (!user) {
