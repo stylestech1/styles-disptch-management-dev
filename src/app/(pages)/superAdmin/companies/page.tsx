@@ -817,7 +817,6 @@ export default function CompaniesPage() {
                   }}
                   className="text-center">Company ID</TableCell>
                 <TableCell
-
                   sx={{
                     color: theme.currentPalette.primary,
                     fontWeight: 800,
@@ -856,21 +855,36 @@ export default function CompaniesPage() {
                 !isFetching &&
                 companies.map((row, index) => (
                   <TableRow key={row.id} hover>
-                    <TableCell className="text-center">{index + 1}</TableCell>
-                    <TableCell className="text-center">{row.name}</TableCell>
-                    <TableCell className="text-center">{row.usersCount}</TableCell>
-                    <TableCell className="text-center">{row.email}</TableCell>
-                    <TableCell className="text-center">
+                    <TableCell   sx={{
+                    color: theme.currentPalette.primary,
+                    fontWeight: 800,
+                  }} className="text-center">{index + 1}</TableCell>
+                    <TableCell   sx={{
+                    color: theme.currentPalette.primary,
+                    fontWeight: 800,
+                  }} className="text-center">{row.name}</TableCell>
+                    <TableCell   sx={{
+                    color: theme.currentPalette.primary,
+                    fontWeight: 800,
+                  }} className="text-center">{row.usersCount}</TableCell>
+                    <TableCell   sx={{
+                    color: theme.currentPalette.primary,
+                    fontWeight: 800,
+                  }} className="text-center">{row.email}</TableCell>
+                    <TableCell   sx={{
+                    color: theme.currentPalette.primary,
+                    fontWeight: 800,
+                  }} className="text-center">
                       {/* {row.active === true ? "active" : "inactive"} */}
                       <StatusPill active={row.active} />
                     </TableCell>
 
-                    <TableCell className="text-center">
+                    <TableCell  className="text-center">
                       <IconButton
                         onClick={(e) => openActionsMenu(e, row)}
                         sx={{ width: 42, height: 42 }}
                       >
-                        <CircleEllipsis size={20} />
+                        <CircleEllipsis color={theme.currentPalette.primary}   size={20} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
