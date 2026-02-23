@@ -50,15 +50,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(isDesktop);
 
-    // Google hook
     const isGoogleMapsLoaded = useGoogleMaps();
 
-    // Sync sidebar when breakpoint changes
     useEffect(() => {
         setIsSidebarOpen(isDesktop);
     }, [isDesktop]);
 
-    // ✅ detect base from current route
     const base = useMemo(() => {
         if (pathname.startsWith("/superAdmin")) return "/superAdmin";
         if (pathname.startsWith("/admin")) return "/admin";
@@ -67,7 +64,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const isSuperAdminRoute = pathname.startsWith("/superAdmin");
 
-    // ✅ Show loader while redux/user hydrates (avoid blank screen)
     if (!user) {
         return (
             <Box
@@ -88,11 +84,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         );
     }
 
-    // ✅ Tabs resolving
     const roleKey = normalizeRole(user.role);
     const roleTabs = TABS_CONFIG[roleKey as keyof typeof TABS_CONFIG] ?? [];
 
-    // ✅ SUPERADMIN => Companies ONLY
     const tabs = isSuperAdminRoute
         ? roleTabs.filter((t) => t.label.toLowerCase() === "companies")
         : roleTabs;
@@ -179,7 +173,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Navigation */}
             <List sx={{ flex: 1, overflowY: "auto", py: 1 }}>
                 {tabs.map(({ label, icon }, i) => {
-                    // you can keep these guards (won’t matter since tabs is Companies only on superadmin)
                     if (label === "Load Details" || label === "Notifications") return null;
 
                     const link = `${base}/${label.replace(/\s+/g, "").toLowerCase()}`;
@@ -275,7 +268,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         display: "flex",
                         flexDirection: "column",
                         minHeight: "100vh",
-                        bgcolor: alpha(themePalette.currentPalette.primary, 0.02),
+                        // bgcolor: alpha(themePalette.currentPalette.primary, 0.02),
                     }}
                 >
                     {isGoogleMapsLoaded ? (
