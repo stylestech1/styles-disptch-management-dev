@@ -11,6 +11,12 @@ export type TTruckId = {
   truckId: number;
   plateNumber: string;
 };
+export type PaginationResult = {
+  currentPage: number;
+  limit: number;
+  totalDocs: number;
+  totalPages: number;
+};
 export type TUser = {
   id: string;
   name: string;
@@ -22,6 +28,41 @@ export type TUser = {
   jobId: number;
   driver?: string;
 };
+
+export type CompanyStatus = "Active" | "Inactive";
+
+export type CompanyUpsertBody = {
+  name: string;
+  email: string;
+  phone?: string;
+  usersCount?: number;
+  active: boolean;
+};
+export type CompanyDto = {
+  id: number;
+  name: string;
+  email: string;
+  status: CompanyStatus;
+  phone?: string;
+  usersCount?: number;
+  active: boolean;
+};
+
+export type CompanyForm = {
+  name: string;
+  email: string;
+  phone?: string;
+  usersCount?: number;
+  status: CompanyStatus;
+  active: boolean;
+};
+
+export type CompaniesResponse = {
+  data: CompanyDto[];
+  totalCompanies?: number;
+  totalUsers?: number;
+};
+
 export type ServiceCenter = {
   id: string;
   name: string;
@@ -129,7 +170,7 @@ export type TDriver = {
   updatedBy?: string;
   user: TUser | string;
   toggle: boolean
-  documents?: AttachmentItem[]; 
+  documents?: AttachmentItem[];
 };
 export type TTruck = {
   id: string;

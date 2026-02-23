@@ -32,7 +32,6 @@ import {
   Mail,
   Phone,
   Search,
-  SquarePen,
   X,
   CircleCheckBig,
   UsersRound,
@@ -51,13 +50,16 @@ import {
   useCreateCompanyMutation,
   useGetCompaniesQuery,
   useUpdateCompanyMutation,
+  useUpdateactivationcompanyMutation,
+  useUpdatedeactivationcompanyMutation,
+  useCreateUserMutation,
 } from "@/redux/slices/apiSlice";
+import Pagination from "@/components/ui/Pagination";
 
-/** ===== Types (UI) ===== */
 type CompanyStatus = "Active" | "Inactive";
 
 type CompanyRow = {
-  id: string; // mongo _id
+  id: string;
   name: string;
   email: string;
   phone?: string;
@@ -82,6 +84,8 @@ type AssignAdminForm = {
   confirmPassword: string;
 };
 
+type AssignAdminErrors = Partial<Record<keyof AssignAdminForm, string>>;
+
 const emptyCompanyForm: CompanyForm = {
   name: "",
   email: "",
@@ -99,9 +103,6 @@ const emptyAssignAdminForm: AssignAdminForm = {
   confirmPassword: "",
 };
 
-/** ================================
- *  Status pill (same design)
- *  ================================ */
 const StatusPill = ({ active }: { active: boolean }) => {
   const palette = useAppSelector((s: RootState) => s.palette.currentPalette);
   const primary = palette?.primary ?? "#205DAC";
@@ -119,7 +120,7 @@ const StatusPill = ({ active }: { active: boolean }) => {
         color: active ? "#fff" : primary,
         fontWeight: 700,
         fontSize: 14,
-        minWidth: 80, // ✅ width like screenshot
+        minWidth: 80,
         justifyContent: "center",
       }}
     >
@@ -205,16 +206,9 @@ function CompanyDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth sx={{ zIndex: 1500 }}>
       <Box sx={{ p: 2.25 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            // borderRadius: 1,
-            // border: "1px solid #BFD3FF",
-            overflow: "hidden",
-          }}
-        >
+        <Paper elevation={0} sx={{ overflow: "hidden" }}>
           <Box
             sx={{
               px: 2,
@@ -225,9 +219,7 @@ function CompanyDialog({
               bgcolor: "#fff",
             }}
           >
-            <Typography sx={{ fontWeight: 900, color: "#0F2E4A" }}>
-              {title}
-            </Typography>
+            <Typography sx={{ fontWeight: 900, color: "#0F2E4A" }}>{title}</Typography>
 
             <IconButton onClick={onClose} size="small">
               <X size={18} />
@@ -241,11 +233,7 @@ function CompanyDialog({
               <TextField
                 label="Company Name"
                 required
-                sx={{
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                }}
+                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
                 value={form.name}
                 onChange={(e) => onChange({ name: e.target.value })}
                 placeholder="e.g. Aramex"
@@ -263,11 +251,7 @@ function CompanyDialog({
                 label="Company Email"
                 value={form.email}
                 required
-                sx={{
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                }}
+                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
                 onChange={(e) => onChange({ email: e.target.value })}
                 placeholder="e.g. aramex@gmail.com"
                 fullWidth
@@ -296,8 +280,7 @@ function CompanyDialog({
               />
 
               <FormControl fullWidth>
-                <Typography
-                  sx={{ fontSize: 13, color: "#64748B", fontWeight: 700, mb: 0.8 }}>
+                <Typography sx={{ fontSize: 13, color: "#64748B", fontWeight: 700, mb: 0.8 }}>
                   Status
                 </Typography>
                 <Select
@@ -310,6 +293,11 @@ function CompanyDialog({
                     </InputAdornment>
                   }
                   displayEmpty
+                  MenuProps={{
+                    disablePortal: false,
+                    sx: { zIndex: 4000 },
+                    PaperProps: { sx: { zIndex: 4000 } },
+                  }}
                 >
                   <MenuItem value="" disabled>
                     Select status
@@ -342,6 +330,7 @@ function CompanyDialog({
     </Dialog>
   );
 }
+
 function AssignAdminDialog({
   open,
   onClose,
@@ -349,6 +338,7 @@ function AssignAdminDialog({
   onChange,
   onSubmit,
   loading,
+  apiErrors,
 }: {
   open: boolean;
   onClose: () => void;
@@ -356,12 +346,14 @@ function AssignAdminDialog({
   onChange: (patch: Partial<AssignAdminForm>) => void;
   onSubmit: () => void;
   loading?: boolean;
+  apiErrors?: AssignAdminErrors;
 }) {
   const theme = useAppSelector((state: RootState) => state.palette);
 
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof AssignAdminForm, string>>>({});
+  const [errors, setErrors] = useState<AssignAdminErrors>({});
+
   useEffect(() => {
     if (!open) {
       setErrors({});
@@ -370,8 +362,14 @@ function AssignAdminDialog({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (apiErrors && open) {
+      setErrors((prev) => ({ ...prev, ...apiErrors }));
+    }
+  }, [apiErrors, open]);
+
   const validate = (values: AssignAdminForm) => {
-    const next: Partial<Record<keyof AssignAdminForm, string>> = {};
+    const next: AssignAdminErrors = {};
 
     const name = values.fullName.trim();
     if (!name) next.fullName = "Full name is required";
@@ -380,16 +378,14 @@ function AssignAdminDialog({
     const email = values.email.trim();
     if (!email) next.email = "Email is required";
     else if (!email.includes("@")) next.email = "Email must include @";
+
     const phone = values.phone.trim();
     if (!phone) next.phone = "Phone number is required";
 
     const pass = values.password ?? "";
     if (!pass) next.password = "Password is required";
-    else {
-      if (pass.length < 6) next.password = "Password must be 6 characters or more";
-      else if (!/[A-Za-z]/.test(pass) || !/[0-9]/.test(pass))
-        next.password = "Password must include at least 1 letter and 1 number";
-    }
+    else if (pass.length < 6) next.password = "Password must be 6 characters or more";
+
     const confirm = values.confirmPassword ?? "";
     if (!confirm) next.confirmPassword = "Confirm password is required";
     else if (confirm !== pass) next.confirmPassword = "Passwords do not match";
@@ -400,11 +396,10 @@ function AssignAdminDialog({
   const handleSubmit = () => {
     const nextErrors = validate(form);
     setErrors(nextErrors);
-
     if (Object.keys(nextErrors).length > 0) return;
-
     onSubmit();
   };
+
   const patchField = (patch: Partial<AssignAdminForm>) => {
     onChange(patch);
     const key = Object.keys(patch)[0] as keyof AssignAdminForm;
@@ -412,7 +407,7 @@ function AssignAdminDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth sx={{ zIndex: 1500 }}>
       <Box sx={{ p: 1 }}>
         <Paper elevation={0} sx={{ overflow: "hidden" }}>
           <Box
@@ -501,11 +496,13 @@ function AssignAdminDialog({
               />
 
               <TextField
-                label="Position"
+                label="Position (optional)"
                 value={form.position}
                 onChange={(e) => patchField({ position: e.target.value })}
-                placeholder="e.g. Admin"
+                placeholder="e.g. Dispatcher"
                 fullWidth
+                error={Boolean(errors.position)}
+                helperText={errors.position}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -570,6 +567,7 @@ function AssignAdminDialog({
               />
 
               <Button
+                type="button"
                 onClick={handleSubmit}
                 disabled={loading}
                 variant="contained"
@@ -605,23 +603,26 @@ export default function CompaniesPage() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignCompany, setAssignCompany] = useState<CompanyRow | null>(null);
   const [assignForm, setAssignForm] = useState<AssignAdminForm>(emptyAssignAdminForm);
+  const [assignApiErrors, setAssignApiErrors] = useState<AssignAdminErrors>({});
+
+  const [activateCompany, activateState] = useUpdateactivationcompanyMutation();
+  const [deactivateCompany, deactivateState] = useUpdatedeactivationcompanyMutation();
+  const [createUser, createUserState] = useCreateUserMutation();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuRow, setMenuRow] = useState<CompanyRow | null>(null);
   const menuOpen = Boolean(menuAnchor);
 
-  const { data, isLoading, isFetching, error, refetch } = useGetCompaniesQuery(
-    { page: 1, limit: 50 } as any,
+  const [page, setPage] = useState(1);
+  const [limit] = useState(50);
+
+  const { data, isLoading, isFetching, refetch } = useGetCompaniesQuery(
+    { page, limit } as any,
     { refetchOnMountOrArgChange: true }
   );
 
   const [createCompany, createState] = useCreateCompanyMutation();
   const [updateCompany, updateState] = useUpdateCompanyMutation();
-
-  useEffect(() => {
-    if (data) console.log("✅ getCompanies response:", data);
-    if (error) console.log("❌ getCompanies error:", error);
-  }, [data, error]);
 
   const companies: CompanyRow[] = useMemo(() => {
     const raw = (data?.data ?? []) as any[];
@@ -636,6 +637,7 @@ export default function CompaniesPage() {
 
     const q = search.trim().toLowerCase();
     if (!q) return mapped;
+
     return mapped.filter(
       (c) =>
         c.id.toLowerCase().includes(q) ||
@@ -645,8 +647,14 @@ export default function CompaniesPage() {
   }, [data, search]);
 
   const totalCompanies = data?.totalCompanies ?? companies.length;
-  const totalUsers =
-    data?.totalUsers ?? companies.reduce((sum, c) => sum + (c.usersCount ?? 0), 0);
+  const totalUsers = data?.totalUsers ?? companies.reduce((sum, c) => sum + (c.usersCount ?? 0), 0);
+
+  const pagination = data?.paginationResult ?? {
+    currentPage: page,
+    limit,
+    totalDocs: companies.length,
+    totalPages: 1,
+  };
 
   const openActionsMenu = (e: React.MouseEvent<HTMLElement>, row: CompanyRow) => {
     setMenuAnchor(e.currentTarget);
@@ -678,67 +686,127 @@ export default function CompaniesPage() {
     setCompanyDialogOpen(true);
   };
 
+  const openAssignAdmin = (row: CompanyRow) => {
+    setAssignCompany(row);
+    setAssignForm(emptyAssignAdminForm);
+    setAssignApiErrors({});
+    setAssignOpen(true);
+  };
+
   const submitCompanyDialog = async () => {
     if (!companyForm.name.trim() || !companyForm.email.trim() || !companyForm.status) return;
+
+    const nextActive = companyForm.status === "Active";
 
     const body = {
       name: companyForm.name.trim(),
       email: companyForm.email.trim(),
       phone: companyForm.phone.trim() || undefined,
       usersCount: companyForm.usersCount ? Number(companyForm.usersCount) : 0,
-      active: companyForm.status === "Active",
     };
 
     try {
       if (companyDialogMode === "add") {
-        await createCompany(body as any).unwrap();
+        await createCompany({ ...body, active: nextActive } as any).unwrap();
         setCompanyDialogOpen(false);
-        refetch();
+        await refetch();
         return;
       }
 
       if (companyDialogMode === "edit") {
         if (!editing?.id) return;
-        await updateCompany({ id: editing.id, body } as any).unwrap();
+        const id = editing.id;
+
+        await updateCompany({ id, body } as any).unwrap();
+
+        if (editing.active !== nextActive) {
+          if (nextActive) {
+            await activateCompany({ id, active: true } as any).unwrap();
+          } else {
+            await deactivateCompany({ id, active: false } as any).unwrap();
+          }
+        }
+
         setCompanyDialogOpen(false);
-        refetch();
+        await refetch();
       }
     } catch (e) {
-      console.log(" submitCompanyDialog error:", e);
+      // keep silent as requested
     }
-  };
-
-  const openAssignAdmin = (row: CompanyRow) => {
-    setAssignCompany(row);
-    setAssignForm(emptyAssignAdminForm);
-    setAssignOpen(true);
   };
 
   const submitAssignAdmin = async () => {
-    if (
-      !assignForm.fullName.trim() ||
-      !assignForm.email.trim() ||
-      !assignForm.phone.trim() ||
-      !assignForm.position.trim() ||
-      !assignForm.password ||
-      !assignForm.confirmPassword
-    ) {
-      return;
+    if (!assignCompany?.id) return;
+
+    setAssignApiErrors({});
+
+    const payload: any = {
+      name: assignForm.fullName.trim(),
+      email: assignForm.email.trim(),
+      phone: assignForm.phone.trim(),
+      password: assignForm.password,
+      passwordConfirmation: assignForm.confirmPassword,
+      role: "admin",
+      companyId: assignCompany.id,
+    };
+
+    if (assignForm.position?.trim()) payload.position = assignForm.position.trim();
+
+    try {
+      await createUser(payload).unwrap();
+      setAssignOpen(false);
+      setAssignCompany(null);
+      setAssignForm(emptyAssignAdminForm);
+      await refetch();
+    } catch (e: any) {
+      const errs = e?.data?.errors;
+
+      if (Array.isArray(errs)) {
+        const mapped: AssignAdminErrors = {};
+        for (const err of errs) {
+          const path = String(err?.path ?? "");
+          const msg = String(err?.msg ?? "Invalid value");
+
+          if (path === "name") mapped.fullName = msg;
+          else if (path === "email") mapped.email = msg;
+          else if (path === "phone") mapped.phone = msg;
+          else if (path === "password") mapped.password = msg;
+          else if (path === "passwordConfirmation") mapped.confirmPassword = msg;
+          else if (path === "position") mapped.position = msg;
+        }
+
+        setAssignApiErrors(mapped);
+        return;
+      }
+
+      // fallback non-field error
+      setAssignApiErrors({
+        email: e?.data?.message || "Failed to assign admin",
+      });
     }
-    if (assignForm.password !== assignForm.confirmPassword) return;
-
-    // console.log("assign admin to company:", assignCompany?.id, assignForm);
-
-    setAssignOpen(false);
   };
 
-  const savingCompany = createState.isLoading || updateState.isLoading;
+  const savingCompany =
+    createState.isLoading ||
+    updateState.isLoading ||
+    activateState.isLoading ||
+    deactivateState.isLoading;
+
+  const assigningAdmin = createUserState.isLoading;
 
   return (
     <Box sx={{ minHeight: "100vh", p: 3 }}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2 }}>
-        <StatCard label="Total Companies" value={totalCompanies} icon={<UsersRound size={18} color={theme.currentPalette.primary} />} />
-        <StatCard label="Total Users" value={totalUsers} icon={<UserRoundCheck size={18} color={theme.currentPalette.primary} />} />
+        <StatCard
+          label="Total Companies"
+          value={totalCompanies}
+          icon={<UsersRound size={18} color={theme.currentPalette.primary} />}
+        />
+        <StatCard
+          label="Total Users"
+          value={totalUsers}
+          icon={<UserRoundCheck size={18} color={theme.currentPalette.primary} />}
+        />
       </Stack>
 
       <Paper
@@ -810,33 +878,24 @@ export default function CompaniesPage() {
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: "#F8FBFF" }}>
-                <TableCell
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }}
-                  className="text-center">Company ID</TableCell>
-                <TableCell
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }} className="text-center">Company Name</TableCell>
-                <TableCell sx={{
-                  color: theme.currentPalette.primary,
-                  fontWeight: 800,
-                }} className="text-center">No. of Users</TableCell>
-                <TableCell sx={{
-                  color: theme.currentPalette.primary,
-                  fontWeight: 800,
-                }} className="text-center">Email</TableCell>
-                <TableCell sx={{
-                  color: theme.currentPalette.primary,
-                  fontWeight: 800,
-                }} className="text-center">Status</TableCell>
-                <TableCell sx={{
-                  color: theme.currentPalette.primary,
-                  fontWeight: 800,
-                }} className="text-center">Actions</TableCell>
+                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                  Company ID
+                </TableCell>
+                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                  Company Name
+                </TableCell>
+                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                  No. of Users
+                </TableCell>
+                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                  Email
+                </TableCell>
+                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                  Status
+                </TableCell>
+                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
 
@@ -844,9 +903,7 @@ export default function CompaniesPage() {
               {(isLoading || isFetching) && (
                 <TableRow>
                   <TableCell colSpan={6} sx={{ py: 4 }}>
-                    <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>
-                      Loading...
-                    </Typography>
+                    <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>Loading...</Typography>
                   </TableCell>
                 </TableRow>
               )}
@@ -855,36 +912,25 @@ export default function CompaniesPage() {
                 !isFetching &&
                 companies.map((row, index) => (
                   <TableRow key={row.id} hover>
-                    <TableCell   sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }} className="text-center">{index + 1}</TableCell>
-                    <TableCell   sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }} className="text-center">{row.name}</TableCell>
-                    <TableCell   sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }} className="text-center">{row.usersCount}</TableCell>
-                    <TableCell   sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }} className="text-center">{row.email}</TableCell>
-                    <TableCell   sx={{
-                    color: theme.currentPalette.primary,
-                    fontWeight: 800,
-                  }} className="text-center">
-                      {/* {row.active === true ? "active" : "inactive"} */}
+                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                      {row.name}
+                    </TableCell>
+                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                      {row.usersCount}
+                    </TableCell>
+                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                      {row.email}
+                    </TableCell>
+                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
                       <StatusPill active={row.active} />
                     </TableCell>
 
-                    <TableCell  className="text-center">
-                      <IconButton
-                        onClick={(e) => openActionsMenu(e, row)}
-                        sx={{ width: 42, height: 42 }}
-                      >
-                        <CircleEllipsis color={theme.currentPalette.primary}   size={20} />
+                    <TableCell className="text-center">
+                      <IconButton onClick={(e) => openActionsMenu(e, row)} sx={{ width: 42, height: 42 }}>
+                        <CircleEllipsis color={theme.currentPalette.primary} size={20} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -893,9 +939,7 @@ export default function CompaniesPage() {
               {!isLoading && !isFetching && companies.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>
-                      No companies found
-                    </Typography>
+                    <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>No companies found</Typography>
                   </TableCell>
                 </TableRow>
               )}
@@ -908,15 +952,9 @@ export default function CompaniesPage() {
         anchorEl={menuAnchor}
         open={menuOpen}
         onClose={closeActionsMenu}
+        sx={{ zIndex: 2000 }}
         PaperProps={{
-          sx: {
-            mt: 1,
-            // borderRadius: 1,
-            // border: "1px solid #E6EEFF",
-            // boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-            minWidth: 190,
-            overflow: "hidden",
-          },
+          sx: { mt: 1, minWidth: 190, overflow: "hidden" },
         }}
       >
         <MenuItem
@@ -927,7 +965,7 @@ export default function CompaniesPage() {
           }}
           sx={{ py: 1.2, color: theme.currentPalette.primary }}
         >
-          <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary, }}>
+          <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary }}>
             <UserPlus size={18} />
           </ListItemIcon>
           <ListItemText primary="Assign Admin" primaryTypographyProps={{ fontWeight: 700 }} />
@@ -939,17 +977,16 @@ export default function CompaniesPage() {
             closeActionsMenu();
             openEdit(menuRow);
           }}
-          sx={{
-            py: 1.2,
-            color: theme.currentPalette.primary,
-          }}
+          sx={{ py: 1.2, color: theme.currentPalette.primary }}
         >
-          <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary, }}>
+          <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary }}>
             <Pen size={18} />
           </ListItemIcon>
           <ListItemText primary="Edit Company" primaryTypographyProps={{ fontWeight: 700 }} />
         </MenuItem>
       </Menu>
+
+      <Pagination pagination={pagination} page={page} setPage={setPage} pageSize={limit} />
 
       <CompanyDialog
         open={companyDialogOpen}
@@ -963,10 +1000,15 @@ export default function CompaniesPage() {
 
       <AssignAdminDialog
         open={assignOpen}
-        onClose={() => setAssignOpen(false)}
+        onClose={() => {
+          setAssignOpen(false);
+          setAssignApiErrors({});
+        }}
         form={assignForm}
         onChange={(patch) => setAssignForm((p) => ({ ...p, ...patch }))}
         onSubmit={submitAssignAdmin}
+        loading={assigningAdmin}
+        apiErrors={assignApiErrors}
       />
     </Box>
   );

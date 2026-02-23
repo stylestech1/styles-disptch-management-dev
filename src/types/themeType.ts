@@ -30,7 +30,7 @@ export interface Palette {
   paper: string;
   _id?: string
   mode: PaletteMode;
-  customName: string; 
+  customName: string;
   primary: string;
   secondary: string;
   background: string;

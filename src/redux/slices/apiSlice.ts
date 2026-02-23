@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  CompanyDto,
+  CompanyUpsertBody,
+  PaginationResult,
   TCustomer,
   TDriver,
   TLoadSummary,
@@ -23,43 +26,7 @@ import {
 } from "@/types/chatType";
 import { MaintenanceCenterForm } from "@/components/truck/centermaintenance/createEditModal";
 
-/* =========================
-   ✅ Companies Types
-========================= */
-export type CompanyStatus = "Active" | "Inactive";
 
-export type CompanyUpsertBody = {
-  name: string;
-  email: string;
-  phone?: string;
-  usersCount?: number;
-  active: boolean; // ✅ backend expects boolean
-};
-export type CompanyDto = {
-  id: number;
-  name: string;
-  email: string;
-  status: CompanyStatus;
-  phone?: string;
-  usersCount?: number;
-  active: boolean;
-};
-
-export type CompanyForm = {
-  name: string;
-  email: string;
-  phone?: string;
-  usersCount?: number;
-  status: CompanyStatus;
-  active: boolean;
-};
-
-// ✅ change response type if your backend shape is different
-export type CompaniesResponse = {
-  data: CompanyDto[];
-  totalCompanies?: number;
-  totalUsers?: number;
-};
 
 export const apiSlice = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -115,13 +82,13 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["centermaintenance"],
     }),
-
-
+    // ! ========== Companies ==========
     getCompanies: builder.query<
       {
         data: CompanyDto[];
         totalCompanies?: number;
         totalUsers?: number;
+        paginationResult?: PaginationResult;
       },
       { page?: number; limit?: number }
     >({
@@ -133,18 +100,25 @@ export const apiSlice = api.injectEndpoints({
         const queryString = params.length ? `?${params.join("&")}` : "";
         return `/api/v1/companies${queryString}`;
       },
-
       transformResponse: (response: any) => {
+        const raw = Array.isArray(response?.data) ? response.data : [];
+
+        const sorted = [...raw].sort((a: any, b: any) => {
+          const da = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return da - db;
+        });
 
         return {
           ...response,
-          data: response.data.map((company: any) => ({
-            id: String(company.id ?? company.id),
-            name: company.name,
-            email: company.email,
-            phone: company.phone,
+          data: sorted.map((company: any) => ({
+            id: String(company._id ?? company.id),
+            name: company.name ?? "",
+            email: company.email ?? "",
+            phone: company.phone ?? "",
             usersCount: company.usersCount ?? 0,
-            active: company.active,
+            active: Boolean(company.active),
+            createdAt: company.createdAt,
           })),
         };
       },
@@ -152,6 +126,23 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["companies"],
     }),
 
+    updateactivationcompany: builder.mutation<any, { id: string; active: boolean }>({
+      query: ({ id, active }) => ({
+        url: `/api/v1/companies/activate/${id}`,
+        method: "PATCH",
+        body: { active },
+      }),
+      invalidatesTags: [{ type: "companies", id: "LIST" }],
+    }),
+
+    updatedeactivationcompany: builder.mutation<any, { id: string; active: boolean }>({
+      query: ({ id, active }) => ({
+        url: `/api/v1/companies/deactivate/${id}`,
+        method: "PATCH",
+        body: { active },
+      }),
+      invalidatesTags: [{ type: "companies", id: "LIST" }],
+    }),
     createCompany: builder.mutation<any, CompanyUpsertBody>({
       query: (body) => ({
         url: `/api/v1/companies`,
@@ -167,7 +158,8 @@ export const apiSlice = api.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["companies"],
+
+      invalidatesTags: (r, e, arg) => [{ type: "companies", id: arg.id }],
     }),
     deleteCompany: builder.mutation<any, string | number>({
       query: (id) => ({
@@ -993,9 +985,11 @@ export const {
   useUpdateServiceCenterMutation,
   useDeleteServiceCenterMutation,
 
-  // ✅ ----- Companies -----
+  // TODO: ----- Companies -----
   useGetCompaniesQuery,
   useCreateCompanyMutation,
-  useUpdateCompanyMutation,
   useDeleteCompanyMutation,
+  useUpdateCompanyMutation,
+  useUpdateactivationcompanyMutation,
+  useUpdatedeactivationcompanyMutation,
 } = apiSlice;
