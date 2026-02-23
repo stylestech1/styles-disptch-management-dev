@@ -218,7 +218,7 @@ export default function AdminLayout({
                   sx={{
                     mx: 1,
                     my: 0.5,
-                    borderRadius: 2,
+                    borderRadius: 0.5,
                     color: themePalette.currentPalette.primary,
 
                     pl: 4,
@@ -259,7 +259,11 @@ export default function AdminLayout({
                           href={childLink}
                           sx={{
                             ml: 4,
-                            borderRadius: 2,
+                            borderTopLeftRadius: 4,
+                            borderBottomLeftRadius: 4,
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+
 
                             color: childActive
                               ? theme.palette.primary.contrastText
@@ -309,7 +313,10 @@ export default function AdminLayout({
               href={link}
               sx={{
                 ml: 4,
-                borderRadius: 2,
+                borderTopLeftRadius: 4,
+                borderBottomLeftRadius: 4,
+                borderTopRightRadius: 0,
+                borderBottomRightRadius: 0,
 
                 color: active
                   ? theme.palette.primary.contrastText
@@ -343,10 +350,13 @@ export default function AdminLayout({
             fullWidth
             startIcon={<PiPaintBrushBroad />}
             variant="outlined"
+            className="!rounded-[8px]"
             sx={{
               color: themePalette.currentPalette.primary,
               textTransform: "capitalize",
+              // borderRadius: 0.5,
             }}
+          // className="border rounded-lg"
           >
             Theme
           </Button>
@@ -356,12 +366,14 @@ export default function AdminLayout({
           startIcon={<IoLogOutOutline />}
           variant="contained"
           onClick={handleLogout}
+          className="!rounded-[8px]"
           sx={{
-            borderRadius: 2,
+            // borderRadius: 0.5,
             bgcolor: themePalette.currentPalette.primary,
             textTransform: "none",
             py: 1,
           }}
+
         >
           Logout
         </Button>

@@ -192,7 +192,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             href={link}
                             onClick={() => !isDesktop && setIsSidebarOpen(false)}
                             sx={{
-                                borderRadius: 2,
+                                borderRadius: 1,
                                 mx: 1,
                                 my: 0.5,
                                 backgroundColor: active ? themePalette.currentPalette.primary : "transparent",
@@ -228,7 +228,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     variant="contained"
                     onClick={handleLogout}
                     sx={{
-                        borderRadius: 2,
+                        borderRadius: 1,
                         bgcolor: themePalette.currentPalette.primary,
                         textTransform: "none",
                         py: 1,

@@ -824,7 +824,7 @@ export const TruckForm = React.memo(function TruckFormComp(
             sx={{
               mt: 2,
               py: 1.5,
-              borderRadius: 2,
+              borderRadius: 1,
               fontWeight: 500,
               color: "#fff",
               background: theme.currentPalette.primary,

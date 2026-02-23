@@ -47,7 +47,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
             <Box
               sx={{
                 border: `2px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-                borderRadius: 2,
+                borderRadius: 1,
                 p: 2,
               }}
             >
@@ -169,7 +169,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
                     theme.currentPalette.primary,
                     0.3
                   )}`,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   p: 2,
                 }}
               >
@@ -289,7 +289,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
             <Box
               sx={{
                 border: `2px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-                borderRadius: 2,
+                borderRadius: 1,
                 p: 2,
               }}
             >

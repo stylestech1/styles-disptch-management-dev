@@ -210,7 +210,7 @@ function CompanyDialog({
         <Paper
           elevation={0}
           sx={{
-            // borderRadius: 3,
+            // borderRadius: 1,
             // border: "1px solid #BFD3FF",
             overflow: "hidden",
           }}
@@ -327,7 +327,7 @@ function CompanyDialog({
                 sx={{
                   mt: 1,
                   py: 1.2,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -577,7 +577,7 @@ function AssignAdminDialog({
                 sx={{
                   mt: 1,
                   py: 1.35,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -911,7 +911,7 @@ export default function CompaniesPage() {
         PaperProps={{
           sx: {
             mt: 1,
-            // borderRadius: 2,
+            // borderRadius: 1,
             // border: "1px solid #E6EEFF",
             // boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
             minWidth: 190,

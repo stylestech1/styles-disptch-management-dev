@@ -113,7 +113,7 @@ const EditDialog: React.FC<EditDialogProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: 1,
           overflow: "hidden",
           maxHeight: "90vh",
         },
@@ -176,7 +176,7 @@ const EditDialog: React.FC<EditDialogProps> = ({
                   required
                   sx={{
                     "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
+                      borderRadius: 1,
                     },
                   }}
                 />
@@ -245,7 +245,7 @@ const EditDialog: React.FC<EditDialogProps> = ({
                   p: 2,
                   mb: 2,
                   border: `1px solid ${alpha(theme.currentPalette.text, 0.1)}`,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   bgcolor: alpha(theme.currentPalette.background, 0.5),
                 }}
               >

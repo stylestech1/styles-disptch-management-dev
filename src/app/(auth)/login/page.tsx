@@ -103,7 +103,7 @@ const Login = () => {
         <Paper
           elevation={8}
           sx={{
-            borderRadius: 3,
+            borderRadius: 1,
             overflow: "hidden",
             backgroundColor: "background.paper",
             display: "flex",
@@ -132,7 +132,7 @@ const Login = () => {
                     width: 40,
                     height: 40,
                     backgroundColor: "primary.main",
-                    borderRadius: 2,
+                    borderRadius: 1,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -253,7 +253,7 @@ const Login = () => {
                 startIcon={<IoLogInOutline />}
                 sx={{
                   py: 1.5,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   fontSize: "1rem",
                   fontWeight: "medium",
                   "&:focus": {

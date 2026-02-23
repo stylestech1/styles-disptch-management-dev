@@ -186,7 +186,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
           maxWidth: "95vw",
           py: 4,
           px: 5,
-          borderRadius: 3,
+          borderRadius: 1,
           bgcolor: theme.currentPalette.background,
         }}
       >
@@ -366,7 +366,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
               <Alert
                 severity="success"
                 icon={<CheckCircle />}
-                sx={{ mt: 2, borderRadius: 2 }}
+                sx={{ mt: 2, borderRadius: 1 }}
               >
                 {linkMessage}
               </Alert>
@@ -376,7 +376,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
               <Alert
                 severity="error"
                 icon={<AlertCircle />}
-                sx={{ mt: 2, borderRadius: 2 }}
+                sx={{ mt: 2, borderRadius: 1 }}
               >
                 {linkMessage}
               </Alert>
@@ -402,7 +402,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
                 placeholder="e.g. DL123456"
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
+                    borderRadius: 1,
                     bgcolor: alpha(theme.currentPalette.primary, 0.08),
                   },
                 }}
@@ -426,7 +426,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
+                    borderRadius: 1,
                     bgcolor: alpha(theme.currentPalette.primary, 0.08),
                   },
                 }}
@@ -454,7 +454,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
                     },
                     sx: {
                       "& .MuiOutlinedInput-root": {
-                        borderRadius: 2,
+                        borderRadius: 1,
                         bgcolor: alpha(theme.currentPalette.primary, 0.08),
                       },
                     },
@@ -489,7 +489,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
             sx={{
               flex: activeStep === 0 ? 1 : 2,
               py: 1.3,
-              borderRadius: 2,
+              borderRadius: 1,
               textTransform: "none",
               bgcolor: theme.currentPalette.primary,
               "&:hover": {

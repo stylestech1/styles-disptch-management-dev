@@ -142,7 +142,7 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           py: 1,
           px: 2,
           border: `1px solid ${alpha(theme.currentPalette.text, 0.3)}`,
-          borderRadius: 2,
+          borderRadius: 1,
           color: theme.currentPalette.primary,
           textTransform: "none",
           display: "flex",

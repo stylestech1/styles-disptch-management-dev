@@ -23,15 +23,12 @@ export default function MuiThemeProvider({
 
   const token = useSelector((state: RootState) => state.auth?.token);
 
-  // ✅ عدّلي ده حسب شكل auth عندك
   const role = useSelector((state: RootState) => state.auth?.user?.role);
 
-  // ✅ SuperAdmin => ممنوع fetch
   const isSuperAdmin =
     String(role || "").toLowerCase() === "superadmin" ||
     String(role || "").toLowerCase() === "super-admin";
 
-  // ✅ fetch فقط لو عندك token ومش superadmin
   const shouldFetchPalette = Boolean(token) && !isSuperAdmin;
 
   const { data: backendPalettes = [] } = useGetPaletteQuery(
@@ -49,7 +46,6 @@ export default function MuiThemeProvider({
     }
   }, [backendPalettes, dispatch]);
 
-  // ✅ fallbacks (عشان مفيش fetch في superadmin)
   const mode = currentPalette?.mode ?? "light";
   const primary = currentPalette?.primary ?? "#205DAC";
   const secondary = currentPalette?.secondary ?? "#7FA9E6";

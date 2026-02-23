@@ -265,7 +265,7 @@ const NotificationPage = () => {
         elevation={2}
         sx={{
           border: `1px solid ${alpha(theme.currentPalette.text, 0.1)}`,
-          borderRadius: 2,
+          borderRadius: 1,
           overflow: "hidden",
         }}
       >

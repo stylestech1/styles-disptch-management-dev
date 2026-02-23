@@ -141,7 +141,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         }}
         sx={{
           '& .MuiOutlinedInput-root': {
-            borderRadius: 2,
+            borderRadius: 1,
             backgroundColor: 'background.paper',
             '& fieldset': { 
               borderColor: 'divider',

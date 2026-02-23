@@ -425,7 +425,7 @@ const DriverSummary = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 2,
+    borderRadius: 1,
     backgroundColor: theme.currentPalette.background,
   };
 
@@ -453,7 +453,7 @@ const DriverSummary = () => {
         <Box
           sx={{
             border: 1,
-            borderRadius: 2,
+            borderRadius: 1,
             borderColor: alpha(theme.currentPalette.primary, 0.3),
             p: 3,
           }}
@@ -466,7 +466,7 @@ const DriverSummary = () => {
                   p: 1.5,
                   bgcolor: alpha(theme.currentPalette.primary, 0.1),
                   color: theme.currentPalette.primary,
-                  borderRadius: 2,
+                  borderRadius: 1,
                 }}
               >
                 <CircleUserRound size={25} />
@@ -498,7 +498,7 @@ const DriverSummary = () => {
                     p: 1.5,
                     bgcolor: alpha(theme.currentPalette.primary, 0.1),
                     color: theme.currentPalette.primary,
-                    borderRadius: 2,
+                    borderRadius: 1,
                   }}
                 >
                   {card.icon}
@@ -522,7 +522,7 @@ const DriverSummary = () => {
                 p: 3,
                 border: 1,
                 borderColor: alpha(theme.currentPalette.primary, 0.3),
-                borderRadius: 2,
+                borderRadius: 1,
                 cursor: "pointer",
               }}
               className="flex flex-col justify-center"
@@ -558,7 +558,7 @@ const DriverSummary = () => {
               PaperProps={{
                 onMouseEnter: () => setEarningsAnchorEl(earningsRef.current),
                 onMouseLeave: handleEarningsLeave,
-                sx: { p: 2, borderRadius: 2, boxShadow: 6, minWidth: 220, textAlign: "left" },
+                sx: { p: 2, borderRadius: 1, boxShadow: 6, minWidth: 220, textAlign: "left" },
               }}
             >
               <Typography
@@ -603,7 +603,7 @@ const DriverSummary = () => {
           </Box>
 
           <Box
-            sx={{ p: 3, border: 1, borderColor: alpha(theme.currentPalette.primary, 0.3), borderRadius: 2 }}
+            sx={{ p: 3, border: 1, borderColor: alpha(theme.currentPalette.primary, 0.3), borderRadius: 1 }}
             className="flex flex-col justify-center"
           >
             <Typography sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -616,7 +616,7 @@ const DriverSummary = () => {
           </Box>
 
           <Box
-            sx={{ p: 3, border: 1, borderColor: alpha(theme.currentPalette.primary, 0.3), borderRadius: 2 }}
+            sx={{ p: 3, border: 1, borderColor: alpha(theme.currentPalette.primary, 0.3), borderRadius: 1 }}
             className="flex flex-col justify-center"
           >
             <Typography sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -629,7 +629,7 @@ const DriverSummary = () => {
           </Box>
 
           <Box
-            sx={{ p: 3, border: 1, borderColor: alpha(theme.currentPalette.primary, 0.3), borderRadius: 2 }}
+            sx={{ p: 3, border: 1, borderColor: alpha(theme.currentPalette.primary, 0.3), borderRadius: 1 }}
             className="flex flex-col justify-center"
           >
             <Typography sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -646,7 +646,7 @@ const DriverSummary = () => {
       <Box
         sx={{
           border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
-          borderRadius: 2,
+          borderRadius: 1,
           backgroundColor: theme.currentPalette.background,
           overflow: "hidden",
           mt: 3,
@@ -738,7 +738,7 @@ const DriverSummary = () => {
                     key={doc.id}
                     sx={{
                       border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
-                      borderRadius: 2,
+                      borderRadius: 1,
                       px: 2,
                       py: 1.5,
                       display: "flex",
@@ -843,7 +843,7 @@ const DriverSummary = () => {
                     ? alpha(theme.currentPalette.primary, 0.9)
                     : alpha(theme.currentPalette.primary, 0.35)
                     }`,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   p: 3,
                   textAlign: "center",
                   backgroundColor: "#fff",
@@ -873,7 +873,7 @@ const DriverSummary = () => {
                   sx={{
                     textTransform: "none",
                     fontWeight: 800,
-                    borderRadius: 2,
+                    borderRadius: 1,
                     px: 3.5,
                     backgroundColor: theme.currentPalette.primary,
                     "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
@@ -921,7 +921,7 @@ const DriverSummary = () => {
                           justifyContent: "space-between",
                           px: 2,
                           py: 1.6,
-                          borderRadius: 2,
+                          borderRadius: 1,
                           border: `1px solid ${alpha(theme.currentPalette.primary, 0.18)}`,
                           backgroundColor: alpha(theme.currentPalette.primary, 0.08),
                         }}
@@ -980,7 +980,7 @@ const DriverSummary = () => {
                   sx={{
                     textTransform: "none",
                     fontWeight: 800,
-                    borderRadius: 2,
+                    borderRadius: 1,
                     backgroundColor: alpha("#94A3B8", 0.15),
                     color: "#0F172A",
                     py: 1.25,
@@ -999,7 +999,7 @@ const DriverSummary = () => {
                   sx={{
                     textTransform: "none",
                     fontWeight: 900,
-                    borderRadius: 2,
+                    borderRadius: 1,
                     py: 1.25,
                     backgroundColor: theme.currentPalette.primary,
                     "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.9) },
@@ -1054,7 +1054,7 @@ const DriverSummary = () => {
 
       {displayedData && (
         <div className="mt-6 flex justify-end">
-          <Box sx={{ borderRadius: 2, borderColor: alpha(theme.currentPalette.primary, 0.3) }} className="px-4 py-3 border">
+          <Box sx={{ borderRadius: 1, borderColor: alpha(theme.currentPalette.primary, 0.3) }} className="px-4 py-3 border">
             <Typography sx={{ color: alpha(theme.currentPalette.primary, 0.8), fontSize: "14px" }}>
               Showing {displayedData.length} loads {isFiltered && " (filtered)"}
             </Typography>

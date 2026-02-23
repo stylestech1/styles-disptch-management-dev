@@ -466,7 +466,7 @@ const LoadsPageDetails = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 2,
+    borderRadius: 1,
     backgroundColor: theme.currentPalette.background,
     width: "100%",
   };
@@ -542,7 +542,7 @@ const LoadsPageDetails = () => {
             inputSx={{
               "& .MuiOutlinedInput-root": {
                 width: { xs: "100%", md: 250 },
-                borderRadius: 2,
+                borderRadius: 1,
                 backgroundColor: theme.currentPalette.background,
                 py: 0.5,
                 "&:hover": {
@@ -562,7 +562,7 @@ const LoadsPageDetails = () => {
             startIcon={<IoAdd size={22} />}
             sx={{
               width: { xs: "100%", md: "100%" },
-              borderRadius: 2,
+              borderRadius: 1,
               px: 3,
               py: 2,
             }}

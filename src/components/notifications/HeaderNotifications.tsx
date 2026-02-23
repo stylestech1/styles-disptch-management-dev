@@ -138,7 +138,7 @@ export default function HeaderNotifications() {
         sx={{
           color: theme.currentPalette.primary,
           border: `1px solid ${alpha(theme.currentPalette.text, 0.3)}`,
-          borderRadius: 2,
+          borderRadius: 1,
           "&:hover": {
             backgroundColor: alpha(theme.currentPalette.primary, 0.1),
           },

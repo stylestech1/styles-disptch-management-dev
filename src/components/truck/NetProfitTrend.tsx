@@ -176,7 +176,7 @@ const NetProfitTrend: React.FC<NetProfitTrendProps> = ({
     <Box
       sx={{
         borderColor: alpha(theme.currentPalette.primary, 0.3),
-        borderRadius: 2,
+        borderRadius: 1,
         bgcolor: theme.currentPalette.background,
       }}
       className="border p-5 h-full"

@@ -67,7 +67,7 @@ export const ConversationItem = ({
         alignItems: "center",
         p: 2,
         m: 1,
-        borderRadius: 2,
+        borderRadius: 1,
         cursor: "pointer",
         transition: "background-color 0.2s ease",
 

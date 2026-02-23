@@ -521,7 +521,7 @@ const TruckMaintenance = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 2,
+    borderRadius: 1,
     backgroundColor: theme.currentPalette.background,
     width: "100%",
   };
@@ -621,7 +621,7 @@ const TruckMaintenance = () => {
             sx={{ width: { xs: "100%", sm: "100%", md: 280, lg: 350 } }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
+                borderRadius: 1,
                 backgroundColor: theme.currentPalette.background,
                 height: 36,
                 "&:hover": { borderColor: theme.currentPalette.primary },
@@ -639,7 +639,7 @@ const TruckMaintenance = () => {
             sx={{
               bgcolor: theme.currentPalette.primary,
               color: theme.currentPalette.background,
-              borderRadius: 2,
+              borderRadius: 1,
               px: 5,
               fontWeight: 800,
               textTransform: "none",

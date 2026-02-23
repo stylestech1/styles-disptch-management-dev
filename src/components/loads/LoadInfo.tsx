@@ -144,7 +144,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
       sx={{
         height: "100%",
         border: `1px solid ${alpha(theme.currentPalette.text, 0.2)}`,
-        borderRadius: 2,
+        borderRadius: 1,
         bgcolor: theme.currentPalette.background,
         transition: "all 0.2s ease",
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
@@ -231,7 +231,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
           my: 5,
           bgcolor: theme.currentPalette.background,
           border: `1px solid ${alpha(theme.currentPalette.text, 0.2)}`,
-          borderRadius: 2,
+          borderRadius: 1,
           boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
@@ -291,7 +291,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
           overflow: "hidden",
           bgcolor: theme.currentPalette.background,
           border: `1px solid ${alpha(theme.currentPalette.text, 0.2)}`,
-          borderRadius: 2,
+          borderRadius: 1,
           boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
@@ -358,7 +358,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
               mb: 3,
               display: "flex",
               justifyContent: "flex-end",
-              borderRadius: 2,
+              borderRadius: 1,
             }}
           >
             <Button
@@ -370,7 +370,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                 px: 4,
                 fontWeight: "bold",
                 fontSize: "1rem",
-                borderRadius: 2,
+                borderRadius: 1,
                 textTransform: "none",
                 width: { xs: "100%", lg: "auto" },
                 background: `linear-gradient(135deg, ${theme.currentPalette.primary}, ${theme.currentPalette.secondary})`,
@@ -695,7 +695,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                 variant="outlined"
                 sx={{
                   border: `1px solid ${alpha(theme.currentPalette.text, 0.1)}`,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                   bgcolor: theme.currentPalette.background,
                 }}
@@ -741,7 +741,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                         px: 4,
                         fontWeight: "bold",
                         fontSize: "1rem",
-                        borderRadius: 2,
+                        borderRadius: 1,
                         textTransform: "none",
                         width: { xs: "100%", lg: "auto" },
                         background: `linear-gradient(135deg, ${theme.currentPalette.primary}, ${theme.currentPalette.secondary})`,
@@ -880,7 +880,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                 px: 4,
                 fontWeight: "bold",
                 fontSize: "1rem",
-                borderRadius: 2,
+                borderRadius: 1,
                 textTransform: "none",
                 width: { xs: "100%", lg: "auto" },
                 background: `linear-gradient(135deg, ${theme.currentPalette.primary}, ${theme.currentPalette.secondary})`,
@@ -903,7 +903,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                 sx={{
                   bgcolor: theme.currentPalette.background,
                   border: `1px solid ${theme.currentPalette.text}`,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                 }}
               >
@@ -1168,7 +1168,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 2,
+            borderRadius: 1,
             boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
           },
         }}

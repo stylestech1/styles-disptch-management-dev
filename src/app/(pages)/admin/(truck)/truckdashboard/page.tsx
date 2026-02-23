@@ -235,7 +235,7 @@ const TruckDashboard = () => {
         <td className="p-4 text-center">
           <Chip
             sx={{
-              borderRadius: 2,
+              borderRadius: 1,
               bgcolor: alpha(theme.currentPalette.primary, 0.1),
               color: theme.currentPalette.primary,
             }}
@@ -268,7 +268,7 @@ const TruckDashboard = () => {
         <td className="p-4 text-center">
           <Chip
             sx={{
-              borderRadius: 2,
+              borderRadius: 1,
               bgcolor: alpha(theme.currentPalette.primary, 0.1),
               color: theme.currentPalette.primary,
             }}
@@ -312,7 +312,7 @@ const TruckDashboard = () => {
         <td className="p-4 text-center">
           <Chip
             sx={{
-              borderRadius: 2,
+              borderRadius: 1,
               bgcolor: alpha(theme.currentPalette.primary, 0.1),
               color: theme.currentPalette.primary,
             }}
@@ -380,7 +380,7 @@ const TruckDashboard = () => {
         <td className="p-4 text-center">
           <Chip
             sx={{
-              borderRadius: 2,
+              borderRadius: 1,
               bgcolor: alpha(theme.currentPalette.primary, 0.1),
               color: theme.currentPalette.primary,
             }}
@@ -519,7 +519,7 @@ const TruckDashboard = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 2,
+    borderRadius: 1,
     backgroundColor: theme.currentPalette.background,
     width: "100%",
   };
@@ -632,7 +632,7 @@ const TruckDashboard = () => {
               showClearButton
               inputSx={{
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
+                  borderRadius: 1,
                   backgroundColor: theme.currentPalette.background,
                   borderColor: theme.currentPalette.primary,
                 },
@@ -658,7 +658,7 @@ const TruckDashboard = () => {
               }}
               sx={{
                 py: 0.5,
-                borderRadius: 2,
+                borderRadius: 1,
                 color: theme.currentPalette.primary,
               }}
             >
@@ -733,7 +733,7 @@ const TruckDashboard = () => {
                 p: 3,
                 border: 1,
                 borderColor: alpha(theme.currentPalette.primary, 0.3),
-                borderRadius: 2,
+                borderRadius: 1,
                 bgcolor: theme.currentPalette.background,
               }}
             >
