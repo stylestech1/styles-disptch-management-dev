@@ -241,7 +241,7 @@ export default function AdminLayout({
             display: "flex",
             flexDirection: "column",
             minHeight: "100vh",
-            // bgcolor: alpha(themePalette.currentPalette.primary, 0.02),
+            bgcolor: themePalette.currentPalette.background,
           }}
         >
           {/* Page content */}
