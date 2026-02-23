@@ -21,7 +21,7 @@ import {
     useMediaQuery,
 } from "@mui/material";
 
-import {  IoClose } from "react-icons/io5";
+import { IoClose } from "react-icons/io5";
 import { CiCircleCheck } from "react-icons/ci";
 
 
@@ -364,6 +364,7 @@ export default function AddEditMaintenanceCenterDialog({
                     px: 2,
                     pb: 2,
                     pt: 0,
+                    bgcolor: "#fff",
                     overflowY: "auto",
                     flex: "1 1 auto",
                     WebkitOverflowScrolling: "touch",
@@ -508,7 +509,7 @@ export default function AddEditMaintenanceCenterDialog({
                                             startAdornment: (
                                                 <>
                                                     <InputAdornment position="start">
-                                                        <Wrench  color={theme.currentPalette.primary} />
+                                                        <Wrench color={theme.currentPalette.primary} />
                                                     </InputAdornment>
                                                     {params.InputProps.startAdornment}
                                                 </>

@@ -152,8 +152,11 @@ export default function AdminLayout({
                 href={link}
                 onClick={() => !isDesktop && setIsSidebarOpen(false)}
                 sx={{
-                  borderRadius: 1,
-                  mx: 1,
+                  borderTopLeftRadius: 6,
+                  borderBottomLeftRadius: 6,
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
+                  ml: 1,
                   my: 0.5,
                   backgroundColor: active
                     ? themePalette.currentPalette.primary
@@ -192,13 +195,13 @@ export default function AdminLayout({
           startIcon={<IoLogOutOutline />}
           variant="contained"
           onClick={handleLogout}
+          className="!rounded-[6px]"
           sx={{
             // borderRadius: 1,
             bgcolor: themePalette.currentPalette.primary,
             textTransform: "none",
             py: 1,
           }}
-          className="rounded-[12px]"
         >
           Logout
         </Button>

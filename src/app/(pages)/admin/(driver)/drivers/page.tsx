@@ -324,11 +324,11 @@ const DriversPage = () => {
       const stats = isFiltered ? filteredData?.stats : driversData?.stats;
       return stats
         ? {
-            total: stats.total || 0,
-            available: stats.available || 0,
-            busy: stats.busy || 0,
-            inactive: stats.inactive || 0,
-          }
+          total: stats.total || 0,
+          available: stats.available || 0,
+          busy: stats.busy || 0,
+          inactive: stats.inactive || 0,
+        }
         : { total: 0, available: 0, busy: 0, inactive: 0 };
     } else {
       const stats = isFiltered
@@ -373,7 +373,7 @@ const DriversPage = () => {
       // Optimistic UI update - RTK Query will automatically refetch driver summary
       const formData = new FormData();
       formData.append("toggle", String(newToggleValue));
-      
+
       await updateDriver({
         id: driver.id,
         body: formData,
@@ -791,11 +791,14 @@ const DriversPage = () => {
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
+            sx={{ zIndex: 999 }}
             PaperProps={{
               sx: {
                 borderRadius: 1,
                 boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                 mt: 1,
+                bgcolor: "#fff",
+
               },
             }}
           >
@@ -1487,6 +1490,7 @@ const DriversPage = () => {
             borderRadius: 1,
             overflow: "hidden",
             width: 400,
+            bgcolor: "#fff"
           },
         }}
       >
@@ -1499,6 +1503,7 @@ const DriversPage = () => {
                 p: 2,
                 borderBottom: 1,
                 borderColor: alpha(theme.currentPalette.text, 0.1),
+                bgcolor: "#fff"
               }}
             >
               <Typography
@@ -1578,21 +1583,21 @@ const DriversPage = () => {
                   )}
                   {(selectedTimeOff.status === "rejected" ||
                     selectedTimeOff.status === "cancelled") && (
-                    <Chip
-                      sx={{
-                        bgcolor: "#B52C17",
-                        color: theme.currentPalette.background,
-                        px: 0.5,
-                        py: 0.5,
-                      }}
-                      icon={
-                        <OctagonX
-                          style={{ color: theme.currentPalette.background }}
-                        />
-                      }
-                      label={selectedTimeOff.status}
-                    />
-                  )}
+                      <Chip
+                        sx={{
+                          bgcolor: "#B52C17",
+                          color: theme.currentPalette.background,
+                          px: 0.5,
+                          py: 0.5,
+                        }}
+                        icon={
+                          <OctagonX
+                            style={{ color: theme.currentPalette.background }}
+                          />
+                        }
+                        label={selectedTimeOff.status}
+                      />
+                    )}
                 </Box>
 
                 {/* Requested Dates */}

@@ -794,7 +794,7 @@ const DriverSummary = () => {
 
         {/* Upload Dialog */}
         <Dialog open={openUpload} onClose={closeUploadDialog} maxWidth="sm" fullWidth>
-          <DialogContent sx={{ p: 0 }}>
+          <DialogContent sx={{ p: 0 ,  bgcolor: "#fff" }}>
             {/* Header */}
             <Box
               sx={{

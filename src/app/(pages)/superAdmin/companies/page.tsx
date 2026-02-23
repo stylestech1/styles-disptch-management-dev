@@ -26,6 +26,7 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  InputLabel,
 } from "@mui/material";
 import {
   Building2,
@@ -114,13 +115,13 @@ const StatusPill = ({ active }: { active: boolean }) => {
         alignItems: "center",
         gap: 1,
         px: 2,
-        py: 1.1,
-        borderRadius: 999,
+        py: 1,
+        borderRadius: 0.5,
         bgcolor: active ? primary : alpha(primary, 0.12),
         color: active ? "#fff" : primary,
-        fontWeight: 700,
+        fontWeight: 800,
         fontSize: 14,
-        minWidth: 80,
+        minWidth: 86,
         justifyContent: "center",
       }}
     >
@@ -143,19 +144,22 @@ function StatCard({
       elevation={0}
       sx={{
         flex: 1,
-        borderRadius: 1,
+        borderRadius: 0.5, // ✅ as requested
         border: "1px solid #BFD3FF",
-        p: 2,
+        bgcolor: "#fff",
+        px: 2.25,
+        py: 1.6,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        minHeight: 76,
+        minHeight: 78,
       }}
     >
       <Box>
         <Typography sx={{ fontSize: 12, color: "#1D5FBF", fontWeight: 800 }}>
           {label}
         </Typography>
+
         <Typography sx={{ fontSize: 22, fontWeight: 900, color: "#0F2E4A", mt: 0.5 }}>
           {value}
         </Typography>
@@ -163,8 +167,8 @@ function StatCard({
 
       <Box
         sx={{
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
           borderRadius: "50%",
           border: "1px solid #BFD3FF",
           display: "grid",
@@ -197,18 +201,27 @@ function CompanyDialog({
 }) {
   const theme = useAppSelector((state: RootState) => state.palette);
   const title = mode === "add" ? "Add Company" : "Edit Company";
-
-  const selectSx = {
-    borderRadius: "10px",
-    backgroundColor: "#fff",
-    minHeight: 48,
-    "& .MuiSelect-select": { display: "flex", alignItems: "center", gap: 8 },
+  const tfSx = {
+    "& .MuiOutlinedInput-root": { borderRadius: 0.5 },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
+    "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
+    "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: theme.currentPalette.primary,
+    },
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth sx={{ zIndex: 1500 }}>
       <Box sx={{ p: 2.25 }}>
-        <Paper elevation={0} sx={{ overflow: "hidden" }}>
+        <Paper
+          elevation={0}
+        // sx={{
+        //   overflow: "hidden",
+        //   borderRadius: 0.5,
+        //   border: "1px solid #BFD3FF",
+        //   bgcolor: "#fff",
+        // }}
+        >
           <Box
             sx={{
               px: 2,
@@ -217,6 +230,7 @@ function CompanyDialog({
               alignItems: "center",
               justifyContent: "space-between",
               bgcolor: "#fff",
+              zIndex: 999
             }}
           >
             <Typography sx={{ fontWeight: 900, color: "#0F2E4A" }}>{title}</Typography>
@@ -228,12 +242,12 @@ function CompanyDialog({
 
           <Divider />
 
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, mt: 2 }}>
             <Stack spacing={1.6}>
               <TextField
                 label="Company Name"
                 required
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 value={form.name}
                 onChange={(e) => onChange({ name: e.target.value })}
                 placeholder="e.g. Aramex"
@@ -251,7 +265,7 @@ function CompanyDialog({
                 label="Company Email"
                 value={form.email}
                 required
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 onChange={(e) => onChange({ email: e.target.value })}
                 placeholder="e.g. aramex@gmail.com"
                 fullWidth
@@ -270,6 +284,7 @@ function CompanyDialog({
                 onChange={(e) => onChange({ phone: e.target.value })}
                 placeholder="e.g. +20 10xxxxxx"
                 fullWidth
+                sx={tfSx}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -280,28 +295,44 @@ function CompanyDialog({
               />
 
               <FormControl fullWidth>
-                <Typography sx={{ fontSize: 13, color: "#64748B", fontWeight: 700, mb: 0.8 }}>
+                <InputLabel
+                  id="status-label"
+                  sx={{
+                    fontWeight: 700,
+                  }}
+                >
                   Status
-                </Typography>
+                </InputLabel>
+
                 <Select
-                  value={form.status}
+                  labelId="status-label"
+                  label="Status"
+                  required
+                  value={form.status || "Active"}
                   onChange={(e) => onChange({ status: e.target.value as CompanyStatus })}
-                  sx={selectSx}
                   startAdornment={
                     <InputAdornment position="start">
-                      <CircleCheckBig color={theme.currentPalette.primary} />
+                      <CircleCheckBig size={18} color={theme.currentPalette.primary} />
                     </InputAdornment>
                   }
-                  displayEmpty
+                  sx={{
+                    borderRadius: 0.5,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#BFD3FF",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#A9C4FF",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: theme.currentPalette.primary,
+                    },
+                  }}
                   MenuProps={{
                     disablePortal: false,
                     sx: { zIndex: 4000 },
                     PaperProps: { sx: { zIndex: 4000 } },
                   }}
                 >
-                  <MenuItem value="" disabled>
-                    Select status
-                  </MenuItem>
                   <MenuItem value="Active">Active</MenuItem>
                   <MenuItem value="Inactive">Inactive</MenuItem>
                 </Select>
@@ -315,7 +346,7 @@ function CompanyDialog({
                 sx={{
                   mt: 1,
                   py: 1.2,
-                  borderRadius: 1,
+                  borderRadius: 0.5,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -368,6 +399,15 @@ function AssignAdminDialog({
     }
   }, [apiErrors, open]);
 
+  const tfSx = {
+    "& .MuiOutlinedInput-root": { borderRadius: 0.5 },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
+    "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
+    "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: theme.currentPalette.primary,
+    },
+  };
+
   const validate = (values: AssignAdminForm) => {
     const next: AssignAdminErrors = {};
 
@@ -409,7 +449,16 @@ function AssignAdminDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth sx={{ zIndex: 1500 }}>
       <Box sx={{ p: 1 }}>
-        <Paper elevation={0} sx={{ overflow: "hidden" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            overflow: "hidden",
+            borderRadius: 0.5,
+            // border: "1px solid #BFD3FF",
+            bgcolor: "#fff",
+
+          }}
+        >
           <Box
             sx={{
               px: 2,
@@ -436,7 +485,7 @@ function AssignAdminDialog({
 
           <Divider />
 
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, mt: 2 }}>
             <Stack spacing={1.8}>
               <TextField
                 label="Full Name"
@@ -447,7 +496,7 @@ function AssignAdminDialog({
                 fullWidth
                 error={Boolean(errors.fullName)}
                 helperText={errors.fullName}
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -466,7 +515,7 @@ function AssignAdminDialog({
                 fullWidth
                 error={Boolean(errors.email)}
                 helperText={errors.email}
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -485,7 +534,7 @@ function AssignAdminDialog({
                 fullWidth
                 error={Boolean(errors.phone)}
                 helperText={errors.phone}
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -503,6 +552,7 @@ function AssignAdminDialog({
                 fullWidth
                 error={Boolean(errors.position)}
                 helperText={errors.position}
+                sx={tfSx}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -522,7 +572,7 @@ function AssignAdminDialog({
                 fullWidth
                 error={Boolean(errors.password)}
                 helperText={errors.password}
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -549,7 +599,7 @@ function AssignAdminDialog({
                 fullWidth
                 error={Boolean(errors.confirmPassword)}
                 helperText={errors.confirmPassword}
-                sx={{ "& .MuiFormLabel-asterisk": { color: "red" } }}
+                sx={{ ...tfSx, "& .MuiFormLabel-asterisk": { color: "red" } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -574,8 +624,8 @@ function AssignAdminDialog({
                 fullWidth
                 sx={{
                   mt: 1,
-                  py: 1.35,
-                  borderRadius: 1,
+                  py: 1.25,
+                  borderRadius: 0.5,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -720,11 +770,8 @@ export default function CompaniesPage() {
         await updateCompany({ id, body } as any).unwrap();
 
         if (editing.active !== nextActive) {
-          if (nextActive) {
-            await activateCompany({ id, active: true } as any).unwrap();
-          } else {
-            await deactivateCompany({ id, active: false } as any).unwrap();
-          }
+          if (nextActive) await activateCompany({ id, active: true } as any).unwrap();
+          else await deactivateCompany({ id, active: false } as any).unwrap();
         }
 
         setCompanyDialogOpen(false);
@@ -779,7 +826,6 @@ export default function CompaniesPage() {
         return;
       }
 
-      // fallback non-field error
       setAssignApiErrors({
         email: e?.data?.message || "Failed to assign admin",
       });
@@ -793,6 +839,20 @@ export default function CompaniesPage() {
     deactivateState.isLoading;
 
   const assigningAdmin = createUserState.isLoading;
+
+  const searchSx = {
+    minWidth: { xs: "100%", sm: 320 },
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 0.5,
+      minHeight: 40,
+      bgcolor: "#fff",
+    },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
+    "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
+    "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: theme.currentPalette.primary,
+    },
+  };
 
   return (
     <Box sx={{ minHeight: "100vh", p: 3 }}>
@@ -811,32 +871,39 @@ export default function CompaniesPage() {
 
       <Paper
         elevation={0}
-        sx={{
-          borderRadius: 1,
-          border: "1px solid #BFD3FF",
-          overflow: "hidden",
-        }}
+      // sx={{
+      //   borderRadius: 0.5, 
+      //   border: "1px solid #BFD3FF",
+      //   overflow: "hidden",
+      //   bgcolor: "#fff",
+      // }}
       >
         <Box sx={{ p: 2 }}>
           <Box
             sx={{
+              px: 2,
+              py: 1.6,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: 2,
+              gap: 1.5,
               flexWrap: "wrap",
+              borderRadius: 0.5,
+              border: "1px solid #BFD3FF",
+              bgcolor: "#fff",
+              mb: 2,
             }}
           >
             <Box>
               <Typography sx={{ fontWeight: 900, color: theme.currentPalette.primary }}>
                 Company Details
               </Typography>
-              <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
+              <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary, opacity: 0.9 }}>
                 Check the list of all companies
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ width: { xs: "100%", sm: "auto" } }}>
               <TextField
                 size="small"
                 placeholder="Search .."
@@ -849,10 +916,7 @@ export default function CompaniesPage() {
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  minWidth: 320,
-                  "& .MuiOutlinedInput-root": { borderRadius: 1 },
-                }}
+                sx={searchSx}
               />
 
               <Button
@@ -861,91 +925,93 @@ export default function CompaniesPage() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 900,
-                  borderRadius: 1,
-                  px: 3,
+                  borderRadius: 0.5,
+                  px: 2.6,
+                  minHeight: 40,
                   bgcolor: theme.currentPalette.primary,
+                  whiteSpace: "nowrap",
                 }}
               >
                 Add Company
               </Button>
             </Stack>
           </Box>
-        </Box>
 
-        <Divider />
+          <Divider />
 
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: "#F8FBFF" }}>
-                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                  Company ID
-                </TableCell>
-                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                  Company Name
-                </TableCell>
-                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                  No. of Users
-                </TableCell>
-                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                  Email
-                </TableCell>
-                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                  Status
-                </TableCell>
-                <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {(isLoading || isFetching) && (
-                <TableRow>
-                  <TableCell colSpan={6} sx={{ py: 4 }}>
-                    <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>Loading...</Typography>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "#F8FBFF" }}>
+                  <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 900 }} className="text-center">
+                    Company ID
+                  </TableCell>
+                  <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 900 }} className="text-center">
+                    Company Name
+                  </TableCell>
+                  <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 900 }} className="text-center">
+                    No. of Users
+                  </TableCell>
+                  <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 900 }} className="text-center">
+                    Email
+                  </TableCell>
+                  <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 900 }} className="text-center">
+                    Status
+                  </TableCell>
+                  <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 900 }} className="text-center">
+                    Actions
                   </TableCell>
                 </TableRow>
-              )}
+              </TableHead>
 
-              {!isLoading &&
-                !isFetching &&
-                companies.map((row, index) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                      {row.name}
-                    </TableCell>
-                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                      {row.usersCount}
-                    </TableCell>
-                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                      {row.email}
-                    </TableCell>
-                    <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
-                      <StatusPill active={row.active} />
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <IconButton onClick={(e) => openActionsMenu(e, row)} sx={{ width: 42, height: 42 }}>
-                        <CircleEllipsis color={theme.currentPalette.primary} size={20} />
-                      </IconButton>
+              <TableBody>
+                {(isLoading || isFetching) && (
+                  <TableRow>
+                    <TableCell colSpan={6} sx={{ py: 4 }}>
+                      <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>Loading...</Typography>
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
 
-              {!isLoading && !isFetching && companies.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>No companies found</Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                {!isLoading &&
+                  !isFetching &&
+                  companies.map((row, index) => (
+                    <TableRow key={row.id} hover>
+                      <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                        {row.name}
+                      </TableCell>
+                      <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                        {row.usersCount}
+                      </TableCell>
+                      <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                        {row.email}
+                      </TableCell>
+                      <TableCell sx={{ color: theme.currentPalette.primary, fontWeight: 800 }} className="text-center">
+                        <StatusPill active={row.active} />
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <IconButton onClick={(e) => openActionsMenu(e, row)} sx={{ width: 42, height: 42 }}>
+                          <CircleEllipsis color={theme.currentPalette.primary} size={20} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                {!isLoading && !isFetching && companies.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <Typography sx={{ color: "#6B7A90", fontWeight: 800 }}>No companies found</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       </Paper>
 
       <Menu
@@ -954,7 +1020,13 @@ export default function CompaniesPage() {
         onClose={closeActionsMenu}
         sx={{ zIndex: 2000 }}
         PaperProps={{
-          sx: { mt: 1, minWidth: 190, overflow: "hidden" },
+          sx: {
+            mt: 1,
+            minWidth: 190,
+            overflow: "hidden",
+            borderRadius: 0.5,
+            border: "1px solid #BFD3FF",
+          },
         }}
       >
         <MenuItem
@@ -968,7 +1040,7 @@ export default function CompaniesPage() {
           <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary }}>
             <UserPlus size={18} />
           </ListItemIcon>
-          <ListItemText primary="Assign Admin" primaryTypographyProps={{ fontWeight: 700 }} />
+          <ListItemText primary="Assign Admin" primaryTypographyProps={{ fontWeight: 800 }} />
         </MenuItem>
 
         <MenuItem
@@ -982,7 +1054,7 @@ export default function CompaniesPage() {
           <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary }}>
             <Pen size={18} />
           </ListItemIcon>
-          <ListItemText primary="Edit Company" primaryTypographyProps={{ fontWeight: 700 }} />
+          <ListItemText primary="Edit Company" primaryTypographyProps={{ fontWeight: 800 }} />
         </MenuItem>
       </Menu>
 

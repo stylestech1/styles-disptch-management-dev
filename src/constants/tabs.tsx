@@ -150,7 +150,7 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
   ],
   superAdmin: [
     {
-      label: "companies",
+      label: "Companies",
       subtitle: "Manage your companies and their access",
       icon: <Building />
     }

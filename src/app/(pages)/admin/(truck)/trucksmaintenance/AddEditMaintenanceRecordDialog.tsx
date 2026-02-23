@@ -350,6 +350,9 @@ export default function AddEditMaintenanceRecordDialog({
             maxWidth="xs"
             scroll="paper"
             fullScreen={isXs}
+            sx={{
+                zIndex: 999,
+            }}
             PaperProps={{
                 sx: {
                     borderRadius: isXs ? 0 : "14px",
@@ -361,7 +364,7 @@ export default function AddEditMaintenanceRecordDialog({
                 },
             }}
         >
-            <DialogContent sx={{ p: 0 }}>
+            <DialogContent sx={{ p: 0, bgcolor: "#fff", }}>
                 {/* Header */}
                 <Box sx={{ px: 3, py: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
@@ -410,7 +413,7 @@ export default function AddEditMaintenanceRecordDialog({
                                     width: "78%",
                                     height: 2,
                                     bgcolor: alpha(theme.currentPalette.primary, 0.15),
-                                    zIndex: 0,
+                                    zIndex: 999,
                                 }}
                             />
                             {steps.map((label, i) => {
@@ -437,7 +440,7 @@ export default function AddEditMaintenanceRecordDialog({
                                             display: "flex",
                                             flexDirection: "column",
                                             alignItems: "center",
-                                            zIndex: 1,
+                                            zIndex: 999,
                                             minWidth: 110,
                                         }}
                                     >
@@ -736,7 +739,7 @@ export default function AddEditMaintenanceRecordDialog({
                                                     <Truck size={16} color={primaryColor} />
                                                 </Box>
 
-                                                <Typography sx={{  color: primaryColor, fontSize: 18, lineHeight: 1 }}>
+                                                <Typography sx={{ color: primaryColor, fontSize: 18, lineHeight: 1 }}>
                                                     Truck {idx + 1}
                                                 </Typography>
                                             </Box>
