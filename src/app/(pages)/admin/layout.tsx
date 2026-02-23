@@ -259,8 +259,8 @@ export default function AdminLayout({
                           href={childLink}
                           sx={{
                             ml: 4,
-                            borderTopLeftRadius: 4,
-                            borderBottomLeftRadius: 4,
+                            borderTopLeftRadius: 6,
+                            borderBottomLeftRadius: 6,
                             borderTopRightRadius: 0,
                             borderBottomRightRadius: 0,
 
@@ -313,8 +313,8 @@ export default function AdminLayout({
               href={link}
               sx={{
                 ml: 4,
-                borderTopLeftRadius: 4,
-                borderBottomLeftRadius: 4,
+                borderTopLeftRadius: 6,
+                borderBottomLeftRadius: 6,
                 borderTopRightRadius: 0,
                 borderBottomRightRadius: 0,
 
@@ -350,7 +350,7 @@ export default function AdminLayout({
             fullWidth
             startIcon={<PiPaintBrushBroad />}
             variant="outlined"
-            className="!rounded-[8px]"
+            className="!rounded-[6px]"
             sx={{
               color: themePalette.currentPalette.primary,
               textTransform: "capitalize",
@@ -366,7 +366,7 @@ export default function AdminLayout({
           startIcon={<IoLogOutOutline />}
           variant="contained"
           onClick={handleLogout}
-          className="!rounded-[8px]"
+          className="!rounded-[6px]"
           sx={{
             // borderRadius: 0.5,
             bgcolor: themePalette.currentPalette.primary,
