@@ -164,8 +164,9 @@ export default function CreateUserModal({
       disableScrollLock
       sx={{
         "& .MuiDialog-container": { overflow: "visible" },
-        "& .MuiPaper-root": { overflow: "visible" },
-      }} PaperProps={{
+         "& .MuiPaper-root": { overflow: "visible" },
+      }}
+       PaperProps={{
         sx: {
           width: "100%",
           maxWidth: 420,
@@ -189,23 +190,21 @@ export default function CreateUserModal({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box
             sx={{
-              width: 44,
-              height: 44,
+              width: 26,
+              height: 26,
               borderRadius: "50%",
-              
               display: "grid",
               placeItems: "center",
               bgcolor: alpha(theme.currentPalette.primary, 0.12),
               color: theme.currentPalette.primary,
             }}
           >
-            <UserPlus size={20} />
+            <UserPlus size={18} />
           </Box>
 
           <Typography
             sx={{
-              fontSize: 22,
-              fontWeight: 900,
+              fontSize: 18,
               color: theme.currentPalette.primary,
             }}
           >

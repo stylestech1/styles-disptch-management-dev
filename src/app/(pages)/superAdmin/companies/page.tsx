@@ -301,9 +301,6 @@ function CompanyDialog({
               <FormControl fullWidth>
                 <InputLabel
                   id="status-label"
-                  sx={{
-                    fontWeight: 700,
-                  }}
                 >
                   Status
                 </InputLabel>

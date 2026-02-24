@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { IoClose } from "react-icons/io5";
 import toast from "react-hot-toast";
 import {
@@ -10,17 +10,19 @@ import {
   Button,
   Divider,
   FormControl,
+  InputAdornment,
+  InputLabel,
   MenuItem,
+  OutlinedInput,
   Select,
   Typography,
   alpha,
 } from "@mui/material";
-import { Mail, Phone, UserRoundPen, ChevronDown, Shield, BadgeCheck, UserStar } from "lucide-react";
+import { Mail, Phone, UserRoundPen, ChevronDown, BadgeCheck, UserStar } from "lucide-react";
 
 import { TDispatcher, TUserRole } from "@/types/globalTypes";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
-import { socketService } from "@/services/socketService";
 
 interface UserSettingsModalProps {
   isOpen: boolean;
@@ -32,7 +34,7 @@ interface UserSettingsModalProps {
   isLoading?: boolean;
 }
 
-const DRAWER_RADIUS = 18;
+const DRAWER_RADIUS = 12;
 
 const UserSettingsModal = ({
   isOpen,
@@ -47,7 +49,7 @@ const UserSettingsModal = ({
 
   const [tempUser, setTempUser] = useState<{
     role: TUserRole;
-    status: "active" | "deactive";
+    status: "active" | "inactive";
   }>({
     role: "employee",
     status: "active",
@@ -57,7 +59,7 @@ const UserSettingsModal = ({
     if (user) {
       setTempUser({
         role: user.role as TUserRole,
-        status: user.active ? "active" : "deactive",
+        status: user.active ? "active" : "inactive",
       });
     }
   }, [user]);
@@ -95,112 +97,139 @@ const UserSettingsModal = ({
   const bg = theme.currentPalette.background;
   const text = theme.currentPalette.text;
 
+  const border = alpha(text, 0.16);
+  const cardBorder = alpha(primary, 0.25);
+  // const cardBg = alpha(primary, 0.04);
+  const iconChipBg = alpha(primary, 0.10);
+
+  const fieldSx = {
+    height: 60,
+    borderRadius: 2,
+    bgcolor: "#fff",
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: border },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: alpha(primary, 0.35) },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: primary,
+      borderWidth: "2px",
+    },
+    "& .MuiSelect-select": {
+      display: "flex",
+      alignItems: "center",
+      color: alpha(text, 0.8),
+    },
+  } as const;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <Box
         sx={{
-          width: "100%",
-          maxWidth: 520,
+          width: { xs: "100%", md: "80%" },
+          maxWidth: { xs: "calc(100vw - 32px)", sm: 420 },
           bgcolor: bg,
           borderRadius: `${DRAWER_RADIUS}px`,
-          border: `1px solid ${alpha(text, 0.08)}`,
-          boxShadow: "0 18px 60px rgba(0,0,0,0.22)",
+          border: `1px solid ${alpha(text, 0.10)}`,
           overflow: "hidden",
         }}
       >
         {/* Header */}
         <Box
           sx={{
-            px: 2.5,
-            py: 2,
+            px: 3,
+            py: 2.2,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            bgcolor: "#fff",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.6 }}>
             <Box
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "999px",
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
                 display: "grid",
                 placeItems: "center",
-                bgcolor: alpha(primary, 0.12),
+                bgcolor: iconChipBg,
               }}
             >
               <UserRoundPen size={18} color={primary} />
             </Box>
 
-            <Typography sx={{ fontWeight: 800, color: primary, fontSize: 18 }}>
+            <Typography sx={{ color: primary, fontSize: 18, lineHeight: 1 }}>
               Edit User Information
             </Typography>
           </Box>
 
           <Button
             onClick={onClose}
-            className="cursor-pointer text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
+            sx={{
+              minWidth: "auto",
+              p: 0.6,
+              borderRadius: 2,
+              "&:hover": { bgcolor: alpha(text, 0.06) },
+            }}
           >
-            <IoClose size={22} color={theme.currentPalette.primary} />
+            <IoClose size={22} color={alpha(text, 0.55)} />
           </Button>
         </Box>
 
-        <Divider />
+        <Divider sx={{ borderColor: alpha(text, 0.10) }} />
 
-        <Box sx={{ p: 2.5 }}>
+        <Box sx={{ p: 3, bgcolor: "#fff" }}>
           {/* User card */}
           <Box
             sx={{
-              border: `1px solid ${alpha(primary, 0.2)}`,
-              borderRadius: 6,
-              p: 2,
-              bgcolor: alpha(primary, 0.03),
+              border: `1px solid ${cardBorder}`,
+              borderRadius: 3,
+              p: 2.6,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2.2 }}>
               <Avatar
                 sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: alpha(primary, 0.18),
+                  width: 44,
+                  height: 44,
+                  bgcolor: alpha(primary, 0.20),
                   color: primary,
-                  fontWeight: 900,
-                  fontSize: 18,
+                  fontSize: 20,
                 }}
               >
                 {initials}
               </Avatar>
 
-              <Typography sx={{ fontWeight: 800, color: alpha(text, 0.9), fontSize: 16 }}>
+              <Typography sx={{ color: alpha(text, 0.88), fontSize: 24 }}>
                 {user.name}
               </Typography>
             </Box>
 
-            <Box sx={{ mt: 2, display: "grid", gap: 1.2 }}>
-              {/* Email row */}
+            <Divider sx={{ my: 2.2, borderColor: cardBorder }} />
+
+            <Box sx={{ display: "grid", gap: 1.4 }}>
+              {/* Email */}
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                  <Mail size={18} color={primary} />
-                  <Typography sx={{ fontWeight: 700, color: primary, fontSize: 13 }}>
+                  <Mail size={20} color={primary} />
+                  <Typography sx={{ color: primary, fontSize: 14 }}>
                     Email
                   </Typography>
                 </Box>
 
-                <Typography sx={{ color: alpha(text, 0.65), fontSize: 13 }}>
+                <Typography sx={{ color: alpha(text, 0.62), fontSize: 14 }}>
                   {user.email}
                 </Typography>
               </Box>
 
-              {/* Phone row */}
+              {/* Phone */}
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                  <Phone size={18} color={primary} />
-                  <Typography sx={{ fontWeight: 700, color: primary, fontSize: 13 }}>
+                  <Phone size={20} color={primary} />
+                  <Typography sx={{ color: primary, fontSize: 14 }}>
                     Phone
                   </Typography>
                 </Box>
 
-                <Typography sx={{ color: alpha(text, 0.65), fontSize: 13 }}>
+                <Typography sx={{ color: alpha(text, 0.62), fontSize: 14, }}>
                   {user.phone}
                 </Typography>
               </Box>
@@ -208,129 +237,124 @@ const UserSettingsModal = ({
           </Box>
 
           {/* Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2.2, display: "grid", gap: 2 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2.6, display: "grid", gap: 2.2 }}>
             {/* Role */}
-            <Box>
-              <Typography
+            <FormControl fullWidth variant="outlined">
+              <InputLabel
                 sx={{
-                  mb: 0.8,
-                  fontSize: 13,
-                  color: alpha(text, 0.6),
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  color: alpha(text, 0.60),
+                  "&.Mui-focused": { color: primary },
                 }}
               >
                 Role
-              </Typography>
+              </InputLabel>
 
-              <FormControl fullWidth>
-                <Select
-                  value={tempUser.role}
-                  onChange={(e) =>
-                    setTempUser((p) => ({ ...p, role: e.target.value as TUserRole }))
-                  }
-                  displayEmpty
-                  IconComponent={ChevronDown as any}
-                  sx={{
-                    height: 54,
-                    borderRadius: 6,
-                    bgcolor: bg,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: alpha(text, 0.16),
+              <Select
+                value={tempUser.role}
+                onChange={(e) => setTempUser((p) => ({ ...p, role: e.target.value as TUserRole }))}
+                IconComponent={ChevronDown as any}
+                input={
+                  <OutlinedInput
+                    label="Role"
+                    startAdornment={
+                      <InputAdornment position="start" sx={{ ml: 0.2 }}>
+                        <UserStar size={22} color={primary} />
+                      </InputAdornment>
+                    }
+                  />
+                }
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      mt: 1,
+                      borderRadius: 2,
+                      border: `1px solid ${alpha(text, 0.10)}`,
+                      overflow: "hidden",
+                      zIndex: 2000,
                     },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: alpha(primary, 0.35),
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: primary,
-                      borderWidth: "2px",
-                    },
-                  }}
-                  renderValue={(value) => (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                      <UserStar size={18} color={primary} />
-                      <Typography sx={{ fontWeight: 700, color: alpha(text, 0.75) }}>
-                        {String(value).charAt(0).toUpperCase() + String(value).slice(1)}
-                      </Typography>
-                    </Box>
-                  )}
-                >
-                  <MenuItem value={"employee"}>Employee</MenuItem>
-                  <MenuItem value={"admin"}>Admin</MenuItem>
-                  <MenuItem value={"driver"}>Driver</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
+                  },
+                }}
+                sx={fieldSx}
+                renderValue={(value) => (
+                  <Typography sx={{ fontWeight: 600, color: alpha(text, 0.78), fontSize: 16 }}>
+                    {String(value).charAt(0).toUpperCase() + String(value).slice(1)}
+                  </Typography>
+                )}
+              >
+                <MenuItem value="employee">Employee</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="driver">Driver</MenuItem>
+              </Select>
+            </FormControl>
 
             {/* Status */}
-            <Box>
-              <Typography
+            <FormControl fullWidth variant="outlined">
+              <InputLabel
                 sx={{
-                  mb: 0.8,
-                  fontSize: 13,
-                  color: alpha(text, 0.6),
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  color: alpha(text, 0.60),
+                  "&.Mui-focused": { color: primary },
                 }}
               >
                 Status
-              </Typography>
+              </InputLabel>
 
-              <FormControl fullWidth>
-                <Select
-                  value={tempUser.status}
-                  onChange={(e) =>
-                    setTempUser((p) => ({
-                      ...p,
-                      status: e.target.value as "active" | "deactive",
-                    }))
-                  }
-                  displayEmpty
-                  IconComponent={ChevronDown as any}
-                  sx={{
-                    height: 54,
-                    borderRadius: 6,
-                    bgcolor: bg,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: alpha(text, 0.16),
+              <Select
+                value={tempUser.status}
+                onChange={(e) =>
+                  setTempUser((p) => ({ ...p, status: e.target.value as "active" | "inactive" }))
+                }
+                IconComponent={ChevronDown as any}
+                input={
+                  <OutlinedInput
+                    label="Status"
+                    startAdornment={
+                      <InputAdornment position="start" sx={{ ml: 0.2 }}>
+                        <BadgeCheck size={22} color={primary} />
+                      </InputAdornment>
+                    }
+                  />
+                }
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      mt: 1,
+                      borderRadius: 2,
+                      border: `1px solid ${alpha(text, 0.10)}`,
+                      overflow: "hidden",
+                      zIndex: 2000,
                     },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: alpha(primary, 0.35),
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: primary,
-                      borderWidth: "2px",
-                    },
-                  }}
-                  renderValue={(value) => (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                      <BadgeCheck size={18} color={primary} />
-                      <Typography sx={{ fontWeight: 700, color: alpha(text, 0.75) }}>
-                        {value === "active" ? "Active" : "Deactive"}
-                      </Typography>
-                    </Box>
-                  )}
-                >
-                  <MenuItem value={"active"}>Active</MenuItem>
-                  <MenuItem value={"deactive"}>Deactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
+                  },
+                }}
+                sx={fieldSx}
+                renderValue={(value) => (
+                  <Typography sx={{ fontWeight: 600, color: alpha(text, 0.78), fontSize: 16 }}>
+                    {value === "active" ? "Active" : "Inactive"}
+                  </Typography>
+                )}
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
 
-            {/* CTA */}
             <Button
               type="submit"
               disabled={isLoading}
               sx={{
-                mt: 0.5,
-                height: 56,
-                borderRadius: 6,
+                mt: 0.6,
+                borderRadius: 1,
+                py: 1,
                 bgcolor: primary,
-                color: bg,
-                fontWeight: 900,
+                color: "#fff",
+                fontWeight: 800,
                 textTransform: "none",
+                fontSize: 18,
                 "&:hover": { bgcolor: alpha(primary, 0.92) },
                 "&.Mui-disabled": {
                   bgcolor: alpha(primary, 0.5),
-                  color: alpha(bg, 0.9),
+                  color: alpha("#fff", 0.9),
                 },
               }}
             >
