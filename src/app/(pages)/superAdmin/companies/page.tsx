@@ -116,7 +116,7 @@ const StatusPill = ({ active }: { active: boolean }) => {
         gap: 1,
         px: 2,
         py: 1,
-        borderRadius: 0.5,
+        borderRadius: 1,
         bgcolor: active ? primary : alpha(primary, 0.12),
         color: active ? "#fff" : primary,
         fontWeight: 800,
@@ -139,16 +139,20 @@ function StatCard({
   value: React.ReactNode;
   icon: React.ReactNode;
 }) {
+  const palette = useAppSelector((s: RootState) => s.palette.currentPalette);
+  const primary = palette?.primary ?? "#205DAC";
+
   return (
     <Paper
       elevation={0}
       sx={{
         flex: 1,
-        borderRadius: 0.5, // ✅ as requested
-        border: "1px solid #BFD3FF",
+        borderRadius: 1,
+        border: "1px solid",
+        borderColor: alpha(primary, 0.12),
         bgcolor: "#fff",
         px: 2.25,
-        py: 1.6,
+        py: 2,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -202,7 +206,7 @@ function CompanyDialog({
   const theme = useAppSelector((state: RootState) => state.palette);
   const title = mode === "add" ? "Add Company" : "Edit Company";
   const tfSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: 0.5 },
+    "& .MuiOutlinedInput-root": { borderRadius: 1 },
     "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
     "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
     "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
@@ -217,7 +221,7 @@ function CompanyDialog({
           elevation={0}
         // sx={{
         //   overflow: "hidden",
-        //   borderRadius: 0.5,
+        //   borderRadius: 1,
         //   border: "1px solid #BFD3FF",
         //   bgcolor: "#fff",
         // }}
@@ -316,7 +320,7 @@ function CompanyDialog({
                     </InputAdornment>
                   }
                   sx={{
-                    borderRadius: 0.5,
+                    borderRadius: 1,
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#BFD3FF",
                     },
@@ -346,13 +350,13 @@ function CompanyDialog({
                 sx={{
                   mt: 1,
                   py: 1.2,
-                  borderRadius: 0.5,
+                  borderRadius: 1,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
                 }}
               >
-                {loading ? "Saving..." : "Submit"}
+                {loading ? "Saving..." : "Save"}
               </Button>
             </Stack>
           </Box>
@@ -400,7 +404,7 @@ function AssignAdminDialog({
   }, [apiErrors, open]);
 
   const tfSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: 0.5 },
+    "& .MuiOutlinedInput-root": { borderRadius: 1 },
     "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
     "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
     "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
@@ -453,7 +457,7 @@ function AssignAdminDialog({
           elevation={0}
           sx={{
             overflow: "hidden",
-            borderRadius: 0.5,
+            borderRadius: 1,
             // border: "1px solid #BFD3FF",
             bgcolor: "#fff",
 
@@ -545,7 +549,7 @@ function AssignAdminDialog({
               />
 
               <TextField
-                label="Position (optional)"
+                label="Position"
                 value={form.position}
                 onChange={(e) => patchField({ position: e.target.value })}
                 placeholder="e.g. Dispatcher"
@@ -625,7 +629,7 @@ function AssignAdminDialog({
                 sx={{
                   mt: 1,
                   py: 1.25,
-                  borderRadius: 0.5,
+                  borderRadius: 1,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -843,7 +847,7 @@ export default function CompaniesPage() {
   const searchSx = {
     minWidth: { xs: "100%", sm: 320 },
     "& .MuiOutlinedInput-root": {
-      borderRadius: 0.5,
+      borderRadius: 1,
       minHeight: 40,
       bgcolor: "#fff",
     },
@@ -872,13 +876,13 @@ export default function CompaniesPage() {
       <Paper
         elevation={0}
       // sx={{
-      //   borderRadius: 0.5, 
+      //   borderRadius: 1, 
       //   border: "1px solid #BFD3FF",
       //   overflow: "hidden",
       //   bgcolor: "#fff",
       // }}
       >
-        <Box sx={{ p: 2 }}>
+        <Box>
           <Box
             sx={{
               px: 2,
@@ -888,8 +892,9 @@ export default function CompaniesPage() {
               justifyContent: "space-between",
               gap: 1.5,
               flexWrap: "wrap",
-              borderRadius: 0.5,
-              border: "1px solid #BFD3FF",
+              borderRadius: 1,
+              border: "1px solid",
+              borderColor: alpha(theme.currentPalette.primary, 0.1),
               bgcolor: "#fff",
               mb: 2,
             }}
@@ -925,7 +930,7 @@ export default function CompaniesPage() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 900,
-                  borderRadius: 0.5,
+                  borderRadius: 1,
                   px: 2.6,
                   minHeight: 40,
                   bgcolor: theme.currentPalette.primary,
@@ -937,9 +942,16 @@ export default function CompaniesPage() {
             </Stack>
           </Box>
 
-          <Divider />
+          {/* <Divider /> */}
 
-          <TableContainer>
+          <TableContainer
+            sx={{
+              borderRadius: 1,
+              border: "1px solid",
+              borderColor: alpha(theme.currentPalette.primary, 0.1),
+              overflow: "hidden",
+            }}
+          >
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: "#F8FBFF" }}>
@@ -1024,7 +1036,7 @@ export default function CompaniesPage() {
             mt: 1,
             minWidth: 190,
             overflow: "hidden",
-            borderRadius: 0.5,
+            borderRadius: 1,
             border: "1px solid #BFD3FF",
           },
         }}

@@ -1,29 +1,33 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect, useRef, useState } from "react";
-import {
-  IoAdd,
-  IoPerson,
-  IoMail,
-  IoCall,
-  IoKey,
-  IoClose,
-} from "react-icons/io5";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { getErrorMessage } from "@/utils/getErrorMessage";
+
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import toast from "react-hot-toast";
 import {
   alpha,
   Box,
   Button,
-  FormControl,
+  Dialog,
+  DialogContent,
+  IconButton,
   InputAdornment,
   MenuItem,
-  Select,
   TextField,
   Typography,
 } from "@mui/material";
+import {
+  IoAdd,
+  IoClose,
+  IoPerson,
+  IoMail,
+  IoCall,
+  IoKey,
+} from "react-icons/io5";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
+import { UserPlus } from "lucide-react";
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -51,18 +55,17 @@ interface UserFormData {
   passwordConfirmation: string;
 }
 
-const CreateUserModal = ({
+export default function CreateUserModal({
   isOpen,
   onClose,
   onSubmit,
   isLoading = false,
   closeOnOutsideClick = true,
-}: CreateUserModalProps) => {
+}: CreateUserModalProps) {
+  const theme = useAppSelector((state: RootState) => state.palette);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const theme = useAppSelector((state: RootState) => state.palette);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   const {
     register,
@@ -76,7 +79,7 @@ const CreateUserModal = ({
       name: "",
       email: "",
       phone: "",
-      role: "",
+      role: "driver",
       position: "",
       password: "",
       passwordConfirmation: "",
@@ -84,8 +87,47 @@ const CreateUserModal = ({
     mode: "onSubmit",
   });
 
-  const watchPassword = watch("password");
   const role = watch("role");
+  const watchPassword = watch("password");
+
+  const tfSx = {
+    mb: 1,
+    "& .MuiFormLabel-asterisk": { color: "red" },
+    "& .MuiInputLabel-root": {
+      fontSize: 12,
+      fontWeight: 700,
+      color: alpha("#000", 0.55),
+      transform: "translate(14px, -8px) scale(1)",
+      padding: "0 6px",
+      lineHeight: 1.2,
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: theme.currentPalette.primary,
+    },
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "8px",
+      minHeight: 58,
+      "& fieldset": { borderColor: alpha("#000", 0.2) },
+      "&:hover fieldset": { borderColor: alpha("#000", 0.28) },
+      "&.Mui-focused": {
+        backgroundColor: alpha(theme.currentPalette.primary, 0.10),
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: alpha(theme.currentPalette.primary, 0.35),
+      },
+      "&.Mui-error fieldset": { borderColor: "#d32f2f" },
+    },
+    "& .MuiOutlinedInput-input": {
+      padding: "16px 14px",
+      fontSize: 16,
+    },
+    "& .MuiFormHelperText-root": {
+      display: "none",
+      margin: 0,
+      padding: 0,
+      height: 0,
+    },
+  };
 
   const onSubmitForm = async (data: UserFormData) => {
     try {
@@ -94,8 +136,7 @@ const CreateUserModal = ({
       setShowPassword(false);
       setShowPasswordConfirm(false);
     } catch (error: unknown) {
-      const errorMessage = getErrorMessage(error);
-      toast.error(errorMessage || "Adding user Failed ❌");
+      toast.error(getErrorMessage(error) || "Adding user Failed");
     }
   };
 
@@ -106,444 +147,319 @@ const CreateUserModal = ({
     onClose();
   };
 
-  // closing popup
   useEffect(() => {
-    const handleBodyScroll = (shouldPrevent: boolean) => {
-      document.body.style.overflow = shouldPrevent ? "hidden" : "unset";
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
     };
-
-    handleBodyScroll(isOpen);
-    return () => handleBodyScroll(false);
   }, [isOpen]);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isOpen && !isSelectOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose, isSelectOpen]);
-
-  useEffect(() => {
-    const checkSelectState = () => {
-      const selectMenus = document.querySelectorAll(
-        ".MuiMenu-paper, .MuiPopover-root"
-      );
-      const isOpen = Array.from(selectMenus).some((menu) => {
-        const style = window.getComputedStyle(menu);
-        return style.display !== "none" && style.visibility !== "hidden";
-      });
-      setIsSelectOpen(isOpen);
-    };
-
-    const interval = setInterval(checkSelectState, 100);
-
-    return () => clearInterval(interval);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   return (
-    <div
-      onClick={(e) => {
-        if (
-          closeOnOutsideClick &&
-          modalRef.current &&
-          !modalRef.current.contains(e.target as Node) &&
-          !isSelectOpen
-        ) {
-          onClose();
-        }
+    <Dialog
+      open={isOpen}
+      onClose={(_, reason) => {
+        if (reason === "backdropClick" && !closeOnOutsideClick) return;
+        handleClose();
       }}
-      className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 p-4"
+      disableScrollLock
+      sx={{
+        "& .MuiDialog-container": { overflow: "visible" },
+        "& .MuiPaper-root": { overflow: "visible" },
+      }} PaperProps={{
+        sx: {
+          width: "100%",
+          maxWidth: 420,
+          borderRadius: "22px",
+          overflow: "hidden",
+          bgcolor: "#fff",
+        },
+      }}
     >
+      {/* Header */}
       <Box
-        sx={{ bgcolor: theme.currentPalette.background }}
-        ref={modalRef}
-        className="relative rounded-2xl shadow-2xl border border-slate-200 bg-white p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        sx={{
+          px: 3,
+          py: 2.25,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: `1px solid ${alpha("#000", 0.08)}`,
+        }}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-1">
-            <IoAdd size={20} />
-            <Typography sx={{ color: theme.currentPalette.primary, fontSize: '18px', fontWeight: 'bold' }}>Add New User</Typography>
-          </h3>
-          <Button
-            onClick={handleClose}
-            className="cursor-pointer text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              
+              display: "grid",
+              placeItems: "center",
+              bgcolor: alpha(theme.currentPalette.primary, 0.12),
+              color: theme.currentPalette.primary,
+            }}
           >
-            <IoClose size={20} />
-          </Button>
-        </div>
+            <UserPlus size={20} />
+          </Box>
 
-        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
-          <div>
-            <Typography
-              sx={{
-                color: theme.currentPalette.primary,
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "block",
-                mb: 1,
-              }}
-            >
-              Full Name
-            </Typography>
-            <div className="relative">
-              <TextField
-                type="text"
-                {...register("name", {
-                  required: "Name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Name must be at least 2 characters",
-                  },
-                  maxLength: {
-                    value: 50,
-                    message: "Name must be less least 50 characters",
-                  },
-                })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.name ? "border-red-500" : "border-slate-300"
-                  }`}
-                sx={{
-                  bgcolor: theme.currentPalette.background,
-                  width: "100%",
-                }}
-                placeholder="Enter full name"
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoPerson className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-          </div>
+          <Typography
+            sx={{
+              fontSize: 22,
+              fontWeight: 900,
+              color: theme.currentPalette.primary,
+            }}
+          >
+            Add New User
+          </Typography>
+        </Box>
 
-          <div>
-            <Typography
-              sx={{
-                color: theme.currentPalette.primary,
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "block",
-                mb: 1,
-              }}
-            >
-              Email Address
-            </Typography>
-            <div className="relative">
-              <TextField
-                type="email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address",
-                  },
-                })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.email ? "border-red-500" : "border-slate-300"
-                  }`}
-                sx={{
-                  bgcolor: theme.currentPalette.background,
-                  width: "100%",
-                }}
-                placeholder="Enter full name"
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoMail className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-          </div>
+        <IconButton
+          onClick={handleClose}
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: "8px",
+            color: alpha("#000", 0.55),
+            "&:hover": { bgcolor: alpha("#000", 0.06) },
+          }}
+        >
+          <IoClose size={20} />
+        </IconButton>
+      </Box>
 
-          <div>
-            <Typography
-              sx={{
-                color: theme.currentPalette.primary,
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "block",
-                mb: 1,
-              }}
-            >
-              Phone Number
-            </Typography>
-            <div className="relative">
-              <TextField
-                type="text"
-                {...register("phone", {
-                  required: "Phone number is required",
-                  pattern: {
-                    value: /^[0-9+\-\s()]+$/,
-                    message: "Invalid phone number format",
-                  },
-                  minLength: {
-                    value: 8,
-                    message: "Phone number must be at least 8 digits",
-                  },
-                })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.phone ? "border-red-500" : "border-slate-300"
-                  }`}
-                sx={{
-                  bgcolor: theme.currentPalette.background,
-                  width: "100%",
-                }}
-                placeholder="Enter phone number"
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoCall className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.phone.message}
-                </p>
-              )}
-            </div>
-          </div>
+      <DialogContent sx={{ p: 3 }}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit(onSubmitForm)}
+          sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
+        >
+          <TextField
+            label="Full Name"
+            placeholder="Enter full name"
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            sx={tfSx}
+            error={!!errors.name}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Typography
-                sx={{
-                  color: theme.currentPalette.primary,
-                  fontSize: "14px",
-                  fontWeight: "bold",
-                  display: "block",
-                  mb: 1,
-                }}
-              >
-                Role
-              </Typography>
-              <FormControl fullWidth error={!!errors.role}>
-                <Controller
-                  name="role"
-                  control={control}
-                  rules={{ required: "Role is required" }}
-                  render={({ field }) => (
-                    <Select
-                      labelId="demo-simple-select-label"
-                      displayEmpty
-                      {...field}
-                      value={field.value || ""}
-                      className={`block w-full border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.role ? "border-red-500" : "border-slate-300"
-                        }`}
-                    >
-                      <MenuItem value="" disabled>
-                        <span className="text-slate-400">Select a role...</span>
-                      </MenuItem>
-                      <MenuItem value={"employee"}>Employee</MenuItem>
-                      <MenuItem value={"admin"}>Admin</MenuItem>
-                      <MenuItem value={"driver"}>Driver</MenuItem>
-                    </Select>
-                  )}
-                />
-              </FormControl>
-              {errors.role && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.role.message}
-                </p>
-              )}
-            </div>
-            {role === "employee" && (
-              <div>
-                <Typography
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "block",
-                    mb: 1,
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IoPerson size={18} color={theme.currentPalette.primary} />
+                </InputAdornment>
+              ),
+            }}
+            {...register("name", { required: "Name is required" })}
+          />
+
+          <TextField
+            label="Email Address"
+            placeholder="e.g. test@gmail.com"
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            sx={tfSx}
+            error={!!errors.email}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IoMail size={18} color={theme.currentPalette.primary} />
+                </InputAdornment>
+              ),
+            }}
+            {...register("email", {
+              required: "Email is required",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Invalid email address",
+              },
+            })}
+          />
+
+          <TextField
+            label="Phone Number"
+            placeholder="e.g. +201234567890"
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            sx={tfSx}
+            error={!!errors.phone}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IoCall size={18} color={theme.currentPalette.primary} />
+                </InputAdornment>
+              ),
+            }}
+            {...register("phone", {
+              required: "Phone number is required",
+              pattern: {
+                value: /^[0-9+\-\s()]+$/,
+                message: "Invalid phone number format",
+              },
+            })}
+          />
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1.25,
+              flexDirection: role === "employee" ? "row" : "column",
+            }}
+          >
+            <Controller
+              name="role"
+              control={control}
+              rules={{ required: "Role is required" }}
+              render={({ field }) => (
+                <TextField
+                  label="Role"
+                  select
+                  fullWidth
+                  required
+                  InputLabelProps={{ shrink: true }}
+                  sx={tfSx}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  error={!!errors.role}
+                  SelectProps={{
+                    MenuProps: {
+                      disablePortal: false,
+                      anchorOrigin: { vertical: "bottom", horizontal: "left" },
+                      transformOrigin: { vertical: "top", horizontal: "left" },
+                      PaperProps: {
+                        sx: {
+                          zIndex: 20000,
+                          bgcolor: "#fff",
+                          mt: 1,
+                          borderRadius: "10px",
+                          overflow: "hidden",
+                          boxShadow: "0 14px 50px rgba(0,0,0,0.18)",
+                        },
+                      },
+                      slotProps: {
+                        root: {
+                          sx: { zIndex: 20000 },
+                        },
+                      },
+                    },
                   }}
                 >
-                  Position
-                </Typography>
-                <TextField
-                  type="text"
-                  {...register("position", {
-                    // required: "Position is required",
-                    minLength: {
-                      value: 2,
-                      message: "Position must be at least 2 characters",
-                    },
-                  })}
-                  className={`block w-full border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.position ? "border-red-500" : "border-slate-300"
-                    }`}
-                  sx={{
-                    bgcolor: theme.currentPalette.background,
-                    width: "100%",
-                  }}
-                  placeholder="Position"
-                />
-                {/* {errors.position && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.position.message}
-                  </p>
-                )} */}
-              </div>
-            )}
-          </div>
+                  <MenuItem value="driver">Driver</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="employee">Employee</MenuItem>
+                </TextField>
+              )}
+            />
 
-          <div>
-            <Typography
-              sx={{
-                color: theme.currentPalette.primary,
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "block",
-                mb: 1,
-              }}
-            >
-              Password
-            </Typography>
-            <div className="relative">
+            {role === "employee" && (
               <TextField
-                type={showPassword ? "text" : "password"}
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.password ? "border-red-500" : "border-slate-300"
-                  }`}
-                sx={{
-                  bgcolor: theme.currentPalette.background,
-                  width: "100%",
-                }}
-                placeholder="Enter password"
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoKey className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
+                label="Position"
+                placeholder="Position"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                sx={tfSx}
+                {...register("position", { required: "Position is required" })}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute cursor-pointer inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.password.message}
-              </p>
             )}
-          </div>
+          </Box>
 
-          <div>
-            <Typography
-              sx={{
-                color: theme.currentPalette.primary,
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "block",
-                mb: 1,
-              }}
-            >
-              Confirm Password
-            </Typography>
-            <div className="relative">
-              <TextField
-                type={showPasswordConfirm ? "text" : "password"}
-                {...register("passwordConfirmation", {
-                  required: "Please confirm your password",
-                  validate: (value: string) =>
-                    value === watchPassword || "Passwords do not match",
-                })}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${errors.passwordConfirmation
-                  ? "border-red-500"
-                  : "border-slate-300"
-                  }`}
-                sx={{
-                  bgcolor: theme.currentPalette.background,
-                  width: "100%",
-                }}
-                placeholder="Confirm password"
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoKey className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasswordConfirm((prev) => !prev)}
-                className="absolute cursor-pointer inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {showPasswordConfirm ? (
-                  <FaEyeSlash size={18} />
-                ) : (
-                  <FaEye size={18} />
-                )}
-              </button>
-            </div>
-            {errors.passwordConfirmation && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.passwordConfirmation.message}
-              </p>
-            )}
-          </div>
+          <TextField
+            label="Password"
+            placeholder="Password"
+            fullWidth
+            required
+            type={showPassword ? "text" : "password"}
+            InputLabelProps={{ shrink: true }}
+            sx={tfSx}
+            error={!!errors.password}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IoKey size={18} color={theme.currentPalette.primary} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword((p) => !p)}
+                    edge="end"
+                    sx={{ color: alpha("#000", 0.55) }}
+                  >
+                    {showPassword ? (
+                      <FaEyeSlash size={16} />
+                    ) : (
+                      <FaEye size={16} />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            {...register("password", {
+              required: "Password is required",
+              minLength: { value: 6, message: "Min 6 chars" },
+            })}
+          />
+
+          <TextField
+            label="Confirm Password"
+            placeholder="Confirm password"
+            fullWidth
+            required
+            type={showPasswordConfirm ? "text" : "password"}
+            InputLabelProps={{ shrink: true }}
+            sx={tfSx}
+            error={!!errors.passwordConfirmation}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IoKey size={18} color={theme.currentPalette.primary} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPasswordConfirm((p) => !p)}
+                    edge="end"
+                    sx={{ color: alpha("#000", 0.55) }}
+                  >
+                    {showPasswordConfirm ? (
+                      <FaEyeSlash size={16} />
+                    ) : (
+                      <FaEye size={16} />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            {...register("passwordConfirmation", {
+              required: "Confirm password is required",
+              validate: (v) => v === watchPassword || "Passwords do not match",
+            })}
+          />
 
           <Button
             type="submit"
-            fullWidth
             disabled={isLoading}
+            fullWidth
             sx={{
-              mt: 2,
-              py: 1.5,
-              borderRadius: 1,
-              fontWeight: 500,
+              mt: 1.25,
+              py: 1.6,
+              borderRadius: "8px",
+              fontWeight: 900,
+              fontSize: 16,
               color: "#fff",
-              background: theme.currentPalette.primary,
-              "&:hover": {
-                background: alpha(theme.currentPalette.primary, 0.85),
+              backgroundColor: theme.currentPalette.primary,
+              "&:hover": { backgroundColor: alpha(theme.currentPalette.primary, 0.92) },
+              "&.Mui-disabled": {
+                backgroundColor: alpha(theme.currentPalette.primary, 0.45),
+                color: alpha("#fff", 0.95),
               },
             }}
           >
-            {isLoading ? "Save Changes" : "Create User"}
+            {isLoading ? "CREATING..." : "CREATE USER"}
           </Button>
-        </form>
-      </Box>
-    </div>
+        </Box>
+      </DialogContent>
+    </Dialog>
   );
-};
-
-export default CreateUserModal;
+}

@@ -1,25 +1,21 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
-
-import React, { useEffect, useMemo } from "react";
-import { ThemeProvider, createTheme, responsiveFontSizes } from "@mui/material/styles";
-import { CssBaseline } from "@mui/material";
 import { useSelector } from "react-redux";
-import { skipToken } from "@reduxjs/toolkit/query";
-
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { CssBaseline } from "@mui/material";
 import { RootState, useAppDispatch } from "@/redux/store";
+import { useEffect, useMemo } from "react";
 import { useGetPaletteQuery } from "@/redux/slices/apiSlice";
 import { loadPalettesFromBackend, setPalette } from "@/redux/slices/paletteSlice";
 import { TPaletteConfigToPalette } from "@/utils/helperPalette";
+import { skipToken } from "@reduxjs/toolkit/query";
 
 export default function MuiThemeProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const dispatch = useAppDispatch();
-
   const { currentPalette } = useSelector((state: RootState) => state.palette);
+  const dispatch = useAppDispatch();
 
   const token = useSelector((state: RootState) => state.auth?.token);
 
@@ -35,56 +31,45 @@ export default function MuiThemeProvider({
     shouldFetchPalette ? undefined : skipToken
   );
 
+
   useEffect(() => {
-    if (!backendPalettes?.length) return;
+    if (backendPalettes.length > 0) {
+      dispatch(loadPalettesFromBackend(backendPalettes));
 
-    dispatch(loadPalettesFromBackend(backendPalettes));
-
-    const activePaletteConfig = backendPalettes.find((p) => p.active);
-    if (activePaletteConfig) {
-      dispatch(setPalette(TPaletteConfigToPalette(activePaletteConfig)));
+      const activePaletteConfig = backendPalettes.find(p => p.active);
+      if (activePaletteConfig) {
+        const activePalette = TPaletteConfigToPalette(activePaletteConfig);
+        dispatch(setPalette(activePalette));
+      }
     }
   }, [backendPalettes, dispatch]);
 
-  const mode = currentPalette?.mode ?? "light";
-  const primary = currentPalette?.primary ?? "#205DAC";
-  const secondary = currentPalette?.secondary ?? "#7FA9E6";
-
-  const backgroundDefault =
-    currentPalette?.background ?? (mode === "dark" ? "#0B1220" : "#F4F7FC");
-
-  const paper =
-    currentPalette?.paper ?? (mode === "dark" ? "#101A2C" : "#FFFFFF");
-
-  const textPrimary =
-    currentPalette?.text ?? (mode === "dark" ? "#FFFFFF" : "#0B1220");
-
-  const textSecondary =
-    currentPalette?.primary ??
-    (mode === "dark" ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)");
-
-  const theme = useMemo(() => {
-    let t = createTheme({
+  const muiTheme = useMemo(() => {
+    return createTheme({
       palette: {
-        mode,
-        primary: { main: primary, contrastText: "#FFFFFF" },
-        secondary: { main: secondary, contrastText: "#FFFFFF" },
-        background: { default: backgroundDefault, paper },
-        text: { primary: textPrimary, secondary: textSecondary },
-      },
-      shape: { borderRadius: 12 },
-      typography: {
-        fontFamily:
-          "Roboto, Inter, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif",
+        mode: currentPalette.mode,
+        primary: {
+          main: currentPalette.primary,
+          contrastText: "#FFFFFF"
+        },
+        secondary: {
+          main: currentPalette.secondary,
+          contrastText: "#FFFFFF"
+        },
+        background: {
+          default: currentPalette.background,
+          paper: "#FFFFFF"
+        },
+        text: {
+          primary: currentPalette.text,
+          secondary: "#666666"
+        },
       },
     });
-
-    t = responsiveFontSizes(t);
-    return t;
-  }, [mode, primary, secondary, backgroundDefault, paper, textPrimary, textSecondary]);
+  }, [currentPalette]);
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={muiTheme}>
       <CssBaseline />
       {children}
     </ThemeProvider>

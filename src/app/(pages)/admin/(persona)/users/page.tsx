@@ -351,8 +351,9 @@ const Users = () => {
         {/* Setting */}
         <td className="p-4">
           <button
+          style={{color:theme.currentPalette.primary}}
             onClick={() => openSettingsPopup(dispatcher)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200  transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
           >
             <UserPen />
           </button>
