@@ -51,7 +51,7 @@ const DataTable = <T,>({
       <Paper
         elevation={1}
         sx={{
-          borderRadius: 1,
+          borderRadius: 2,
           border: "1px solid",
           borderColor: theme.currentPalette.primary,
           overflow: "hidden",
@@ -94,7 +94,7 @@ const DataTable = <T,>({
                         width={`${80 - colIndex * 5}%`}
                         sx={{
                           mx: "auto",
-                          borderRadius: 1,
+                          borderRadius: 2,
                           bgcolor: alpha(theme.currentPalette.primary, 0.15),
                         }}
                       />
@@ -135,7 +135,7 @@ const DataTable = <T,>({
     <Paper
       elevation={1}
       sx={{
-        borderRadius: 1,
+        borderRadius: 2,
         border: "1px solid",
         borderColor:  alpha(theme.currentPalette.primary, 0.3),
         overflowX: "auto",

@@ -313,7 +313,7 @@ const LoadsPageDetails = () => {
                 bgcolor: theme.currentPalette.background,
                 color: "#E2852E",
                 border: "1px solid #E2852E",
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -336,7 +336,7 @@ const LoadsPageDetails = () => {
               sx={{
                 bgcolor: alpha(theme.currentPalette.primary, 0.5),
                 color: theme.currentPalette.primary,
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -359,7 +359,7 @@ const LoadsPageDetails = () => {
               sx={{
                 bgcolor: theme.currentPalette.primary,
                 color: theme.currentPalette.background,
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -383,7 +383,7 @@ const LoadsPageDetails = () => {
                 bgcolor: theme.currentPalette.background,
                 color: "#dc2626",
                 border: "1px solid #dc2626",
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -466,7 +466,7 @@ const LoadsPageDetails = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 1,
+    borderRadius: 2,
     backgroundColor: theme.currentPalette.background,
     width: "100%",
   };
@@ -542,7 +542,7 @@ const LoadsPageDetails = () => {
             inputSx={{
               "& .MuiOutlinedInput-root": {
                 width: { xs: "100%", md: 250 },
-                borderRadius: 1,
+                borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,
                 py: 0.5,
                 "&:hover": {
@@ -562,7 +562,7 @@ const LoadsPageDetails = () => {
             startIcon={<IoAdd size={22} />}
             sx={{
               width: { xs: "100%", md: "100%" },
-              borderRadius: 1,
+              borderRadius: 2,
               px: 3,
               py: 2,
             }}

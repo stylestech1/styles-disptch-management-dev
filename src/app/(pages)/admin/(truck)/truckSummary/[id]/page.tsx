@@ -170,7 +170,7 @@ const TruckSummary = () => {
         <Box
           sx={{
             border: 1,
-            borderRadius: 1,
+            borderRadius: 2,
             borderColor: alpha(theme.currentPalette.primary, 0.3),
             p: 3,
             bgcolor: theme.currentPalette.background,
@@ -206,7 +206,7 @@ const TruckSummary = () => {
                     p: 1.5,
                     bgcolor: alpha(theme.currentPalette.primary, 0.1),
                     color: theme.currentPalette.primary,
-                    borderRadius: 1,
+                    borderRadius: 2,
                   }}
                 >
                   {card.icon}
@@ -233,7 +233,7 @@ const TruckSummary = () => {
               p: 3,
               border: 1,
               borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 1,
+              borderRadius: 2,
               bgcolor: theme.currentPalette.background,
             }}
             className="flex flex-col justify-center"
@@ -260,7 +260,7 @@ const TruckSummary = () => {
               p: 3,
               border: 1,
               borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 1,
+              borderRadius: 2,
               bgcolor: theme.currentPalette.background,
             }}
             className="flex flex-col justify-center"
@@ -287,7 +287,7 @@ const TruckSummary = () => {
               p: 3,
               border: 1,
               borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 1,
+              borderRadius: 2,
               bgcolor: theme.currentPalette.background,
             }}
             className="flex flex-col justify-center"
@@ -314,7 +314,7 @@ const TruckSummary = () => {
               p: 3,
               border: 1,
               borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 1,
+              borderRadius: 2,
               bgcolor: theme.currentPalette.background,
             }}
             className="flex flex-col justify-center"

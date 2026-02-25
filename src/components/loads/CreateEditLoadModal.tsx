@@ -999,7 +999,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                         <Box
                           sx={{
                             border: `2px solid ${theme.currentPalette.primary}`,
-                            borderRadius: 1,
+                            borderRadius: 2,
                             p: 2,
                             mb: 2,
                           }}

@@ -114,7 +114,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
         <Box
           sx={{
             border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-            borderRadius: 1,
+            borderRadius: 2,
             p: 2.5,
             bgcolor: alpha(theme.currentPalette.text, 0.03),
           }}
@@ -186,7 +186,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
         <Box
           sx={{
             border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-            borderRadius: 1,
+            borderRadius: 2,
           }}
           className="grid grid-cols-1 md:grid-cols-3"
         >

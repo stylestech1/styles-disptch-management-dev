@@ -176,7 +176,7 @@ const UserProfile = () => {
           <Button
             variant="outlined"
             sx={{
-              borderRadius: 1,
+              borderRadius: 2,
               fontWeight: 500,
               py: 1,
               color: theme.currentPalette.primary,
@@ -195,7 +195,7 @@ const UserProfile = () => {
 
           <Button
             sx={{
-              borderRadius: 1,
+              borderRadius: 2,
               fontWeight: 500,
               py: 1,
               color: theme.currentPalette.background,
@@ -392,7 +392,7 @@ const UserProfile = () => {
               sx={{
                 mt: 2,
                 py: 1.5,
-                borderRadius: 1,
+                borderRadius: 2,
                 fontWeight: 500,
                 color: theme.currentPalette.primary,
                 borderColor: theme.currentPalette.primary,
@@ -413,7 +413,7 @@ const UserProfile = () => {
               sx={{
                 mt: 2,
                 py: 1.5,
-                borderRadius: 1,
+                borderRadius: 2,
                 fontWeight: 500,
                 color: theme.currentPalette.background,
                 background: theme.currentPalette.primary,
@@ -511,7 +511,7 @@ const UserProfile = () => {
             sx={{
               mt: 2,
               py: 1.5,
-              borderRadius: 1,
+              borderRadius: 2,
               fontWeight: 500,
               color: theme.currentPalette.background,
               background: theme.currentPalette.primary,

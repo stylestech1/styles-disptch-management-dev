@@ -17,6 +17,19 @@ export type PaginationResult = {
   totalDocs: number;
   totalPages: number;
 };
+export type SettingsItem = {
+  id: string;
+  key: "repairPerMile" | "insurancePerMile";
+  value: number;
+};
+
+export type RawGetSettingsResponse = {
+  message: string;
+  data: SettingsItem[];
+};
+
+ export type SettingsDto = { id: string; repairPerMile: number; insurancePerMile: number } | null;
+
 export type TUser = {
   id: string;
   name: string;

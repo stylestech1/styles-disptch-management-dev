@@ -92,7 +92,7 @@ const emptyCompanyForm: CompanyForm = {
   email: "",
   phone: "",
   usersCount: "",
-  status: "",
+  status: "Active",
 };
 
 const emptyAssignAdminForm: AssignAdminForm = {
@@ -116,7 +116,7 @@ const StatusPill = ({ active }: { active: boolean }) => {
         gap: 1,
         px: 2,
         py: 1,
-        borderRadius: 1,
+        borderRadius: 2,
         bgcolor: active ? primary : alpha(primary, 0.12),
         color: active ? "#fff" : primary,
         fontWeight: 800,
@@ -147,7 +147,7 @@ function StatCard({
       elevation={0}
       sx={{
         flex: 1,
-        borderRadius: 1,
+        borderRadius: 2,
         border: "1px solid",
         borderColor: alpha(primary, 0.12),
         bgcolor: "#fff",
@@ -200,13 +200,13 @@ function CompanyDialog({
   form: CompanyForm;
   onChange: (patch: Partial<CompanyForm>) => void;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
   loading?: boolean;
 }) {
   const theme = useAppSelector((state: RootState) => state.palette);
   const title = mode === "add" ? "Add Company" : "Edit Company";
   const tfSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: 1 },
+    "& .MuiOutlinedInput-root": { borderRadius: 2 },
     "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
     "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
     "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
@@ -221,7 +221,7 @@ function CompanyDialog({
           elevation={0}
         // sx={{
         //   overflow: "hidden",
-        //   borderRadius: 1,
+        //   borderRadius: 2,
         //   border: "1px solid #BFD3FF",
         //   bgcolor: "#fff",
         // }}
@@ -317,7 +317,7 @@ function CompanyDialog({
                     </InputAdornment>
                   }
                   sx={{
-                    borderRadius: 1,
+                    borderRadius: 2,
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#BFD3FF",
                     },
@@ -340,14 +340,16 @@ function CompanyDialog({
               </FormControl>
 
               <Button
-                onClick={onSubmit}
+                onClick={async () => {
+                  await onSubmit();
+                }}
                 disabled={loading}
                 variant="contained"
                 fullWidth
                 sx={{
                   mt: 1,
                   py: 1.2,
-                  borderRadius: 1,
+                  borderRadius: 2,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -401,7 +403,7 @@ function AssignAdminDialog({
   }, [apiErrors, open]);
 
   const tfSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: 1 },
+    "& .MuiOutlinedInput-root": { borderRadius: 2 },
     "& .MuiOutlinedInput-notchedOutline": { borderColor: "#BFD3FF" },
     "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#A9C4FF" },
     "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
@@ -454,7 +456,7 @@ function AssignAdminDialog({
           elevation={0}
           sx={{
             overflow: "hidden",
-            borderRadius: 1,
+            borderRadius: 2,
             // border: "1px solid #BFD3FF",
             bgcolor: "#fff",
 
@@ -626,7 +628,7 @@ function AssignAdminDialog({
                 sx={{
                   mt: 1,
                   py: 1.25,
-                  borderRadius: 1,
+                  borderRadius: 2,
                   textTransform: "none",
                   fontWeight: 900,
                   bgcolor: theme.currentPalette.primary,
@@ -745,9 +747,7 @@ export default function CompaniesPage() {
   };
 
   const submitCompanyDialog = async () => {
-    if (!companyForm.name.trim() || !companyForm.email.trim() || !companyForm.status) return;
-
-    const nextActive = companyForm.status === "Active";
+    const nextActive = (companyForm.status || "Active") === "Active";
 
     const body = {
       name: companyForm.name.trim(),
@@ -758,6 +758,7 @@ export default function CompaniesPage() {
 
     try {
       if (companyDialogMode === "add") {
+        const nextActive = (companyForm.status || "Active") === "Active";
         await createCompany({ ...body, active: nextActive } as any).unwrap();
         setCompanyDialogOpen(false);
         await refetch();
@@ -778,7 +779,7 @@ export default function CompaniesPage() {
         setCompanyDialogOpen(false);
         await refetch();
       }
-    } catch (e) {
+    } catch {
       // keep silent as requested
     }
   };
@@ -844,7 +845,7 @@ export default function CompaniesPage() {
   const searchSx = {
     minWidth: { xs: "100%", sm: 320 },
     "& .MuiOutlinedInput-root": {
-      borderRadius: 1,
+      borderRadius: 2,
       minHeight: 40,
       bgcolor: "#fff",
     },
@@ -873,7 +874,7 @@ export default function CompaniesPage() {
       <Paper
         elevation={0}
       // sx={{
-      //   borderRadius: 1, 
+      //   borderRadius: 2, 
       //   border: "1px solid #BFD3FF",
       //   overflow: "hidden",
       //   bgcolor: "#fff",
@@ -889,7 +890,7 @@ export default function CompaniesPage() {
               justifyContent: "space-between",
               gap: 1.5,
               flexWrap: "wrap",
-              borderRadius: 1,
+              borderRadius: 2,
               border: "1px solid",
               borderColor: alpha(theme.currentPalette.primary, 0.1),
               bgcolor: "#fff",
@@ -927,7 +928,7 @@ export default function CompaniesPage() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 900,
-                  borderRadius: 1,
+                  borderRadius: 2,
                   px: 2.6,
                   minHeight: 40,
                   bgcolor: theme.currentPalette.primary,
@@ -943,7 +944,7 @@ export default function CompaniesPage() {
 
           <TableContainer
             sx={{
-              borderRadius: 1,
+              borderRadius: 2,
               border: "1px solid",
               borderColor: alpha(theme.currentPalette.primary, 0.1),
               overflow: "hidden",
@@ -1033,7 +1034,7 @@ export default function CompaniesPage() {
             mt: 1,
             minWidth: 190,
             overflow: "hidden",
-            borderRadius: 1,
+            borderRadius: 2,
             border: "1px solid #BFD3FF",
           },
         }}

@@ -344,7 +344,7 @@ const UserSettingsModal = ({
               disabled={isLoading}
               sx={{
                 mt: 0.6,
-                borderRadius: 1,
+                borderRadius: 2,
                 py: 1,
                 bgcolor: primary,
                 color: "#fff",

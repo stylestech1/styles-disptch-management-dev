@@ -31,6 +31,7 @@ export const api = createApi({
     "Conversations",
     "centermaintenance",
     "companies",
+    "Settings"
   ],
   refetchOnFocus: false,
   refetchOnReconnect: false,

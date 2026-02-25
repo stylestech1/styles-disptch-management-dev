@@ -379,7 +379,7 @@ const Users = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 1,
+    borderRadius: 2,
     backgroundColor: theme.currentPalette.background,
   };
   const newLoadButtonSx: SxProps = {
@@ -387,7 +387,7 @@ const Users = () => {
     px: 4,
     fontWeight: "bold",
     fontSize: "1rem",
-    borderRadius: 1,
+    borderRadius: 2,
     width: { xs: "100%", md: "auto" },
     background: theme.currentPalette.primary,
     color: theme.currentPalette.background,
@@ -469,7 +469,7 @@ const Users = () => {
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
-                borderRadius: 1,
+                borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,
                 py: 0.5,
                 "&:hover": {

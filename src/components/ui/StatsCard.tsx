@@ -34,7 +34,7 @@ const StatsCard = ({
       <Card
         variant="outlined"
         sx={{
-          borderRadius: 1,
+          borderRadius: 2,
           borderColor: "#e2e8f0",
           p: 2,
           boxShadow: 1,
@@ -51,7 +51,7 @@ const StatsCard = ({
               <Box sx={{ width: "50%", height: 14, mb: 1 }} />
               <Box sx={{ width: "30%", height: 18 }} />
             </Box>
-            <Box sx={{ p: 1.5, borderRadius: 1 }}>
+            <Box sx={{ p: 1.5, borderRadius: 2 }}>
               <Box sx={{ width: 24, height: 24, borderRadius: "50%" }} />
             </Box>
           </Box>
@@ -64,7 +64,7 @@ const StatsCard = ({
     <Card
       variant="outlined"
       sx={{
-        borderRadius: 1,
+        borderRadius: 2,
         borderColor: alpha(theme.currentPalette.primary, 0.2),
         bgcolor: theme.currentPalette.background,
         transition: "all 0.3s ease",

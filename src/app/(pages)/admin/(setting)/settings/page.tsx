@@ -94,7 +94,7 @@ export default function Settings() {
         sx={{
           width: 120,
           height: 60,
-          borderRadius: 1,
+          borderRadius: 2,
           overflow: "hidden",
           cursor: "pointer",
           boxShadow: currentPalette.customName === palette.customName ? 4 : 1,
@@ -307,7 +307,7 @@ export default function Settings() {
           p: 3,
           border: "1px solid",
           borderColor: "text.secondary",
-          borderRadius: 1,
+          borderRadius: 2,
           backgroundColor: "background.default",
         }}
       >
@@ -377,7 +377,7 @@ export default function Settings() {
                       width: 24,
                       height: 24,
                       backgroundColor: color.value,
-                      borderRadius: 1,
+                      borderRadius: 2,
                       mr: 1,
                       border: "1px solid #ccc",
                     }}

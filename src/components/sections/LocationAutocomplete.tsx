@@ -597,7 +597,7 @@ const LocationAutocomplete = ({
                       height: 20,
                       display: "grid",
                       placeItems: "center",
-                      borderRadius: 1,
+                      borderRadius: 2,
                       color: theme.currentPalette.primary,
                       "& svg": { width: 18, height: 18 },
                     }}
@@ -615,7 +615,7 @@ const LocationAutocomplete = ({
                     sx={{
                       width: 20,
                       height: 20,
-                      borderRadius: 1,
+                      borderRadius: 2,
                       color: alpha("#0F172A", 0.5),
                       "&:hover": {
                         bgcolor: alpha(theme.currentPalette.primary, 0.08),

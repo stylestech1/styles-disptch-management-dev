@@ -26,9 +26,9 @@ export const SearchBar = ({ value, onChange }: SearchBarProps) => {
         ),
       }}
       sx={{
-        borderRadius: 1,
+        borderRadius: 2,
         "& .MuiOutlinedInput-root": {
-          borderRadius: 1,
+          borderRadius: 2,
           bgcolor: alpha(theme.currentPalette.primary, 0.1),
           "& fieldset": {
             border: "none",

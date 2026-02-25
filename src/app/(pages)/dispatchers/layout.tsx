@@ -197,7 +197,7 @@ export default function AdminLayout({
           onClick={handleLogout}
           className="!rounded-[6px]"
           sx={{
-            // borderRadius: 1,
+            // borderRadius: 2,
             bgcolor: themePalette.currentPalette.primary,
             textTransform: "none",
             py: 1,

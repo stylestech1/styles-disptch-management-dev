@@ -69,7 +69,7 @@ const CostBreakdownChart: React.FC<CostBreakdownProps> = ({ costs }) => {
     <Box
       sx={{
         border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-        borderRadius: 1,
+        borderRadius: 2,
         p: 3,
         bgcolor: theme.currentPalette.background,
       }}

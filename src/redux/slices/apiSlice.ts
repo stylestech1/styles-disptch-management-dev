@@ -82,6 +82,59 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["centermaintenance"],
     }),
+
+    // -----settings -----
+    getSettings: builder.query<
+      {
+        data: {
+          repairPerMile: number | null;
+          insurancePerMile: number | null;
+        };
+        raw: Array<{ id: string; key: "repairPerMile" | "insurancePerMile"; value: number }>;
+      },
+      void
+    >({
+      query: () => `/api/v1/settings`,
+      providesTags: ["Settings"],
+      transformResponse: (response: any) => {
+        const raw = Array.isArray(response?.data) ? response.data : [];
+
+        const repair = raw.find((x: any) => x.key === "repairPerMile")?.value ?? null;
+        const insurance = raw.find((x: any) => x.key === "insurancePerMile")?.value ?? null;
+
+        return {
+          raw: raw.map((x: any) => ({
+            id: String(x._id ?? x.id),
+            key: x.key,
+            value: Number(x.value),
+          })),
+          data: {
+            repairPerMile: repair != null ? Number(repair) : null,
+            insurancePerMile: insurance != null ? Number(insurance) : null,
+          },
+        };
+      },
+    }),
+    createSetting: builder.mutation<any, { key: "repairPerMile" | "insurancePerMile"; value: number }>({
+      query: (body) => ({
+        url: `/api/v1/settings`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+    updateSetting: builder.mutation<
+      any,
+      { id: string; key: "repairPerMile" | "insurancePerMile"; value: number }
+    >({
+      query: ({ id, key, value }) => ({
+        url: `/api/v1/settings/${id}`,
+        method: "PATCH",
+        body: { key, value },
+      }),
+      invalidatesTags: ["Settings"],
+    }),
+
     // ! ========== Companies ==========
     getCompanies: builder.query<
       {
@@ -992,4 +1045,9 @@ export const {
   useUpdateCompanyMutation,
   useUpdateactivationcompanyMutation,
   useUpdatedeactivationcompanyMutation,
+  // TODO: ----- settings  -----
+  useGetSettingsQuery,
+  useCreateSettingMutation,
+  useUpdateSettingMutation,
+
 } = apiSlice;

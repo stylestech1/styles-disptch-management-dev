@@ -67,7 +67,7 @@ export const ConversationItem = ({
         alignItems: "center",
         p: 2,
         m: 1,
-        borderRadius: 1,
+        borderRadius: 2,
         cursor: "pointer",
         transition: "background-color 0.2s ease",
 
@@ -130,7 +130,7 @@ export const ConversationItem = ({
                     bgcolor: isSelected
                       ? theme.currentPalette.background
                       : alpha(theme.currentPalette.primary, 0.2),
-                    borderRadius: 1,
+                    borderRadius: 2,
                     "& .MuiChip-label": {
                       px: 1,
                     },

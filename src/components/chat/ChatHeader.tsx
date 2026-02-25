@@ -89,7 +89,7 @@ export const ChatHeader = ({ conversation }: ChatHeaderProps) => {
                     height: 20,
                     color: theme.currentPalette.background,
                     bgcolor: theme.currentPalette.primary,
-                    borderRadius: 1,
+                    borderRadius: 2,
                     "& .MuiChip-label": {
                       px: 1,
                     },

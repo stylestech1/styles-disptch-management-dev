@@ -449,7 +449,7 @@ export const CustomerForm = ({
             sx={{
               mt: 2,
               py: 1.5,
-              borderRadius: 1,
+              borderRadius: 2,
               fontWeight: 500,
               color: "#fff",
               background: theme.currentPalette.primary,

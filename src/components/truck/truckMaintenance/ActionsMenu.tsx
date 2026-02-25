@@ -33,7 +33,7 @@ const ActionsMenu: React.FC<ActionsMenuProps> = ({
       onClose={onClose}
       PaperProps={{
         sx: {
-          borderRadius: 1,
+          borderRadius: 2,
           boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
           mt: 1,
         },

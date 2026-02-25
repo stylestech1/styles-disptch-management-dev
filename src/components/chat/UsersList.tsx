@@ -138,7 +138,7 @@ export const UsersList = ({
                       height: 20,
                       color: theme.currentPalette.primary,
                       bgcolor: alpha(theme.currentPalette.primary, 0.15),
-                      borderRadius: 1,
+                      borderRadius: 2,
                       "& .MuiChip-label": { px: 1 },
                     }}
                   />

@@ -251,7 +251,7 @@ export const MessageInput = ({ conversationId }: MessageInputProps) => {
           sx={{
             px: 2,
             py: 1.5,
-            borderRadius: 1,
+            borderRadius: 2,
             fontWeight: 500,
             transition: "background-color 0.3s",
             bgcolor: isDisabled

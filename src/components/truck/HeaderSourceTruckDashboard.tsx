@@ -28,7 +28,7 @@ const HeaderSourceTruckDashboard = () => {
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       
       {/* Company-Owned */}
-      <Box sx={{ py: 1, px: 2, display: "flex", alignItems: 'center', gap: 0.5, border: 1, borderColor: alpha(theme.currentPalette.text, 0.3), borderRadius: 1 }}>
+      <Box sx={{ py: 1, px: 2, display: "flex", alignItems: 'center', gap: 0.5, border: 1, borderColor: alpha(theme.currentPalette.text, 0.3), borderRadius: 2 }}>
         <GoDotFill color={theme.currentPalette.primary} />
         <Typography sx={{ color: theme.currentPalette.primary, fontSize: "14px" }}>
           Company-owned: {companyOwnedCount}
@@ -36,7 +36,7 @@ const HeaderSourceTruckDashboard = () => {
       </Box>
 
       {/* Owner-Operator */}
-      <Box sx={{ py: 1, px: 2, display: "flex", alignItems: 'center', gap: 0.5, border: 1, borderColor: alpha(theme.currentPalette.text, 0.3), borderRadius: 1 }}>
+      <Box sx={{ py: 1, px: 2, display: "flex", alignItems: 'center', gap: 0.5, border: 1, borderColor: alpha(theme.currentPalette.text, 0.3), borderRadius: 2 }}>
         <GoDotFill color="#28A745" />
         <Typography sx={{ color: theme.currentPalette.primary, fontSize: "14px" }}>
           Owner-Operator: {ownerOperatorCount}

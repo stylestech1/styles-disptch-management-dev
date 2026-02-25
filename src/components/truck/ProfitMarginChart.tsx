@@ -58,7 +58,7 @@ const ProfitMarginChart: React.FC<ProfitMarginChartProps> = ({
       sx={{
         border: 1,
         borderColor: alpha(theme.currentPalette.primary, 0.3),
-        borderRadius: 1,
+        borderRadius: 2,
         p: 3,
         textAlign: "left",
         bgcolor: theme.currentPalette.background,

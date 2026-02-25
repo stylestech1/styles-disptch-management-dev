@@ -135,7 +135,7 @@ export default function AddEditMaintenanceRecordDialog({
     const actionBtnSx = {
         height: 52,
         minWidth: 190,
-        borderRadius: 1,
+        borderRadius: 2,
         textTransform: "none",
         fontWeight: 700,
         fontSize: 16,
@@ -372,7 +372,7 @@ export default function AddEditMaintenanceRecordDialog({
                             sx={{
                                 width: 34,
                                 height: 34,
-                                borderRadius: 1,
+                                borderRadius: 2,
                                 bgcolor: alpha(primaryColor, 0.08),
                                 display: "flex",
                                 alignItems: "center",
@@ -390,7 +390,7 @@ export default function AddEditMaintenanceRecordDialog({
                     <IconButton
                         onClick={onClose}
                         sx={{
-                            borderRadius: 1,
+                            borderRadius: 2,
                             bgcolor: alpha(theme.currentPalette.text, 0.05),
                             "&:hover": { bgcolor: alpha(theme.currentPalette.text, 0.08) },
                         }}
@@ -663,7 +663,7 @@ export default function AddEditMaintenanceRecordDialog({
                                 sx={{
                                     mt: 2,
                                     height: 56,
-                                    borderRadius: 1,
+                                    borderRadius: 2,
                                     textTransform: "none",
                                     fontWeight: 800,
                                     bgcolor: primaryColor,
@@ -686,7 +686,7 @@ export default function AddEditMaintenanceRecordDialog({
                                     onClick={handleAddTruck}
                                     startIcon={<Plus size={18} />}
                                     sx={{
-                                        borderRadius: 1,
+                                        borderRadius: 2,
                                         textTransform: "none",
                                         fontWeight: 800,
                                         borderColor: alpha(primaryColor, 0.5),
@@ -705,7 +705,7 @@ export default function AddEditMaintenanceRecordDialog({
                                         defaultExpanded
                                         disableGutters
                                         sx={{
-                                            borderRadius: 1,
+                                            borderRadius: 2,
                                             border: `1px solid ${alpha(primaryColor, 0.22)}`,
                                             boxShadow: "none",
                                             "&:before": { display: "none" },
@@ -753,7 +753,7 @@ export default function AddEditMaintenanceRecordDialog({
                                                         handleRemoveTruck(row.rowId);
                                                     }}
                                                     sx={{
-                                                        borderRadius: 1,
+                                                        borderRadius: 2,
                                                         px: 2,
                                                         // bgcolor: alpha(theme.currentPalette.text, 0.05),
                                                         "&:hover": { bgcolor: alpha(theme.currentPalette.text, 0.08) },

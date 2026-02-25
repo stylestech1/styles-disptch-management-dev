@@ -265,7 +265,7 @@ const NotificationPage = () => {
         elevation={2}
         sx={{
           border: `1px solid ${alpha(theme.currentPalette.text, 0.1)}`,
-          borderRadius: 1,
+          borderRadius: 2,
           overflow: "hidden",
         }}
       >
@@ -354,7 +354,7 @@ const NotificationPage = () => {
                         sx={{
                           width: 40,
                           height: 40,
-                          borderRadius: 1,
+                          borderRadius: 2,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",

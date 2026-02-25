@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { TTruck, TDriver } from "@/types/globalTypes";
@@ -20,6 +21,8 @@ import React, { useMemo, useEffect, useRef, useState } from "react";
 import { IoClose, IoPerson, IoAdd } from "react-icons/io5";
 import { useForm, Controller } from "react-hook-form";
 import { RootState, useAppSelector } from "@/redux/store";
+import { CiCircleCheck } from "react-icons/ci";
+import { Car, CalendarDays, IdCard, Truck, Building2, Fuel, Gauge, Weight, Shield, LandPlot, CarFront, ShieldUser } from "lucide-react";
 
 export type TruckFormProps = {
   open: boolean;
@@ -48,9 +51,9 @@ interface TruckFormData {
   source: string;
 }
 
-export const TruckForm = React.memo(function TruckFormComp(
-  props: TruckFormProps
-) {
+const stepsDriver = ["Vehicle Information", "Operations & Assignment"];
+
+export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps) {
   const {
     open,
     onClose,
@@ -69,12 +72,13 @@ export const TruckForm = React.memo(function TruckFormComp(
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const theme = useAppSelector((state: RootState) => state.palette);
 
+  const [activeStep, setActiveStep] = useState(0);
+
   // closing popup
   useEffect(() => {
     const handleBodyScroll = (shouldPrevent: boolean) => {
       document.body.style.overflow = shouldPrevent ? "hidden" : "unset";
     };
-
     handleBodyScroll(open);
     return () => handleBodyScroll(false);
   }, [open]);
@@ -83,29 +87,26 @@ export const TruckForm = React.memo(function TruckFormComp(
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && open && !isSelectOpen) {
-        onClose();
+        handleClose();
       }
     };
-
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, onClose, isSelectOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isSelectOpen]);
 
   // handling select closing popups
   useEffect(() => {
     const checkSelectState = () => {
-      const selectMenus = document.querySelectorAll(
-        ".MuiMenu-paper, .MuiPopover-root"
-      );
-      const isOpen = Array.from(selectMenus).some((menu) => {
+      const selectMenus = document.querySelectorAll(".MuiMenu-paper, .MuiPopover-root");
+      const isOpenNow = Array.from(selectMenus).some((menu) => {
         const style = window.getComputedStyle(menu);
         return style.display !== "none" && style.visibility !== "hidden";
       });
-      setIsSelectOpen(isOpen);
+      setIsSelectOpen(isOpenNow);
     };
 
-    const interval = setInterval(checkSelectState, 100);
-
+    const interval = setInterval(checkSelectState, 120);
     return () => clearInterval(interval);
   }, [open]);
 
@@ -134,39 +135,44 @@ export const TruckForm = React.memo(function TruckFormComp(
   });
 
   // when updating data
-  useEffect(() => {
-    if (formData && open) {
-      const formFields: (keyof TruckFormData)[] = [
-        "model",
-        "plateNumber",
-        "type",
-        "year",
-        "source",
-        "capacity",
-        "fuelPerMile",
-        "totalMileage",
-        "assignedDriver",
-        "status",
-      ];
+  const prevOpenRef = useRef(false);
 
-      formFields.forEach((field) => {
-        const value = formData[field];
-        if (value !== undefined && value !== null) {
-          setValue(field, value as never);
-        }
+  useEffect(() => {
+    const justOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+
+    if (!open) return;
+    if (justOpened) {
+      const raw = formData || {};
+
+      reset({
+        model: (raw as any).model ?? "",
+        plateNumber: (raw as any).plateNumber ?? "",
+        type: (raw as any).type ?? "",
+        year: (raw as any).year ?? "",
+        source: (raw as any).source ?? "",
+        capacity: (raw as any).capacity ?? "",
+        fuelPerMile: (raw as any).fuelPerMile ?? "",
+        totalMileage: (raw as any).totalMileage ?? 0,
+        assignedDriver:
+          typeof (raw as any).assignedDriver === "object"
+            ? (raw as any).assignedDriver?.id ?? ""
+            : (raw as any).assignedDriver ?? "",
+        status: (raw as any).status ?? "",
       });
+      setActiveStep(0);
     }
-  }, [formData, open, setValue]);
+  }, [open, formData, reset]);
 
   // assigned driver IDs
   const assignedDriverIds = useMemo(() => {
     if (!allTrucks || allTrucks.length === 0) return [];
     return allTrucks
-      .filter((truck) => truck.assignedDriver && truck.id !== formData.id)
-      .map((truck) =>
-        typeof truck.assignedDriver === "object"
-          ? truck.assignedDriver.id
-          : truck.assignedDriver
+      .filter((t) => (t as any).assignedDriver && t.id !== formData.id)
+      .map((t) =>
+        typeof (t as any).assignedDriver === "object"
+          ? (t as any).assignedDriver.id
+          : (t as any).assignedDriver
       )
       .filter(Boolean) as string[];
   }, [allTrucks, formData.id]);
@@ -174,23 +180,62 @@ export const TruckForm = React.memo(function TruckFormComp(
   const availableUnassignedDrivers = useMemo(() => {
     if (!allDrivers) return [];
     return allDrivers.filter(
-      (driver) =>
-        driver.status === "available" && !assignedDriverIds.includes(driver.id)
+      (driver) => driver.status === "available" && !assignedDriverIds.includes(driver.id)
     );
   }, [allDrivers, assignedDriverIds]);
 
   const truckTypes = useMemo(() => ["reefer", "van"], []);
   const truckSource = useMemo(() => ["company", "other"], []);
 
+  // ======= styles (match screenshot) =======
+  const inputSx = {
+    "& .MuiFormLabel-asterisk": {
+      color: "red",
+    },
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      bgcolor: "#fff",
+      "& fieldset": {
+        borderColor: alpha(theme.currentPalette.text, 0.18),
+      },
+      "&:hover fieldset": {
+        borderColor: alpha(theme.currentPalette.primary, 0.6),
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: theme.currentPalette.primary,
+        borderWidth: 2,
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: alpha(theme.currentPalette.text, 0.55),
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: theme.currentPalette.primary,
+    },
+    "& .MuiFormHelperText-root": {
+      marginLeft: 0,
+    },
+  };
+
+  const selectMenuPaperSx = {
+    borderRadius: 2,
+    mt: 1,
+    bgcolor: "#fff",
+    boxShadow: "0 10px 30px rgba(13,71,161,0.15)",
+    border: `1px solid ${alpha(theme.currentPalette.primary, 0.12)}`,
+  };
+
   // Handle form submission
   const onSubmitForm = async (data: TruckFormData) => {
     Object.keys(data).forEach((key) => {
       const field = key as keyof TTruck;
-      const value = data[key as keyof TruckFormData];
-      onChange(field, value as TTruck[keyof TTruck]);
+      const value = (data as any)[key];
+      onChange(field, value);
     });
+
     await onSubmit();
-    if (props.refetch) props.refetch();
+    if (refetch) refetch();
+
     if (!editMode) {
       reset({
         model: "",
@@ -204,41 +249,132 @@ export const TruckForm = React.memo(function TruckFormComp(
         assignedDriver: "",
         status: "",
       });
+      // setActiveStep(0);
     }
   };
 
   // Handle field change with validation
-  const handleFieldChange = async (
-    field: keyof TruckFormData,
-    value: string
-  ) => {
+  const handleFieldChange = async (field: keyof TruckFormData, value: string) => {
     setValue(field, value as never);
     await trigger(field);
-    onChange(field as keyof TTruck, value as TTruck[keyof TTruck]);
+    onChange(field as keyof TTruck, value as any);
   };
 
-  // Handle number input change
-  const handleNumberChange = async (
-    field: keyof TruckFormData,
-    value: string
-  ) => {
+  const handleNumberChange = async (field: keyof TruckFormData, value: string) => {
     const numValue = value === "" ? 0 : Number(value);
     setValue(field, numValue as never);
     await trigger(field);
-    onChange(field as keyof TTruck, numValue as TTruck[keyof TTruck]);
+    onChange(field as keyof TTruck, numValue as any);
   };
 
-  // Handle year input change
-  const handleYearChange = async (value: string) => {
-    setValue("year", value);
-    await trigger("year");
-    onChange("year", value);
-  };
-
-  // Reset form when closing
   const handleClose = () => {
     reset();
+    setActiveStep(0);
     onClose();
+  };
+
+  // ===== step validation (Next) =====
+  const validateStep0 = async () => {
+    const ok = await trigger(["model", "plateNumber", "year", "type", "source", "status"]);
+    return ok;
+  };
+
+  // ===== Stepper UI (use your component but adjusted to match screenshot) =====
+  const StepperHeader = () => {
+    return (
+      <Box sx={{ px: 3, pt: 2, backgroundColor: "#fff", flex: "0 0 auto" }}>
+        <Box sx={{ mb: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              position: "relative",
+              px: 0.5,
+            }}
+          >
+            {/* line */}
+            <Box
+              sx={{
+                position: "absolute",
+                top: "22px",
+                left: "11%",
+                width: "78%",
+                height: 2,
+                bgcolor:
+                  activeStep === 1
+                    ? alpha(theme.currentPalette.primary, 0.45)
+                    : alpha(theme.currentPalette.primary, 0.18),
+                zIndex: 0,
+              }}
+            />
+
+            {stepsDriver.map((label, i) => {
+              const isActive = i === activeStep;
+              const isCompleted = i < activeStep;
+
+              const borderColor =
+                isActive || isCompleted
+                  ? theme.currentPalette.primary
+                  : alpha(theme.currentPalette.text, 0.2);
+
+              const bgColor = isCompleted
+                ? theme.currentPalette.primary
+                : isActive
+                  ? "#fff"
+                  : "#fff";
+
+              const textColor = isCompleted ? "#fff" : theme.currentPalette.primary;
+
+              return (
+                <Box
+                  key={i}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    zIndex: 1,
+                    minWidth: 130,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      border: "3px solid",
+                      borderColor,
+                      bgcolor: bgColor,
+                      color: isCompleted ? "#fff" : theme.currentPalette.primary,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {isCompleted ? <CiCircleCheck size={22} /> : i + 1}
+                  </Box>
+
+                  <Typography
+                    sx={{
+                      mt: 1,
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      textAlign: "center",
+                      color: isActive
+                        ? theme.currentPalette.primary
+                        : alpha(theme.currentPalette.text, 0.25),
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      </Box>
+    );
   };
 
   if (!open) return null;
@@ -252,325 +388,423 @@ export const TruckForm = React.memo(function TruckFormComp(
           !modalRef.current.contains(e.target as Node) &&
           !isSelectOpen
         ) {
-          onClose();
+          handleClose();
         }
       }}
       className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 p-4"
     >
       <Box
-        sx={{ bgcolor: theme.currentPalette.background }}
         ref={modalRef}
-        className="relative rounded-2xl shadow-2xl border p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        sx={{
+          bgcolor: "#fff",
+          borderRadius: 2,
+          border: `1px solid ${alpha(theme.currentPalette.primary, 0.12)}`,
+          overflow: "hidden",
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            {!editMode && (
-              <Box className="w-8 h-8 rounded-full flex items-center justify-center">
-                <IoAdd size={18} />
-              </Box>
-            )}
-            <h3 className="text-xl font-semibold text-slate-800">
+        <Box
+          sx={{
+            px: 3,
+            py: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: `1px solid ${alpha(theme.currentPalette.text, 0.08)}`,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                bgcolor: alpha(theme.currentPalette.primary, 0.08),
+                border: `1px solid ${alpha(theme.currentPalette.primary, 0.12)}`,
+                color: theme.currentPalette.primary,
+              }}
+            >
+              <Truck size={16} />
+            </Box>
+
+            <Typography
+              sx={{
+                fontSize: 16,
+
+                color: theme.currentPalette.primary,
+              }}
+            >
               {editMode ? "Edit Truck" : "Add New Truck"}
-            </h3>
-          </div>
+            </Typography>
+          </Box>
+
           <Button
             onClick={handleClose}
-            className="cursor-pointer text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
+            sx={{
+              minWidth: "unset",
+              px: 1,
+              color: alpha(theme.currentPalette.text, 0.55),
+              "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.06) },
+            }}
           >
-            <IoClose size={24} />
+            <IoClose size={22} />
           </Button>
-        </div>
+        </Box>
+
+        {/* Stepper */}
+        <StepperHeader />
 
         {/* Content */}
-        <form onSubmit={handleSubmit(onSubmitForm)}>
-          <div className="space-y-6">
-            {/* Basic Information Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-slate-800">
-                  Basic Information
-                </h4>
-              </div>
-              <Divider sx={{ mb: 3 }} />
-              <div className="space-y-4">
-                {/* Model Field */}
-                <Controller
-                  name="model"
-                  control={control}
-                  rules={{
-                    required: "Model is required",
-                    minLength: {
-                      value: 2,
-                      message: "Model must be at least 2 characters",
-                    },
-                    maxLength: {
-                      value: 50,
-                      message: "Model must be less than 50 characters",
-                    },
-                  }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Model *"
-                      error={!!errors.model}
-                      helperText={errors.model?.message}
-                      size="medium"
-                      placeholder="e.g., Volvo FH16"
-                      onChange={(e) =>
-                        handleFieldChange("model", e.target.value)
-                      }
-                      sx={{
-                        marginBottom: "16px",
-                      }}
-                    />
-                  )}
-                />
-
-                {/* Plate Number Field */}
-                <Controller
-                  name="plateNumber"
-                  control={control}
-                  rules={{
-                    required: "Plate number is required",
-                    minLength: {
-                      value: 3,
-                      message: "Plate number must be at least 3 characters",
-                    },
-                  }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Plate Number *"
-                      error={!!errors.plateNumber}
-                      helperText={errors.plateNumber?.message}
-                      size="medium"
-                      placeholder="e.g., ABC-12345"
-                      onChange={(e) =>
-                        handleFieldChange("plateNumber", e.target.value)
-                      }
-                      sx={{
-                        marginBottom: "16px",
-                      }}
-                    />
-                  )}
-                />
-
-                {/* Type Field */}
-                <Controller
-                  name="type"
-                  control={control}
-                  rules={{ required: "Type is required" }}
-                  render={({ field }) => (
-                    <FormControl
-                      fullWidth
-                      size="medium"
-                      error={!!errors.type}
-                      sx={{ marginBottom: "16px" }}
-                    >
-                      <InputLabel>Type *</InputLabel>
-                      <Select
+        <Box sx={{ px: 3, pb: 3 }}>
+          <form onSubmit={handleSubmit(onSubmitForm)}>
+            {/* ================= STEP 1 ================= */}
+            {activeStep === 0 && (
+              <Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2, mt: 2 }}>
+                  {/* Model */}
+                  <Controller
+                    name="model"
+                    control={control}
+                    rules={{
+                      required: "Model is required",
+                      minLength: { value: 2, message: "Model must be at least 2 characters" },
+                      maxLength: { value: 50, message: "Model must be less than 50 characters" },
+                    }}
+                    render={({ field }) => (
+                      <TextField
                         {...field}
-                        label="Type *"
-                        error={!!errors.type}
-                        onChange={(e) =>
-                          handleFieldChange("type", e.target.value)
-                        }
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&:hover fieldset": {
-                              borderColor: "#10b981",
-                            },
-                          },
+                        label="Model"
+                        placeholder="e.g. Freightliner cascadia"
+                        error={!!errors.model}
+                        helperText={errors.model?.message}
+                        required
+                        fullWidth
+                        size="medium"
+                        onChange={(e) => handleFieldChange("model", e.target.value)}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                              <CarFront size={18} color={theme.currentPalette.primary} />
+                            </InputAdornment>
+                          ),
                         }}
-                      >
-                        {truckTypes.map((type) => (
-                          <MenuItem key={type} value={type}>
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.type && (
-                        <Typography
-                          variant="caption"
-                          color="error"
-                          sx={{ mt: 1, display: "block" }}
-                        >
-                          {errors.type.message}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  )}
-                />
+                        sx={inputSx}
+                      />
+                    )}
+                  />
 
-                {/* Source Field */}
-                <Controller
-                  name="source"
-                  control={control}
-                  rules={{ required: "Source is required" }}
-                  render={({ field }) => (
-                    <FormControl
-                      fullWidth
-                      size="medium"
-                      error={!!errors.source}
-                      sx={{ marginBottom: "16px" }}
-                    >
-                      <InputLabel>Source *</InputLabel>
-                      <Select
-                        {...field}
-                        label="Source *"
-                        value={field.value || ""}
-                        error={!!errors.source}
-                        onChange={(e) =>
-                          handleFieldChange("source", e.target.value)
-                        }
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&:hover fieldset": {
-                              borderColor: "#10b981",
-                            },
-                          },
-                        }}
-                      >
-                        {truckSource.map((source) => (
-                          <MenuItem key={source} value={source}>
-                            {source.charAt(0).toUpperCase() + source.slice(1)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.source && (
-                        <Typography
-                          variant="caption"
-                          color="error"
-                          sx={{ mt: 1, display: "block" }}
-                        >
-                          {errors.source.message}
-                        </Typography>
+                  {/* Plate + Year */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                      gap: 2,
+                    }}
+                  >
+                    <Controller
+                      name="plateNumber"
+                      control={control}
+                      rules={{
+                        required: "Plate number is required",
+                        minLength: { value: 3, message: "Plate number must be at least 3 characters" },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Plate Number"
+                          placeholder="e.g. ABC-123"
+                          error={!!errors.plateNumber}
+                          helperText={errors.plateNumber?.message}
+                          fullWidth
+                          size="medium"
+                          onChange={(e) => handleFieldChange("plateNumber", e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                                <IdCard size={18} color={theme.currentPalette.primary} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={inputSx}
+                        />
                       )}
-                    </FormControl>
-                  )}
-                />
+                    />
 
-                {/* Year Field */}
-                <Controller
-                  name="year"
-                  control={control}
-                  rules={{
-                    required: "Year is required",
-                    min: {
-                      value: 1900,
-                      message: "Year must be 1900 or later",
-                    },
-                    max: {
-                      value: new Date().getFullYear() + 1,
-                      message: `Year cannot be later than ${
-                        new Date().getFullYear() + 1
-                      }`,
+                    <Controller
+                      name="year"
+                      control={control}
+                      rules={{
+                        required: "Year is required",
+                        min: { value: 1900, message: "Year must be 1900 or later" },
+                        max: {
+                          value: new Date().getFullYear() + 1,
+                          message: `Year cannot be later than ${new Date().getFullYear() + 1}`,
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Year"
+                          required
+                          placeholder="e.g. 2014"
+                          error={!!errors.year}
+                          helperText={errors.year?.message}
+                          fullWidth
+                          size="medium"
+                          onChange={(e) => handleFieldChange("year", e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                                <CalendarDays size={18} color={theme.currentPalette.primary} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={inputSx}
+                        />
+                      )}
+                    />
+                  </Box>
+
+                  {/* Type + Ownership */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                      gap: 2,
+                    }}
+                  >
+                    <Controller
+                      name="type"
+                      control={control}
+
+                      rules={{ required: "Type is required" }}
+                      render={({ field }) => (
+                        <FormControl fullWidth error={!!errors.type} sx={inputSx as any}>
+                          <InputLabel required>Type</InputLabel>
+                          <Select
+                            {...field}
+                            label="Type"
+                            displayEmpty
+                            size="medium"
+                            value={field.value || ""}
+                            onChange={(e) => handleFieldChange("type", String(e.target.value))}
+                            MenuProps={{ PaperProps: { sx: selectMenuPaperSx } }}
+                            startAdornment={
+                              <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                                <Truck size={18} color={theme.currentPalette.primary} />
+                              </InputAdornment>
+                            }
+                          >
+                            <MenuItem value="" disabled>
+                              Select type
+                            </MenuItem>
+                            {truckTypes.map((t) => (
+                              <MenuItem key={t} value={t}>
+                                {t.charAt(0).toUpperCase() + t.slice(1)}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.type && (
+                            <Typography variant="caption" color="error" sx={{ mt: 1, display: "block" }}>
+                              {errors.type.message}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      )}
+                    />
+
+                    <Controller
+                      name="source"
+                      control={control}
+                      rules={{ required: "Ownership is required" }}
+                      render={({ field }) => (
+                        <FormControl fullWidth error={!!errors.source} sx={inputSx as any}>
+                          <InputLabel required >Ownership</InputLabel>
+                          <Select
+                            {...field}
+                            label="Ownership"
+                            value={field.value || ""}
+                            displayEmpty
+                            size="medium"
+                            onChange={(e) => handleFieldChange("source", String(e.target.value))}
+                            MenuProps={{ PaperProps: { sx: selectMenuPaperSx } }}
+                            startAdornment={
+                              <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                                <Building2 size={18} color={theme.currentPalette.primary} />
+                              </InputAdornment>
+                            }
+                          >
+                            <MenuItem value="" disabled>
+                              Select Ownership
+                            </MenuItem>
+                            {truckSource.map((s) => (
+                              <MenuItem key={s} value={s}>
+                                {s.charAt(0).toUpperCase() + s.slice(1)}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.source && (
+                            <Typography variant="caption" color="error" sx={{ mt: 1, display: "block" }}>
+                              {errors.source.message}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      )}
+                    />
+                  </Box>
+
+                  {/* Status */}
+                  <Controller
+                    name="status"
+                    control={control}
+                    rules={{ required: "Status is required" }}
+                    render={({ field }) => (
+                      <FormControl fullWidth error={!!errors.status} sx={inputSx as any}>
+                        <InputLabel required>Status</InputLabel>
+                        <Select
+                          {...field}
+                          label="Status"
+                          value={field.value || ""}
+                          displayEmpty
+                          size="medium"
+                          onChange={(e) => handleFieldChange("status", String(e.target.value))}
+                          MenuProps={{ PaperProps: { sx: selectMenuPaperSx } }}
+                          startAdornment={
+                            <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                              <CiCircleCheck size={18} color={theme.currentPalette.primary} />
+                            </InputAdornment>
+                          }
+                        >
+                          <MenuItem value="" disabled>
+                            Select Status
+                          </MenuItem>
+                          <MenuItem value="available">Available</MenuItem>
+                          <MenuItem value="busy">Busy</MenuItem>
+                          <MenuItem value="inactive">Inactive</MenuItem>
+                        </Select>
+                        {errors.status && (
+                          <Typography variant="caption" color="error" sx={{ mt: 1, display: "block" }}>
+                            {errors.status.message}
+                          </Typography>
+                        )}
+                      </FormControl>
+                    )}
+                  />
+                </Box>
+
+                <Button
+                  type="button"
+                  fullWidth
+                  onClick={async () => {
+                    const ok = await validateStep0();
+                    if (!ok) return;
+                    setActiveStep(1);
+                  }}
+                  sx={{
+                    mt: 3,
+                    py: 1.35,
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    color: "#fff",
+                    background: theme.currentPalette.primary,
+                    textTransform: "none",
+                    "&:hover": {
+                      background: alpha(theme.currentPalette.primary, 0.9),
                     },
                   }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Year *"
-                      type="text"
-                      error={!!errors.year}
-                      helperText={errors.year?.message}
-                      size="medium"
-                      inputProps={{
-                        min: 1900,
-                        max: new Date().getFullYear() + 1,
-                      }}
-                      onChange={(e) => handleYearChange(e.target.value)}
-                      sx={{}}
-                    />
-                  )}
-                />
-              </div>
-            </div>
+                >
+                  Next
+                </Button>
+              </Box>
+            )}
 
-            {/* Specifications Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-slate-800">
+            {/* ================= STEP 2 ================= */}
+            {activeStep === 1 && (
+              <Box>
+
+
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: theme.currentPalette.text,
+                    mt: 2,
+                    mb: 1,
+                  }}
+                >
                   Specifications
-                </h4>
-              </div>
-              <Divider sx={{ mb: 3 }} />
-              <div className="space-y-4">
-                {/* Capacity Field */}
-                <Controller
-                  name="capacity"
-                  control={control}
-                  rules={{
-                    required: "Capacity is required",
-                  }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Capacity (kg) *"
-                      type="text"
-                      error={!!errors.capacity}
-                      helperText={errors.capacity?.message}
-                      size="medium"
-                      inputProps={{ min: 0 }}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">kg</InputAdornment>
-                        ),
-                      }}
-                      onChange={(e) =>
-                        handleNumberChange("capacity", e.target.value)
-                      }
-                      sx={{
-                        marginBottom: "16px",
-                      }}
-                    />
-                  )}
-                />
+                </Typography>
 
-                {/* Fuel Per Mile Field */}
-                <Controller
-                  name="fuelPerMile"
-                  control={control}
-                  rules={{
-                    required: "Fuel per mile is required",
-                    min: {
-                      value: 0,
-                      message: "Fuel per mile must be at least 0.1",
-                    },
-                    max: {
-                      value: 100,
-                      message: "Fuel consumption seems too high",
-                    },
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 2,
                   }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Fuel Per Mile *"
-                      type="text"
-                      error={!!errors.fuelPerMile}
-                      helperText={errors.fuelPerMile?.message}
-                      size="medium"
-                      inputProps={{ min: 0, step: 0.1 }}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">L/mile</InputAdornment>
-                        ),
-                      }}
-                      onChange={(e) =>
-                        handleNumberChange("fuelPerMile", e.target.value)
-                      }
-                      sx={{}}
-                    />
-                  )}
-                />
+                >
+                  {/* Capacity */}
+                  <Controller
+                    name="capacity"
+                    control={control}
+                    rules={{ required: "Capacity is required" }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Capacity"
+                        required
+                        placeholder="e.g. 15000"
+                        error={!!errors.capacity}
+                        helperText={errors.capacity?.message}
+                        fullWidth
+                        size="medium"
+                        onChange={(e) => handleFieldChange("capacity", e.target.value)}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                              Kg
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={inputSx}
+                      />
+                    )}
+                  />
 
-                {/* Total Milage */}
+                  {/* Fuel */}
+                  <Controller
+                    name="fuelPerMile"
+                    control={control}
+                    rules={{
+                      required: "Fuel / Mile is required",
+                      validate: (v) => (!isNaN(Number(v)) ? true : "Please enter a valid number"),
+                    }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Fuel / Mile"
+                        placeholder="e.g. 0.45"
+                        required
+                        error={!!errors.fuelPerMile}
+                        helperText={errors.fuelPerMile?.message}
+                        fullWidth
+                        size="medium"
+                        onChange={(e) => handleFieldChange("fuelPerMile", e.target.value)}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                              L/Mile
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={inputSx}
+                      />
+                    )}
+                  />
+                </Box>
+
+                {/* Total mileage */}
                 <Controller
                   name="totalMileage"
                   control={control}
@@ -585,263 +819,184 @@ export const TruckForm = React.memo(function TruckFormComp(
                     <TextField
                       {...field}
                       fullWidth
-                      label="totalMileage *"
+                      label="Total Mileage"
+                      required
                       type="text"
                       error={!!errors.totalMileage}
                       helperText={errors.totalMileage?.message}
                       size="medium"
-                      placeholder="e.g., 150000"
-                      inputProps={{ min: 0, step: 100 }}
-                      onChange={(e) =>
-                        handleNumberChange("totalMileage", e.target.value)
-                      }
-                      sx={{ mt: 2 }}
+                      placeholder="e.g. 20000"
+                      onChange={(e) => handleFieldChange("totalMileage", e.target.value)}
+                      sx={{ ...inputSx, mt: 2 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                            <LandPlot size={18} color={theme.currentPalette.primary} />
+                          </InputAdornment>
+                        ),
+                      }}
                     />
                   )}
                 />
-              </div>
-            </div>
 
-            {/* Driver Assignment Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-slate-800">
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 900,
+                    color: theme.currentPalette.text,
+                    mt: 3,
+                    mb: 1,
+                  }}
+                >
                   Driver Assignment
-                </h4>
-              </div>
-              <Divider sx={{ mb: 3 }} />
-              <Controller
-                name="assignedDriver"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth size="medium">
-                    <InputLabel id="driver-assignment-label">
-                      Assigned Driver
-                    </InputLabel>
-                    <Select
-                      {...field}
-                      labelId="driver-assignment-label"
-                      label="Assigned Driver"
-                      displayEmpty
-                      onChange={(e) =>
-                        handleFieldChange("assignedDriver", e.target.value)
-                      }
-                      startAdornment={
-                        <InputAdornment
-                          sx={{ color: theme.currentPalette.primary }}
-                          position="start"
-                        >
-                          <IoPerson />
-                        </InputAdornment>
-                      }
-                      sx={{
-                        "& .MuiSelect-select": {
-                          display: "flex",
-                          alignItems: "center",
-                        },
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <MenuItem value="" disabled>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                            <IoPerson size={16} className="text-slate-500" />
-                          </div>
-                          <span className="text-slate-500 italic">
-                            Unassigned
-                          </span>
-                        </Box>
-                      </MenuItem>
+                </Typography>
 
-                      {availableUnassignedDrivers.length > 0 ? (
-                        availableUnassignedDrivers.map((driver) => (
-                          <MenuItem key={driver.id} value={driver.id}>
-                            <div className="flex items-center gap-3 w-full">
-                              <Box
-                                sx={{ bgcolor: theme.currentPalette.primary }}
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                              >
-                                {driver.name?.charAt(0)?.toUpperCase() || "D"}
-                              </Box>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-slate-900 truncate">
-                                  {driver.name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-slate-500">
-                                    ID: {driver.driverId || driver.id}
-                                  </span>
-                                  <span className="w-1 h-1 bg-slate-400 rounded-full" />
-                                  <span className="text-xs text-slate-500 truncate">
-                                    {driver.licenseNumber}
-                                  </span>
-                                </div>
-                              </div>
-                              <Chip
-                                label="Available"
-                                size="small"
-                                sx={{
-                                  fontSize: "0.625rem",
-                                  height: 20,
-                                  color: theme.currentPalette.primary,
-                                  "& .MuiChip-label": { px: 1 },
-                                }}
-                              />
-                            </div>
-                          </MenuItem>
-                        ))
-                      ) : (
-                        <MenuItem disabled>
-                          <div className="flex items-center gap-3 w-full py-1">
-                            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
-                              <IoPerson size={20} className="text-slate-400" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-slate-600">
-                                No available drivers
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                All drivers are currently assigned or busy
-                              </p>
-                            </div>
-                          </div>
+                <Controller
+                  name="assignedDriver"
+                  control={control}
+                  rules={{ required: "Assigned Driver is required" }}
+                  render={({ field }) => (
+                    <FormControl fullWidth size="medium" error={!!errors.assignedDriver} sx={inputSx as any}>
+                      <InputLabel id="driver-assignment-label" required>Assigned Driver</InputLabel>
+                      <Select
+                        {...field}
+                        labelId="driver-assignment-label"
+                        label="Assigned Driver"
+                        required
+                        displayEmpty
+                        value={field.value || ""}
+                        onChange={(e) => handleFieldChange("assignedDriver", String(e.target.value))}
+                        MenuProps={{ PaperProps: { sx: selectMenuPaperSx } }}
+                        startAdornment={
+                          <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>
+                            <ShieldUser size={18} />
+                          </InputAdornment>
+                        }
+                      >
+                        <MenuItem value="" disabled>
+                          Assigned Driver
                         </MenuItem>
-                      )}
-                    </Select>
 
-                    {availableUnassignedDrivers.length === 0 && (
-                      <Alert
-                        severity="warning"
-                        sx={{
-                          mt: 2,
-                          mb: 2,
-                          borderRadius: 1,
-                          borderColor: theme.currentPalette.primary,
-                          "& .MuiAlert-message": { fontSize: "0.875rem" },
-                        }}
-                        icon={false}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs">
-                            ⚠️
-                          </div>
-                          <span className="text-sm">
-                            No available unassigned drivers. All drivers are
-                            currently assigned to other trucks or busy.
-                          </span>
-                        </div>
-                      </Alert>
-                    )}
+                        {availableUnassignedDrivers.length > 0 ? (
+                          availableUnassignedDrivers.map((driver) => (
+                            <MenuItem key={driver.id} value={driver.id}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
+                                <Box
+                                  sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: "50%",
+                                    display: "grid",
+                                    placeItems: "center",
+                                    bgcolor: alpha(theme.currentPalette.primary, 0.1),
+                                    color: theme.currentPalette.primary,
+                                    border: `1px solid ${alpha(theme.currentPalette.primary, 0.18)}`,
+                                    fontWeight: 800,
+                                    fontSize: 12,
+                                    flex: "0 0 auto",
+                                  }}
+                                >
+                                  {driver.name?.charAt(0)?.toUpperCase() || "D"}
+                                </Box>
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography sx={{ fontWeight: 700, fontSize: 13, color: theme.currentPalette.text }}>
+                                    {driver.name}
+                                  </Typography>
+                                  <Typography sx={{ fontSize: 11.5, color: alpha(theme.currentPalette.text, 0.55) }}>
+                                    ID: {driver.driverId || driver.id}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>No available drivers</MenuItem>
+                        )}
+                      </Select>
 
-                    {availableUnassignedDrivers.length > 0 && (
-                      <div className="flex justify-between mt-2 px-1 mb-2">
-                        <Typography
-                          sx={{
-                            color: theme.currentPalette.primary,
-                            fontSize: "14px",
-                          }}
-                        >
-                          {availableUnassignedDrivers.length} available
-                          unassigned driver
-                          {availableUnassignedDrivers.length !== 1 ? "s" : ""}
+                      {errors.assignedDriver && (
+                        <Typography variant="caption" color="error" sx={{ mt: 1, display: "block" }}>
+                          {errors.assignedDriver.message}
                         </Typography>
-                        <span className="text-xs text-slate-500">
-                          Total: {allDrivers.length} drivers
-                        </span>
-                      </div>
-                    )}
-                  </FormControl>
-                )}
-              />
-            </div>
+                      )}
+                    </FormControl>
+                  )}
+                />
 
-            {/* Status Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-slate-800">Status</h4>
-              </div>
-              <Divider sx={{ mb: 3 }} />
-              <Controller
-                name="status"
-                control={control}
-                rules={{ required: "Status is required" }}
-                render={({ field }) => (
-                  <FormControl fullWidth size="medium" error={!!errors.status}>
-                    <InputLabel>Status *</InputLabel>
-                    <Select
-                      {...field}
-                      label="Status *"
-                      error={!!errors.status}
-                      onChange={(e) =>
-                        handleFieldChange("status", e.target.value)
-                      }
-                      sx={{}}
-                    >
-                      <MenuItem value="available">
-                        <div className="flex items-center gap-2">
-                          <Chip
-                            label="Available"
-                            color="success"
-                            size="small"
-                          />
-                          <span>Available</span>
-                        </div>
-                      </MenuItem>
-                      <MenuItem value="busy">
-                        <div className="flex items-center gap-2">
-                          <Chip label="Busy" color="error" size="small" />
-                          <span>Busy</span>
-                        </div>
-                      </MenuItem>
-                      <MenuItem value="inactive">
-                        <div className="flex items-center gap-2">
-                          <Chip label="Inactive" color="default" size="small" />
-                          <span>Inactive</span>
-                        </div>
-                      </MenuItem>
-                    </Select>
-                    {errors.status && (
-                      <Typography
-                        variant="caption"
-                        color="error"
-                        sx={{ mt: 1, display: "block" }}
-                      >
-                        {errors.status.message}
-                      </Typography>
-                    )}
-                  </FormControl>
+                {availableUnassignedDrivers.length === 0 && (
+                  <Alert
+                    severity="warning"
+                    sx={{
+                      mt: 2,
+                      borderRadius: 2,
+                      borderColor: theme.currentPalette.primary,
+                      "& .MuiAlert-message": { fontSize: "0.875rem" },
+                    }}
+                    icon={false}
+                  >
+                    <span className="text-sm">
+                      No available unassigned drivers. All drivers are currently assigned to other trucks or busy.
+                    </span>
+                  </Alert>
                 )}
-              />
-            </div>
-          </div>
 
-          <Button
-            type="submit"
-            fullWidth
-            disabled={isLoading}
-            sx={{
-              mt: 2,
-              py: 1.5,
-              borderRadius: 1,
-              fontWeight: 500,
-              color: "#fff",
-              background: theme.currentPalette.primary,
-              "&:hover": {
-                background: alpha(theme.currentPalette.primary, 0.85),
-              },
-            }}
-          >
-            {isLoading
-              ? editMode
-                ? "Saving..."
-                : "Creating..."
-              : editMode
-              ? "Save Changes"
-              : "Create Truck"}
-          </Button>
-        </form>
+                {/* Buttons */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 2,
+                    mt: 3,
+                  }}
+                >
+                  <Button
+                    type="button"
+                    onClick={() => setActiveStep(0)}
+                    variant="outlined"
+                    sx={{
+                      py: 1.2,
+                      borderRadius: 2,
+                      fontWeight: 700,
+                      textTransform: "none",
+                      borderColor: alpha(theme.currentPalette.primary, 0.4),
+                      color: theme.currentPalette.primary,
+                      "&:hover": {
+                        borderColor: theme.currentPalette.primary,
+                        bgcolor: alpha(theme.currentPalette.primary, 0.05),
+                      },
+                    }}
+                  >
+                    Back
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    sx={{
+                      py: 1.2,
+                      borderRadius: 2,
+                      fontWeight: 800,
+                      textTransform: "none",
+                      color: "#fff",
+                      background: theme.currentPalette.primary,
+                      "&:hover": {
+                        background: alpha(theme.currentPalette.primary, 0.9),
+                      },
+                    }}
+                  >
+                    {isLoading
+                      ? editMode
+                        ? "Saving..."
+                        : "Creating..."
+                      : editMode
+                        ? "Save Changes"
+                        : "Create Truck"}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </form>
+        </Box>
       </Box>
     </div>
   );

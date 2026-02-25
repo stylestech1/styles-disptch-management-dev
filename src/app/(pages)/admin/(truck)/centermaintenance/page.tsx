@@ -19,7 +19,7 @@ import {
   Menu,
 } from "@mui/material";
 
-import { Lock, Unlock, AlertTriangle, Map, Building2, Mail, Phone, MapPin, Pin, Trash, Clock, Copy, Ellipsis, Search } from "lucide-react";
+import { Lock, Unlock, AlertTriangle, Map, Building2, Mail, Phone, MapPin, Pin, Trash, Clock, Copy, Ellipsis, Search, UserPlus } from "lucide-react";
 
 import React, { Suspense, useState, lazy, useEffect, useMemo } from "react";
 
@@ -860,7 +860,7 @@ Notes: ${(center as any)?.notes ?? ""}\n`;
             className="flex gap-1"
             sx={{ color: theme.currentPalette.primary }}
           >
-            <Pin /> Edit Details
+            <UserPlus /> Edit Details
           </MenuItem>
 
           <MenuItem

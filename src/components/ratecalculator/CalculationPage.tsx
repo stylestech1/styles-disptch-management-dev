@@ -227,7 +227,7 @@ const MapFallback = () => (
       justifyContent: "center",
       height: 500,
       bgcolor: "grey.50",
-      borderRadius: 1,
+      borderRadius: 2,
       border: "1px solid",
       borderColor: "divider",
     }}
@@ -260,7 +260,7 @@ const MetricBox = ({
       sx={{
         border: "3px solid",
         borderColor: alpha(primary, 0.35),
-        borderRadius: 1,
+        borderRadius: 2,
         p: 2,
         minHeight: 130,
         bgcolor: theme.currentPalette.background || "#fff",
@@ -643,13 +643,13 @@ const CalculationPage = () => {
               <Paper
                 elevation={0}
                 sx={{
-                  borderRadius: 1,
+                  borderRadius: 2,
                   border: "1px solid",
                   borderColor: borderBlue,
                   bgcolor: "#fff",
                   p: 2.25,
                   "& .MuiInputLabel-root": { fontSize: 13 },
-                  "& .MuiOutlinedInput-root": { borderRadius: 1 },
+                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
                 }}
               >
                 <Typography
@@ -676,7 +676,7 @@ const CalculationPage = () => {
                       width: "100%",
                       height: 56,
                       px: 2,
-                      borderRadius: 1,
+                      borderRadius: 2,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -809,13 +809,13 @@ const CalculationPage = () => {
               <Paper
                 elevation={0}
                 sx={{
-                  borderRadius: 1,
+                  borderRadius: 2,
                   border: "1px solid",
                   borderColor: borderBlue,
                   bgcolor: "#fff",
                   p: 2.25,
                   "& .MuiInputLabel-root": { fontSize: 13 },
-                  "& .MuiOutlinedInput-root": { borderRadius: 1 },
+                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
                 }}
               >
                 <Typography
@@ -1015,7 +1015,7 @@ const CalculationPage = () => {
               elevation={0}
               sx={{
                 p: 2.25,
-                borderRadius: 1,
+                borderRadius: 2,
                 border: "1px solid",
                 borderColor: borderBlue,
                 bgcolor: "#fff",
@@ -1101,7 +1101,7 @@ const CalculationPage = () => {
         PaperProps={{
           sx: {
             width: isMobile ? 300 : 380,
-            borderRadius: 1,
+            borderRadius: 2,
           },
         }}
       >
@@ -1133,7 +1133,7 @@ const CalculationPage = () => {
               size="small"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 1,
+                  borderRadius: 2,
                   bgcolor: "#fff",
                 },
               }}
@@ -1149,7 +1149,7 @@ const CalculationPage = () => {
             <Box
               sx={{
                 mt: 2,
-                borderRadius: 1,
+                borderRadius: 2,
                 border: "1px solid",
                 borderColor: alpha(theme.currentPalette.primary, 0.35),
                 overflow: "hidden",
@@ -1176,7 +1176,7 @@ const CalculationPage = () => {
               <Button
                 variant="outlined"
                 onClick={closeShare}
-                sx={{ borderRadius: 1, textTransform: "none" }}
+                sx={{ borderRadius: 2, textTransform: "none" }}
               >
                 Cancel
               </Button>
@@ -1186,7 +1186,7 @@ const CalculationPage = () => {
                 onClick={handleShare}
                 disabled={isCreatingConversation || isSendingMessage}
                 sx={{
-                  borderRadius: 1,
+                  borderRadius: 2,
                   px: 4,
                   py: 1.2,
                   fontWeight: 700,

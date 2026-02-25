@@ -672,7 +672,7 @@ const DriversPage = () => {
             sx={{
               bgcolor: alpha(theme.currentPalette.primary, 0.1),
               color: theme.currentPalette.primary,
-              borderRadius: 1,
+              borderRadius: 2,
             }}
             size="small"
           />
@@ -687,7 +687,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: alpha(theme.currentPalette.primary, 0.2),
                 color: theme.currentPalette.primary,
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -710,7 +710,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: theme.currentPalette.primary,
                 color: theme.currentPalette.background,
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -733,7 +733,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: alpha(theme.currentPalette.primary, 0.1),
                 color: theme.currentPalette.primary,
-                borderRadius: 1,
+                borderRadius: 2,
                 pl: 0.5,
               }}
               size="small"
@@ -794,7 +794,7 @@ const DriversPage = () => {
             sx={{ zIndex: 999 }}
             PaperProps={{
               sx: {
-                borderRadius: 1,
+                borderRadius: 2,
                 boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                 mt: 1,
                 bgcolor: "#fff",
@@ -957,7 +957,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: alpha(theme.currentPalette.primary, 0.2),
                 color: theme.currentPalette.primary,
-                borderRadius: 1,
+                borderRadius: 2,
               }}
               size="small"
             />
@@ -969,7 +969,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: theme.currentPalette.primary,
                 color: theme.currentPalette.background,
-                borderRadius: 1,
+                borderRadius: 2,
               }}
               size="small"
             />
@@ -981,7 +981,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: "#FFE2E2",
                 color: "#C10007",
-                borderRadius: 1,
+                borderRadius: 2,
               }}
               size="small"
             />
@@ -993,7 +993,7 @@ const DriversPage = () => {
               sx={{
                 bgcolor: theme.currentPalette.background,
                 color: "#C10007",
-                borderRadius: 1,
+                borderRadius: 2,
                 border: "1px solid #C10007",
               }}
               size="small"
@@ -1096,7 +1096,7 @@ const DriversPage = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 1,
+    borderRadius: 2,
     backgroundColor: theme.currentPalette.background,
     width: "100%",
   };
@@ -1105,7 +1105,7 @@ const DriversPage = () => {
     px: 4,
     fontWeight: "bold",
     fontSize: "1rem",
-    borderRadius: 1,
+    borderRadius: 2,
     width: { xs: "100%", md: "auto" },
     background: theme.currentPalette.primary,
     color: theme.currentPalette.background,
@@ -1126,7 +1126,7 @@ const DriversPage = () => {
           exclusive
           onChange={handleToggleChange}
           sx={{
-            borderRadius: 1,
+            borderRadius: 2,
             overflow: "hidden",
             border: `1px solid ${alpha(theme.currentPalette.primary, 0.5)}`,
           }}
@@ -1254,7 +1254,7 @@ const DriversPage = () => {
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
-                borderRadius: 1,
+                borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,
                 py: 0.5,
                 "&:hover": {
@@ -1310,7 +1310,7 @@ const DriversPage = () => {
                   py: 0.5,
                   width: 150,
                   textAlign: "center",
-                  borderRadius: 1,
+                  borderRadius: 2,
                   color: theme.currentPalette.primary,
                   textTransform: "capitalize",
                 }}
@@ -1418,7 +1418,7 @@ const DriversPage = () => {
         onClose={cancelDelete}
         PaperProps={{
           sx: {
-            borderRadius: 1,
+            borderRadius: 2,
             boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
             minWidth: 300,
             maxWidth: 400,
@@ -1451,7 +1451,7 @@ const DriversPage = () => {
               color="inherit"
               onClick={cancelDelete}
               sx={{
-                borderRadius: 1,
+                borderRadius: 2,
                 minWidth: 80,
                 borderColor: "grey.400",
                 "&:hover": {
@@ -1467,7 +1467,7 @@ const DriversPage = () => {
               color="error"
               onClick={confirmDelete}
               sx={{
-                borderRadius: 1,
+                borderRadius: 2,
                 minWidth: 80,
                 backgroundColor: "error.main",
                 "&:hover": {
@@ -1487,7 +1487,7 @@ const DriversPage = () => {
         onClose={() => setOpenTimeOffDialog(false)}
         PaperProps={{
           sx: {
-            borderRadius: 1,
+            borderRadius: 2,
             overflow: "hidden",
             width: 400,
             bgcolor: "#fff"
@@ -1639,7 +1639,7 @@ const DriversPage = () => {
                         color: theme.currentPalette.primary,
                         fontWeight: "bold",
                         bgcolor: alpha(theme.currentPalette.primary, 0.1),
-                        borderRadius: 1,
+                        borderRadius: 2,
                       }}
                     />
                     <span style={{ color: theme.currentPalette.primary }}>
@@ -1673,7 +1673,7 @@ const DriversPage = () => {
                       bgcolor: alpha(theme.currentPalette.primary, 0.1),
                       p: 2,
                       width: "100%",
-                      borderRadius: 1,
+                      borderRadius: 2,
                     }}
                   >
                     {selectedTimeOff.reason}
@@ -1697,7 +1697,7 @@ const DriversPage = () => {
                     sx={{
                       bgcolor: theme.currentPalette.primary,
                       color: theme.currentPalette.background,
-                      borderRadius: 1,
+                      borderRadius: 2,
                       width: "full",
                       py: 1,
                       textTransform: "capitalize",
@@ -1722,7 +1722,7 @@ const DriversPage = () => {
                     sx={{
                       border: `1px solid ${theme.currentPalette.primary}`,
                       color: theme.currentPalette.primary,
-                      borderRadius: 1,
+                      borderRadius: 2,
                       width: "full",
                       py: 1,
                       textTransform: "capitalize",

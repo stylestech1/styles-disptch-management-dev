@@ -420,7 +420,7 @@ const CustomerPage = () => {
     p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 1,
+    borderRadius: 2,
     backgroundColor: theme.currentPalette.background,
   };
   const newLoadButtonSx: SxProps = {
@@ -428,7 +428,7 @@ const CustomerPage = () => {
     px: 4,
     fontWeight: "bold",
     fontSize: "1rem",
-    borderRadius: 1,
+    borderRadius: 2,
     width: { xs: "100%", md: "auto" },
     background: theme.currentPalette.primary,
     color: theme.currentPalette.background,
@@ -504,7 +504,7 @@ const CustomerPage = () => {
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
-                borderRadius: 1,
+                borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,
                 py: 0.5,
                 "&:hover": {
@@ -590,7 +590,7 @@ const CustomerPage = () => {
         onClose={cancelDelete}
         PaperProps={{
           sx: {
-            borderRadius: 1,
+            borderRadius: 2,
             boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
             minWidth: 300,
             maxWidth: 400,
@@ -623,7 +623,7 @@ const CustomerPage = () => {
               color="inherit"
               onClick={cancelDelete}
               sx={{
-                borderRadius: 1,
+                borderRadius: 2,
                 minWidth: 80,
                 borderColor: "grey.400",
                 "&:hover": {
@@ -639,7 +639,7 @@ const CustomerPage = () => {
               color="error"
               onClick={confirmDelete}
               sx={{
-                borderRadius: 1,
+                borderRadius: 2,
                 minWidth: 80,
                 backgroundColor: "error.main",
                 "&:hover": {
