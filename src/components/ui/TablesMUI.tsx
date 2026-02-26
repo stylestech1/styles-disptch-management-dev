@@ -35,7 +35,6 @@ export const StatusChip: React.FC<{ status: Status }> = ({ status }) => {
   const s = String(status || "").toLowerCase();
 
   const styles = (() => {
-    // match screenshot tones using the SAME primary color
     if (s === "available") {
       return {
         bgcolor: alpha(primary, 0.75),

@@ -19,6 +19,7 @@ import {
     Fuel,
     ShieldUser,
 } from "lucide-react";
+import { StatusChip } from "../ui/TablesMUI";
 
 function InfoItem({
     icon,
@@ -192,10 +193,8 @@ export function ViewTruckDialog({
                         <Typography sx={{ fontSize: 22, fontWeight: 500, color: theme.currentPalette.primary }}>
                             Truck - ({truckId})
                         </Typography>
-                        <Typography
-                            sx={{ mt: { xs: 1, sm: 0 }, }}
-                        >
-                            <StatusPill status={status} theme={theme} />
+                        <Typography className="p-4 text-center">
+                            <StatusChip status={status as any} />
                         </Typography>
                     </Box>
 

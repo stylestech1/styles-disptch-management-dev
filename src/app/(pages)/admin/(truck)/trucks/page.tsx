@@ -525,7 +525,7 @@ const TrucksPage: React.FC = () => {
                 size="small"
                 sx={{ width: 34, height: 34, color: theme.currentPalette.primary }}
               >
-                <CircleEllipsis size={18} />
+                <CircleEllipsis size={24} />
               </IconButton>
             </Tooltip>
           </Box>

@@ -1,17 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import Erros from "@/components/ui/Erros";
 import Loading from "@/components/ui/Loading";
 import { RootState, useAppSelector } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import {
-  IoAdd,
-  IoPerson,
-  IoBriefcase,
-  IoKey,
-  IoSettingsOutline,
-} from "react-icons/io5";
-import { Key, UserPen, UserRoundPlus, UserRoundPlusIcon } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { TDispatcher } from "@/types/globalTypes";
 import useError from "@/hook/useError";
@@ -38,13 +32,18 @@ import {
   Box,
   Button,
   darken,
+  FormControl,
+  MenuItem,
+  OutlinedInput,
+  Select,
   SxProps,
   TableRow,
   Typography,
 } from "@mui/material";
-import { setLoading } from "@/redux/slices/uiSlice";
 import SearchInput from "@/components/ui/SearchInput";
-import { CircleUserRound, ShieldUser, UsersRound } from "lucide-react";
+import { CircleUserRound, ShieldUser, UsersRound, UserRoundPlusIcon, UserPen, UserRoundCog } from "lucide-react";
+
+type StatusFilter = "all" | "active" | "inactive";
 
 const Users = () => {
   const [page, setPage] = useState(1);
@@ -52,7 +51,10 @@ const Users = () => {
   const [popupSetting, setPopupSetting] = useState(false);
   const [selectedUser, setSelectedUser] = useState<TDispatcher | null>(null);
 
-  // ✅ Search And Filter
+  // ✅ Status Filter
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  // ✅ (optional existing date filter hooks you already had)
   const [fromDate, setFromDate] = useState<Dayjs | null>(null);
   const [toDate, setToDate] = useState<Dayjs | null>(null);
   const [isFiltered, setIsFiltered] = useState(false);
@@ -62,7 +64,81 @@ const Users = () => {
   const { error, setError } = useError();
   const theme = useAppSelector((state: RootState) => state.palette);
 
-  // RTK Querys
+  // ---------------------------
+  // ✅ Styles (MUST be here)
+  // ---------------------------
+  const containerSx: SxProps = { p: 3 };
+
+  const searchFilterContainerSx: SxProps = {
+    display: "flex",
+    flexDirection: { xs: "column", md: "row" },
+    alignItems: { xs: "flex-start", md: "center" },
+    justifyContent: "space-between",
+    gap: { xs: 2, md: 0 },
+    p: 2,
+    my: 2,
+    border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
+    borderRadius: 2,
+    backgroundColor: theme.currentPalette.background,
+  };
+
+  const controlHeight = 46;
+
+  const commonOutlinedSx: SxProps = {
+    height: controlHeight,
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: alpha(theme.currentPalette.primary, 0.35),
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: alpha(theme.currentPalette.primary, 0.7),
+    },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: theme.currentPalette.primary,
+    },
+  };
+
+  const searchInputSx: any = {
+    "& .MuiOutlinedInput-root": {
+      ...commonOutlinedSx,
+      borderRadius: 2,
+      backgroundColor: theme.currentPalette.background,
+      px: 1,
+    },
+  };
+
+  const selectSx: SxProps = {
+    minWidth: 140,
+    "& .MuiOutlinedInput-root": {
+      ...commonOutlinedSx,
+      borderRadius: 2,
+      backgroundColor: theme.currentPalette.background,
+    },
+    "& .MuiSelect-select": {
+      display: "flex",
+      alignItems: "center",
+      height: "100%",
+      py: 0,
+    },
+  };
+
+  const addButtonSx: SxProps = {
+    height: controlHeight,
+    px: 3,
+    fontWeight: 700,
+    borderRadius: 2,
+    width: { xs: "100%", md: "auto" },
+    background: theme.currentPalette.primary,
+    color: theme.currentPalette.background,
+    textTransform: "capitalize",
+    whiteSpace: "nowrap",
+    "&:hover": {
+      background: darken(theme.currentPalette.primary, 0.1),
+    },
+  };
+
+  // ---------------------------
+  // ✅ RTK Queries
+  // ---------------------------
   const {
     data: dispatchersData,
     error: dispatchersError,
@@ -77,7 +153,11 @@ const Users = () => {
     }
   );
 
-  const { data: filteredData } = useGetUserWithSearchQuery(
+  const {
+    data: filteredData,
+    error: filteredError,
+    isLoading: filteredLoading,
+  } = useGetUserWithSearchQuery(
     {
       from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
       to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
@@ -97,7 +177,7 @@ const Users = () => {
     },
   ] = useLazyGetUserByIdQuery();
 
-  // Search Hook
+  // ✅ Search Hook (reset also resets filter)
   const searchHook = useSearchSubmit({
     onSearch: (term) => {
       setPage(1);
@@ -107,72 +187,84 @@ const Users = () => {
     },
     onReset: () => {
       setPage(1);
+      setStatusFilter("all");
       resetSearchQuery();
       refetchLoads();
     },
   });
 
-  const { searchTerm, isSearching } = searchHook;
+  const { isSearching } = searchHook;
 
-  // RTK Mutation
+  // ---------------------------
+  // ✅ Mutations
+  // ---------------------------
   const [createUser, { isLoading: creatingUser }] = useCreateUserMutation();
-  const [updateUserRole, { isLoading: updatingRole }] =
-    useUpdateUserRoleMutation();
+  const [updateUserRole, { isLoading: updatingRole }] = useUpdateUserRoleMutation();
   const [activateUser, { isLoading: activating }] = useActivateUserMutation();
-  const [deactivateUser, { isLoading: deactivating }] =
-    useDeactivateUserMutation();
+  const [deactivateUser, { isLoading: deactivating }] = useDeactivateUserMutation();
 
-  const user = useMemo(() => {
-    if (isSearching && Array.isArray(userByIdData?.data)) {
-      return userByIdData.data.flat();
-    }
-    if (isFiltered && filteredData?.data) {
-      return filteredData.data;
-    }
+  // ---------------------------
+  // ✅ Data source (search > date filter > base list)
+  // ---------------------------
+  const users = useMemo(() => {
+    if (isSearching && Array.isArray(userByIdData?.data)) return userByIdData.data.flat();
+    if (isFiltered && Array.isArray(filteredData?.data)) return filteredData.data;
     return dispatchersData?.data || [];
   }, [isSearching, isFiltered, userByIdData, filteredData, dispatchersData]);
+
+  // ✅ Status Filter (frontend)
+  const filteredUsers = useMemo(() => {
+    if (statusFilter === "all") return users;
+    const wantActive = statusFilter === "active";
+    return users.filter((u: any) => Boolean(u.active) === wantActive);
+  }, [users, statusFilter]);
 
   const pagination = isFiltered
     ? filteredData?.paginationResult || null
     : dispatchersData?.paginationResult || null;
 
-  // Loading state
+  // ---------------------------
+  // ✅ Errors (handle ALL)
+  // ---------------------------
   useEffect(() => {
-    setLoading(loading && !dispatchersData);
-  }, [loading, dispatchersData]);
+    const currentError = dispatchersError || userByIdError || filteredError;
+    if (!currentError) return;
 
-  // handling Errors
-  useEffect(() => {
-    const currentError = dispatchersError || userByIdError;
-    if (currentError) {
-      const errorMessage = getErrorMessage(currentError);
-      setError(errorMessage);
-      toast.error(errorMessage || "Failed to load data ❌", {
-        style: {
-          background: "#dc2626",
-          color: "#fff",
-          borderRadius: "8px",
-          fontSize: "14px",
-        },
-        duration: 4000,
-      });
-    }
-  }, [dispatchersError, userByIdError, setError]);
+    const errorMessage = getErrorMessage(currentError);
+    setError(errorMessage);
 
-  // Stats cards
+    toast.error(errorMessage || "Failed to load data ❌", {
+      style: {
+        background: "#dc2626",
+        color: "#fff",
+        borderRadius: "8px",
+        fontSize: "14px",
+      },
+      duration: 4000,
+    });
+  }, [dispatchersError, userByIdError, filteredError, setError]);
+
+  // ---------------------------
+  // ✅ Stats
+  // ---------------------------
   const statsData = useMemo(() => {
-    const statsUsersData = dispatchersData?.stats || [];
-    if (!statsUsersData || statsUsersData.length === 0)
-      return { totalUsers: 0, drivers: 0, admins: 0, employees: 0 };
+    const statsUsersData: any = dispatchersData?.stats;
+    if (!statsUsersData) return { totalUsers: 0, drivers: 0, admins: 0, employees: 0 };
+
+    // support both "object" or "array" shapes safely
+    const s = Array.isArray(statsUsersData) ? statsUsersData[0] : statsUsersData;
+
     return {
-      totalUsers: statsUsersData.total,
-      drivers: statsUsersData.drivers,
-      admins: statsUsersData.admins,
-      employees: statsUsersData.employee,
+      totalUsers: Number(s?.total ?? 0),
+      drivers: Number(s?.drivers ?? 0),
+      admins: Number(s?.admins ?? 0),
+      employees: Number(s?.employee ?? s?.employees ?? 0),
     };
   }, [dispatchersData?.stats]);
 
-  // FIXME: Create User
+  // ---------------------------
+  // ✅ Actions
+  // ---------------------------
   const handleCreateUser = async (userData: {
     name: string;
     email: string;
@@ -182,16 +274,14 @@ const Users = () => {
     password: string;
     passwordConfirmation: string;
   }) => {
-    if (!token) {
-      router.replace("/");
-      return;
-    }
+    if (!token) return router.replace("/");
     try {
       await createUser(userData).unwrap();
       toast.success("User created successfully!", {
         style: { background: "#16a34a", color: "#fff" },
       });
       setPopup(false);
+      await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       toast.error(errorMessage || "Creating user failed ❌");
@@ -203,16 +293,13 @@ const Users = () => {
     userId: string,
     newRole: "admin" | "employee" | "driver" | "superAdmin"
   ) => {
-    if (!token) {
-      router.replace("/");
-      return;
-    }
-
+    if (!token) return router.replace("/");
     try {
       await updateUserRole({ id: userId, role: newRole }).unwrap();
       toast.success(`Role updated to ${newRole} successfully!`, {
         style: { background: "#16a34a", color: "#fff" },
       });
+      await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       toast.error(errorMessage || "Updating role failed ❌");
@@ -220,18 +307,14 @@ const Users = () => {
     }
   };
 
-  // FIXME: Activate User
   const handleActivateUser = async (userId: string) => {
-    if (!token) {
-      router.replace("/");
-      return;
-    }
-
+    if (!token) return router.replace("/");
     try {
       await activateUser({ id: userId }).unwrap();
       toast.success("User activated successfully!", {
         style: { background: "#16a34a", color: "#fff" },
       });
+      await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       toast.error(errorMessage || "Activating user failed ❌");
@@ -239,18 +322,14 @@ const Users = () => {
     }
   };
 
-  // FIXME: Deactivate User
   const handleDeactivateUser = async (userId: string) => {
-    if (!token) {
-      router.replace("/");
-      return;
-    }
-
+    if (!token) return router.replace("/");
     try {
       await deactivateUser({ id: userId }).unwrap();
       toast.success("User deactivated successfully!", {
         style: { background: "#16a34a", color: "#fff" },
       });
+      await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       toast.error(errorMessage || "Deactivating user failed ❌");
@@ -258,26 +337,22 @@ const Users = () => {
     }
   };
 
-  // TODO: Function to open settings popup
-  const openSettingsPopup = (user: TDispatcher) => {
-    setSelectedUser(user);
+  const openSettingsPopup = (u: TDispatcher) => {
+    setSelectedUser(u);
     setPopupSetting(true);
   };
 
-  // TODO: Close settings popup
   const closeSettingsPopup = () => {
     setPopupSetting(false);
     setSelectedUser(null);
   };
 
-  // TODO: Close create user popup
-  const closeCreateUserPopup = () => {
-    setPopup(false);
-  };
+  const closeCreateUserPopup = () => setPopup(false);
 
-  // TODO: Table
+  // ---------------------------
+  // ✅ Table Row
+  // ---------------------------
   const renderDispatcherRow = (dispatcher: TDispatcher) => {
-    // Styles
     const tableRowSx: SxProps = {
       bgcolor: theme.currentPalette.background,
       "&:hover": {
@@ -289,117 +364,77 @@ const Users = () => {
 
     return (
       <TableRow
-        key={dispatcher.id || dispatcher.jobId}
+        key={(dispatcher as any).id || (dispatcher as any).jobId}
         sx={tableRowSx}
         className="hover:bg-slate-50 transition-colors group"
       >
-        {/* # */}
-        <td className="p-4 text-slate-600 font-medium">{dispatcher.jobId}</td>
-
-        {/* Name */}
-        <td className="p-4">
-          <div className="flex items-center gap-3">
-            {/* <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-              <IoPerson size={14} className="text-slate-600" />
-            </div> */}
-            <span className="font-medium text-slate-900">
-              {dispatcher.name}
-            </span>
-          </div>
+        <td className="p-4 text-slate-600 font-medium text-center">
+          {(dispatcher as any).jobId}
         </td>
 
-        {/* Email */}
-        <td className="p-4 text-slate-700">{dispatcher.email}</td>
+        <td className="p-4 text-slate-700 text-center">{dispatcher.name}</td>
 
-        {/* Phone */}
-        <td className="p-4 text-slate-700">{dispatcher.phone}</td>
-
-        {/* Role */}
         <td className="p-4">
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 text-center">
             <span
-              className={` px-3 py-1 rounded-xl`}
-              style={{ color: theme.currentPalette.primary, backgroundColor: alpha(theme.currentPalette.primary, 0.1) }}
+              className="px-3 py-1 rounded-[8px]"
+              style={{
+                color: theme.currentPalette.primary,
+                backgroundColor: alpha(theme.currentPalette.primary, 0.1),
+              }}
             >
-              {dispatcher.role}
+              {(dispatcher as any).role}
             </span>
-            {dispatcher.role?.toLowerCase() === "employee" &&
-              dispatcher.position && (
-                <span className="text-gray-500 text-sm">
-                  {dispatcher.position}
-                </span>
-              )}
+            {(dispatcher as any).role?.toLowerCase() === "employee" && (dispatcher as any).position ? (
+              <span className="text-gray-500 text-sm">{(dispatcher as any).position}</span>
+            ) : null}
           </div>
         </td>
-        {/* Status */}
+
+        <td className="p-4 text-slate-700 text-center">{dispatcher.email}</td>
+        <td className="p-4 text-slate-700 text-center">{(dispatcher as any).phone}</td>
+
         <td className="p-4 text-center">
-          {dispatcher.active ? (
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"
-              style={{ backgroundColor: alpha(theme.currentPalette.primary, 0.1), color: theme.currentPalette.primary, borderColor: alpha(theme.currentPalette.primary, 0.3) }}
-            >
-              Active
-            </span>
-          ) : (
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-gray-500"
-              style={{ borderColor: alpha(theme.currentPalette.primary, 0.1) }}
-            >
-              Inactive
-            </span>
-          )}
+          {(() => {
+            const isActive = Boolean((dispatcher as any).active);
+            return (
+              <span
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-sm font-medium"
+                style={{
+                  backgroundColor: isActive
+                    ? theme.currentPalette.primary
+                    : alpha(theme.currentPalette.primary, 0.1),
+                  color: isActive ? "#ffffff" : theme.currentPalette.primary,
+                }}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </span>
+            );
+          })()}
         </td>
 
-        {/* Setting */}
         <td className="p-4">
           <button
-          style={{color:theme.currentPalette.primary}}
+            type="button"
+            style={{ color: theme.currentPalette.primary }}
             onClick={() => openSettingsPopup(dispatcher)}
             className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
           >
-            <UserPen />
+            <UserPen size={18} />
           </button>
         </td>
       </TableRow>
     );
   };
 
-  // Loading state
-  const isInitialLoading = userByIdLoading && !dispatchersData;
+  // ---------------------------
+  // ✅ Loading
+  // ---------------------------
+  const isInitialLoading = loading && !dispatchersData && !isSearching;
   if (isInitialLoading) return <Loading />;
-
-  // Container styles
-  const containerSx: SxProps = {
-    p: 3,
-  };
-  const searchFilterContainerSx: SxProps = {
-    display: "flex",
-    flexDirection: { xs: "column", md: "row" },
-    alignItems: { xs: "flex-start", md: "center" },
-    justifyContent: "space-between",
-    gap: { xs: 2, md: 0 },
-    p: 2,
-    my: 2,
-    border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-    borderRadius: 2,
-    backgroundColor: theme.currentPalette.background,
-  };
-  const newLoadButtonSx: SxProps = {
-    py: 1.5,
-    px: 4,
-    fontWeight: "bold",
-    fontSize: "1rem",
-    borderRadius: 2,
-    width: { xs: "100%", md: "auto" },
-    background: theme.currentPalette.primary,
-    color: theme.currentPalette.background,
-    textTransform: "capitalize",
-    "&:hover": {
-      background: darken(theme.currentPalette.primary, 0.1),
-    },
-  };
 
   return (
     <Box sx={containerSx}>
-      {/* Stats Summary */}
       <Box sx={{ mt: 4, mb: 5 }}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
@@ -408,7 +443,6 @@ const Users = () => {
             icon={CircleUserRound}
             iconColor={theme.currentPalette.primary}
           />
-
           <StatsCard
             title="Drivers"
             value={statsData.drivers}
@@ -421,11 +455,10 @@ const Users = () => {
             icon={UsersRound}
             iconColor={theme.currentPalette.primary}
           />
-
           <StatsCard
             title="Admins"
             value={statsData.admins}
-            icon={UserRoundPlusIcon}
+            icon={UserRoundCog}
             iconColor={theme.currentPalette.primary}
           />
         </div>
@@ -433,19 +466,13 @@ const Users = () => {
 
       <Toaster position="top-center" reverseOrder={false} />
 
-      {/* Search */}
+      {/* Top Bar */}
       <Box sx={searchFilterContainerSx}>
         <Box>
-          <Typography
-            variant="h6"
-            sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
-          >
+          <Typography variant="h6" sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}>
             User Details
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
-          >
+          <Typography variant="body2" sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}>
             Ckeck list of all users
           </Typography>
         </Box>
@@ -462,34 +489,44 @@ const Users = () => {
           {/* Search */}
           <SearchInput
             searchHook={searchHook}
-            placeholder="Search users by ID...."
+            placeholder="Search users by ID, Name .."
             showClearButton
-            sx={{
-              width: { xs: "100%", sm: "100%", md: 280, lg: 350 },
-            }}
-            inputSx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                backgroundColor: theme.currentPalette.background,
-                py: 0.5,
-                "&:hover": {
-                  borderColor: theme.currentPalette.primary,
-                },
-              },
-            }}
+            sx={{ width: { xs: "100%", md: 360 } }}
+            inputSx={searchInputSx}
           />
 
-          {/* Add User */}
-          <Box>
-            <Button
-              onClick={() => setPopup(true)}
-              variant="contained"
-              startIcon={<IoAdd size={22} />}
-              sx={newLoadButtonSx}
-            >
-              Add User
-            </Button>
+          {/* Status Filter */}
+          <Box sx={{ width: { xs: "100%", md: "auto" } }}>
+            <Box sx={selectSx}>
+              <FormControl fullWidth>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  displayEmpty
+                  input={<OutlinedInput />}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 2,
+                        mt: 1,
+                        bgcolor: "#fff",
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
           </Box>
+
+          {/* Add User */}
+          <Button onClick={() => setPopup(true)} variant="contained" sx={addButtonSx}>
+            Add User
+          </Button>
         </Box>
       </Box>
 
@@ -499,16 +536,12 @@ const Users = () => {
         </Box>
       )}
 
-      {/* Data Table */}
+      {/* Table */}
       <DataTable
         columns={dispatcherColumns}
-        data={user}
+        data={filteredUsers}
         renderRow={renderDispatcherRow}
-        loading={
-          (isSearching && userByIdLoading) ||
-          (isFiltered && filteredData) ||
-          (loading && !dispatchersData)
-        }
+        loading={Boolean((isSearching && userByIdLoading) || (isFiltered && filteredLoading) || (loading && !dispatchersData))}
       />
 
       {/* Create User Modal */}
@@ -530,8 +563,7 @@ const Users = () => {
         isLoading={updatingRole || activating || deactivating}
       />
 
-      {/* Pagination */}
-      {!isFiltered && !isSearching && pagination && user.length > 0 && (
+      {!isFiltered && !isSearching && pagination && filteredUsers.length > 0 && (
         <Pagination
           pagination={pagination}
           page={page}
