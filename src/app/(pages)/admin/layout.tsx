@@ -121,8 +121,6 @@ export default function AdminLayout({
         subtitle: "Detailed overview of driver information and performance.",
       };
     }
-
-    // ✅ search root + children
     for (const tab of tabs) {
       const tabKey = tab?.label?.replace(/\s+/g, "").toLowerCase();
       if (tabKey === cleanedPath) return tab;
@@ -131,7 +129,7 @@ export default function AdminLayout({
         const child = tab.children.find(
           (c) => c.path?.toLowerCase() === cleanedPath,
         );
-        if (child) return child; // ✅ return child info to navbar
+        if (child) return child; 
       }
     }
 
@@ -142,7 +140,7 @@ export default function AdminLayout({
 
   const getInitials = (fullName: string) => {
     const names = fullName.split(" ");
-    const initials = names.map((n) => n[0].toUpperCase()).join("");
+    const initials = names.map((n) => n[0]?.toUpperCase()).join("");
     return initials;
   };
 

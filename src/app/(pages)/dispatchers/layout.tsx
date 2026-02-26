@@ -87,7 +87,7 @@ export default function AdminLayout({
 
   const getInitials = (fullName: string) => {
     const names = fullName.split(" ");
-    const initials = names.map((n) => n[0].toUpperCase()).join("");
+    const initials = names.map((n) => n[0]?.toUpperCase()).join("");
     return initials;
   };
 

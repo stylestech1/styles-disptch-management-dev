@@ -71,6 +71,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { ViewTruckDialog } from "@/components/truck/ViewPopup";
 
 type TStatusFilter = "all" | "available" | "busy" | "inactive";
 
@@ -159,7 +160,7 @@ const TrucksPage: React.FC = () => {
   const closeSettings = () => setSettingsOpen(false);
 
   useEffect(() => {
-    if (!settingsOpen) return;
+    // if (!settingsOpen) return;
 
     const raw = settingsResp?.raw ?? [];
     const dataObj = settingsResp?.data;
@@ -551,13 +552,14 @@ const TrucksPage: React.FC = () => {
     backgroundColor: theme.currentPalette.background,
     width: "100%",
   };
+  const CONTROL_H = 46;
 
   const newLoadButtonSx: SxProps = {
-    py: 1.2,
+    height: CONTROL_H,
     px: 3,
     fontWeight: 700,
     fontSize: "0.95rem",
-    borderRadius: 1.5,
+    borderRadius: 2,
     width: { xs: "100%", md: "auto" },
     background: theme.currentPalette.primary,
     color: theme.currentPalette.background,
@@ -565,9 +567,10 @@ const TrucksPage: React.FC = () => {
     "&:hover": { background: darken(theme.currentPalette.primary, 0.1) },
   };
 
-  const smallControlSx: SxProps = {
-    height: 42,
-    borderRadius: 1.5,
+
+  const controlSx: SxProps = {
+    height: CONTROL_H,
+    borderRadius: 2,
     bgcolor: "#fff",
     "& .MuiOutlinedInput-notchedOutline": {
       borderColor: alpha(theme.currentPalette.primary, 0.25),
@@ -577,6 +580,14 @@ const TrucksPage: React.FC = () => {
     },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
       borderColor: theme.currentPalette.primary,
+    },
+
+    "& .MuiSelect-select": {
+      display: "flex",
+      alignItems: "center",
+      height: CONTROL_H,
+      paddingTop: 0,
+      paddingBottom: 0,
     },
   };
 
@@ -622,8 +633,15 @@ const TrucksPage: React.FC = () => {
             sx={{ width: { xs: "100%", sm: 260, md: 260, lg: 320 } }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
-                ...smallControlSx,
+                ...controlSx,
                 px: 0.5,
+              },
+              "& .MuiOutlinedInput-input": {
+                paddingTop: 0,
+                paddingBottom: 0,
+                height: CONTROL_H,
+                display: "flex",
+                alignItems: "center",
               },
             }}
           />
@@ -635,7 +653,7 @@ const TrucksPage: React.FC = () => {
                 setStatusFilter(e.target.value as TStatusFilter);
                 setPage(1);
               }}
-              sx={smallControlSx}
+              sx={controlSx}
               displayEmpty
             >
               <MenuItem value="all">All</MenuItem>
@@ -655,9 +673,9 @@ const TrucksPage: React.FC = () => {
               <IconButton
                 onClick={openSettings}
                 sx={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 1,
+                  width: CONTROL_H,         
+                  height: CONTROL_H,       
+                  borderRadius: 2,
                   bgcolor: "#fff",
                   border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
                   color: theme.currentPalette.primary,
@@ -778,7 +796,9 @@ const TrucksPage: React.FC = () => {
           </IconButton>
         </Box>
 
-        <Box sx={{ px: 3, pb: 3 }}>
+        <Divider />
+
+        <Box sx={{ px: 3, pb: 3, mt: 1 }}>
           <Typography sx={{ mt: 0.5, mb: 2.5, color: theme.currentPalette.primary }}>
             Global rate configurations for cost estimation.
           </Typography>
@@ -856,7 +876,7 @@ const TrucksPage: React.FC = () => {
               }}
             />
 
-            <Typography sx={{  fontSize: 12 }}>
+            <Typography sx={{ fontSize: 12 }}>
               Note: Calculations are based on (Cost = Total Mileage × Rate)
             </Typography>
 
@@ -892,7 +912,12 @@ const TrucksPage: React.FC = () => {
         allTrucks={(trucksData as any)?.data?.data || []}
         refetch={refetchTrucks}
       />
-
+      <ViewTruckDialog
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        selectedTruck={selectedTruck}
+        theme={theme}
+      />
       {/* Delete overlay */}
       {deleteToast.open && (
         <Box

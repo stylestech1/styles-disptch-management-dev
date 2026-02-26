@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const getInitials = (fullName: string) => {
         const names = fullName.split(" ").filter(Boolean);
-        return names.map((n) => n[0].toUpperCase()).join("").slice(0, 2);
+        return names.map((n) => n[0]?.toUpperCase()).join("").slice(0, 2);
     };
 
     const SidebarContent = (

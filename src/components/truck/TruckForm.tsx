@@ -187,7 +187,6 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
   const truckTypes = useMemo(() => ["reefer", "van"], []);
   const truckSource = useMemo(() => ["company", "other"], []);
 
-  // ======= styles (match screenshot) =======
   const inputSx = {
     "& .MuiFormLabel-asterisk": {
       color: "red",
@@ -273,13 +272,11 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
     onClose();
   };
 
-  // ===== step validation (Next) =====
   const validateStep0 = async () => {
     const ok = await trigger(["model", "plateNumber", "year", "type", "source", "status"]);
     return ok;
   };
 
-  // ===== Stepper UI (use your component but adjusted to match screenshot) =====
   const StepperHeader = () => {
     return (
       <Box sx={{ px: 3, pt: 2, backgroundColor: "#fff", flex: "0 0 auto" }}>
