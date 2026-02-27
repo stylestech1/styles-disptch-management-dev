@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect, useMemo, useState } from "react";
+
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -37,15 +39,7 @@ import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
 
 // Icons
-import {
-  IoAdd,
-  IoCheckmark,
-  IoTime,
-  IoCar,
-  IoNavigate,
-  IoLocationSharp,
-  IoChatbubbleEllipses,
-} from "react-icons/io5";
+import { IoAdd, IoCheckmark, IoNavigate, IoLocationSharp } from "react-icons/io5";
 
 // MUI
 import {
@@ -53,15 +47,189 @@ import {
   Box,
   Button,
   Chip,
+  FormControl,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
   SxProps,
   TableRow,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
 // Styles
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
+import { Boxes, Clock, Goal, LandPlot, MapPin, NotepadText } from "lucide-react";
 
+type LoadStatusFilter = "all" | "pending" | "in_transit" | "delivered" | "cancelled";
+const CONTROL_H = 42;
+
+// ---------- helpers ----------
+const toTitle = (v: string) =>
+  v
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(" ");
+
+const formatLocationShort = (value?: string) => {
+  const v = (value || "").trim();
+  if (!v) return "-";
+
+  const parts = v
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length >= 3) {
+    const city = parts[1]; 
+    const stateChunk = parts[2]; 
+    const state = stateChunk.split(/\s+/)[0]; 
+
+    if (city && state) return `${city}, ${state}`;
+    if (city) return city;
+  }
+
+  // If already "City, ST"
+  if (parts.length === 2) {
+    const city = parts[0];
+    const state = parts[1].split(/\s+/)[0];
+    return `${city}, ${state}`;
+  }
+
+  return v;
+};
+
+const LocationLine = ({
+  icon,
+  value,
+  theme,
+}: {
+  icon: React.ReactNode;
+  value?: string;
+  theme: any;
+}) => {
+  const full = (value || "").trim();
+  const short = formatLocationShort(full);
+
+  return (
+    <Tooltip
+      title={full || "-"}
+      placement="right"
+      arrow
+      componentsProps={{
+        tooltip: {
+          sx: {
+            bgcolor: "#0f172a",
+            fontSize: 12,
+            borderRadius: 2,
+            px: 1.2,
+            py: 0.8,
+          },
+        },
+        arrow: { sx: { color: "#0f172a" } },
+      }}
+    >
+      <div className="flex text-center items-center gap-2 cursor-default">
+        {icon}
+        <span
+          className="text-sm max-w-[180px] truncate font-medium"
+          style={{ color: theme.currentPalette.primary }} //  text primary
+        >
+          {short}
+        </span>
+      </div>
+    </Tooltip>
+  );
+};
+const StatusChip = ({ status, theme }: { status?: string; theme: any }) => {
+  const s = (status || "").toLowerCase();
+  const primary = theme.currentPalette.primary;
+  const white = theme.currentPalette.background;
+
+  // const dot = (bg: string) => (
+  //   <span
+  //     style={{
+  //       width: 8,
+  //       height: 8,
+  //       borderRadius: "50%",
+  //       backgroundColor: bg,
+  //     }}
+  //   />
+  // );
+  if (s === "pending") {
+    return (
+      <Chip
+        label="Pending"
+        size="small"
+        // icon={dot(primary)}
+        sx={{
+          height: 26,
+          borderRadius: 999,
+          bgcolor: alpha(primary, 0.10),
+          color: primary,
+          border: `1px solid ${alpha(primary, 0.25)}`,
+          pl: 0.25,
+          "& .MuiChip-label": { fontWeight: 800, fontSize: 12 },
+        }}
+      />
+    );
+  }
+  if (s === "in_transit") {
+    return (
+      <Chip
+        label="In Transit"
+        size="small"
+        // icon={dot(white)}
+        sx={{
+          height: 26,
+          borderRadius: 999,
+          bgcolor: primary,
+          color: white,
+          border: `1px solid ${primary}`,
+          pl: 0.25,
+          "& .MuiChip-label": { fontWeight: 800, fontSize: 12 },
+        }}
+      />
+    );
+  }
+  if (s === "delivered") {
+    return (
+      <Chip
+        label="Delivered"
+        size="small"
+        // icon={dot(white)}
+        sx={{
+          height: 26,
+          borderRadius: 999,
+          bgcolor: primary,
+          color: white,
+          border: `1px solid ${primary}`,
+          pl: 0.25,
+          "& .MuiChip-label": { fontWeight: 800, fontSize: 12 },
+        }}
+      />
+    );
+  }
+  return (
+    <Chip
+      label={toTitle(s || "unknown")}
+      size="small"
+      // icon={dot(alpha(primary, 0.6))}
+      sx={{
+        height: 26,
+        borderRadius: 999,
+        bgcolor: alpha(primary, 0.08),
+        color: primary,
+        border: `1px solid ${alpha(primary, 0.18)}`,
+        pl: 0.25,
+        "& .MuiChip-label": { fontWeight: 800, fontSize: 12 },
+      }}
+    />
+  );
+};
+// ---------- page ----------
 const LoadsPageDetails = () => {
   const [page, setPage] = useState(1);
   const router = useRouter();
@@ -70,10 +238,11 @@ const LoadsPageDetails = () => {
 
   const { fromDate, toDate, isFiltered } = useFilter();
 
+  const [statusFilter, setStatusFilter] = useState<LoadStatusFilter>("all");
+
   // Modal states
   const [showCreateEditModal, setShowCreateEditModal] = useState(false);
-  const [selectedLoadForNotes, setSelectedLoadForNotes] =
-    useState<TLoads | null>(null);
+  const [selectedLoadForNotes, setSelectedLoadForNotes] = useState<TLoads | null>(null);
   const [editingLoad, setEditingLoad] = useState<TLoads | null>(null);
 
   // Loading & Error states
@@ -94,9 +263,7 @@ const LoadsPageDetails = () => {
   const searchHook = useSearchSubmit({
     onSearch: (term) => {
       setPage(1);
-      if (term.trim()) {
-        triggerSearchQuery(encodeURIComponent(term));
-      }
+      if (term.trim()) triggerSearchQuery(encodeURIComponent(term));
     },
     onReset: () => {
       setPage(1);
@@ -121,52 +288,43 @@ const LoadsPageDetails = () => {
     }
   );
 
-  const { isLoading: notesLoading } = useGetNotesQuery(
-    selectedLoadForNotes?.id || "",
-    { skip: !selectedLoadForNotes?.id }
+  useGetNotesQuery(selectedLoadForNotes?.id || "", { skip: !selectedLoadForNotes?.id });
+
+  const { data: filteredData, isLoading: filterLoading } = useGetLoadsWithFilterQuery(
+    {
+      from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
+      to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
+      page,
+      limit: 10,
+    },
+    {
+      skip: !isFiltered || !fromDate || !toDate,
+      refetchOnFocus: false,
+    }
   );
 
-  const { data: filteredData, isLoading: filterLoading } =
-    useGetLoadsWithFilterQuery(
-      {
-        from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
-        to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
-        page,
-        limit: 10,
-      },
-      {
-        skip: !isFiltered || !fromDate || !toDate,
-        refetchOnFocus: false,
-      }
-    );
-
   useEffect(() => {
-    if (isFiltered && fromDate && toDate) {
-      setPage(1);
-    }
+    if (isFiltered && fromDate && toDate) setPage(1);
   }, [isFiltered, fromDate, toDate]);
 
-  // Process data
-  const load = useMemo(() => {
-    if (isSearching && Array.isArray(loadByIdData?.data)) {
-      return loadByIdData.data.flat();
-    }
-    if (isFiltered && filteredData?.data) {
-      return filteredData.data;
-    }
+  // Base data (search/date-filter/default)
+  const baseLoads = useMemo<TLoads[]>(() => {
+    if (isSearching && Array.isArray(loadByIdData?.data)) return loadByIdData.data.flat();
+    if (isFiltered && filteredData?.data) return filteredData.data;
     return loadsData?.data || [];
   }, [isSearching, isFiltered, loadByIdData, filteredData, loadsData]);
 
-  const pagination = isFiltered
-    ? filteredData?.paginationResult || null
-    : loadsData?.paginationResult || null;
+  const load = useMemo(() => {
+    if (statusFilter === "all") return baseLoads;
+    return baseLoads.filter((l) => (l.status || "").toLowerCase() === statusFilter);
+  }, [baseLoads, statusFilter]);
 
-  // Loading state
+  const pagination = isFiltered ? filteredData?.paginationResult || null : loadsData?.paginationResult || null;
+
   useEffect(() => {
     setLoading(loadsLoading && !loadsData);
   }, [loadsLoading, loadsData, setLoading]);
 
-  // Error handling
   useEffect(() => {
     const currentError = loadsError || loadByIdError;
     if (currentError) {
@@ -186,7 +344,7 @@ const LoadsPageDetails = () => {
 
   // Stats cards
   const statsData = useMemo(() => {
-    const statLoadData = loadsData?.stats || [];
+    const statLoadData: any = loadsData?.stats || [];
     if (!statLoadData || statLoadData.length === 0)
       return { totalLoads: 0, pending: 0, inTransit: 0, delivered: 0 };
     return {
@@ -197,31 +355,23 @@ const LoadsPageDetails = () => {
     };
   }, [loadsData?.stats]);
 
-  // Loading state
-  const isInitialLoading = loadsLoading && !loadsData;
-  if (isInitialLoading) return <Loading />;
+  if (loadsLoading && !loadsData) return <Loading />;
 
-  // Table row renderer
   const renderLoadRow = (loadItem: TLoads) => {
     const hasComments = loadItem.comments && loadItem.comments.length > 0;
     const commentsCount = loadItem.comments?.length || 0;
 
     const navigateToLoadDetails = (e?: React.MouseEvent) => {
-      if (e) {
-        e.stopPropagation();
-      }
+      if (e) e.stopPropagation();
 
       const path =
         userRole === "admin"
           ? `/admin/loadDetails/${encodeURIComponent(String(loadItem.id))}`
-          : `/dispatchers/loadDetails/${encodeURIComponent(
-              String(loadItem.id)
-            )}`;
+          : `/dispatchers/loadDetails/${encodeURIComponent(String(loadItem.id))}`;
 
       router.push(path);
     };
 
-    // Styles
     const tableRowSx: SxProps = {
       bgcolor: theme.currentPalette.background,
       "&:hover": {
@@ -230,10 +380,15 @@ const LoadsPageDetails = () => {
       },
       transition: "all 0.2s ease-in-out",
     };
+
     const commentButtonSx: SxProps = {
       backgroundColor: theme.currentPalette.primary,
       transition: "all 0.2s ease-in-out",
     };
+
+    const destinationFull = Array.isArray(loadItem.destination)
+      ? loadItem.destination.join(" • ")
+      : (loadItem.destination as any);
 
     return (
       <TableRow
@@ -241,191 +396,70 @@ const LoadsPageDetails = () => {
         key={loadItem.id ? String(loadItem.id) : String(loadItem.loadId)}
         onClick={navigateToLoadDetails}
       >
-        {/* Load ID */}
+        {/* load Id  */}
         <td className="p-4 text-center">
-          <span className="text-sm px-2 py-1 rounded text-slate-700 font-medium">
+          <span className="text-sm px-2 py-1 rounded font-medium" style={{ color: theme.currentPalette.primary }}>
             {loadItem.loadId}
           </span>
         </td>
-
-        {/* Route */}
+        {/* driver name and phone  */}
+        <td className="p-4 text-center">
+          <div>
+            <div className="font-medium text-[14px] text-sm mb-1">
+              {loadItem.driverId?.name || "-"}
+            </div>
+            <div className="text-xs text-slate-500">{loadItem.driverId?.phone || "-"}</div>
+          </div>
+        </td>
+        {/* route */}
         <td className="p-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-700">
-              <IoLocationSharp size={14} className="text-slate-400" />
-              <span
-                className="text-sm max-w-[120px] truncate"
-                title={loadItem.DHO}
-              >
-                {loadItem.DHO || "-"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <IoNavigate size={14} className="text-slate-400" />
-              <span
-                className="text-sm max-w-[120px] truncate"
-                title={loadItem.origin}
-              >
-                {loadItem.origin || "-"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <IoCheckmark size={14} className="text-slate-400" />
-              <span
-                className="text-sm max-w-[120px] truncate"
-                title={
-                  Array.isArray(loadItem.destination)
-                    ? loadItem.destination.join(", ")
-                    : loadItem.destination
-                }
-              >
-                {Array.isArray(loadItem.destination)
-                  ? loadItem.destination.join(", ")
-                  : loadItem.destination || "-"}
-              </span>
+          <div className="flex justify-center">
+            <div className="space-y-1">
+              <LocationLine
+                theme={theme}
+                icon={<MapPin size={14} color={theme.currentPalette.primary} />}
+                value={loadItem.DHO}
+              />
+              <LocationLine
+                theme={theme}
+                icon={<IoNavigate size={14} color={theme.currentPalette.primary} />}
+                value={loadItem.origin}
+              />
+              <LocationLine
+                theme={theme}
+                icon={<LandPlot size={14} color={theme.currentPalette.primary} />}
+                value={destinationFull}
+              />
             </div>
           </div>
         </td>
-
-        {/* Distance */}
-        <td className="p-4 text-center text-slate-700 font-medium">
+        {/* distance */}
+        <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }} >
           {loadItem.distanceMiles ? `${loadItem.distanceMiles} mi` : "-"}
         </td>
-
-        {/* Price Per Mile */}
-        <td className="p-4 text-center text-slate-700">
+        {/* price per mile  */}
+        <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }}>
           {loadItem.pricePerMile ? `$${loadItem.pricePerMile.toFixed(2)}` : "-"}
         </td>
-
-        {/* Total */}
-        <td className="p-4 text-center font-semibold text-emerald-700">
+        {/* total price  */}
+        <td className="p-4 text-center font-bold text-[14px]">
           {loadItem.totalPrice ? `$${loadItem.totalPrice}` : "-"}
         </td>
 
-        {/* Status */}
+        {/* Status*/}
         <td className="p-4 text-center">
-          {/* <StatusBadge status={loadItem.status} size="md" />  */}
-          {loadItem.status === "pending" && (
-            <Chip
-              label={loadItem.status}
-              variant="filled"
-              sx={{
-                bgcolor: theme.currentPalette.background,
-                color: "#E2852E",
-                border: "1px solid #E2852E",
-                borderRadius: 2,
-                pl: 0.5,
-              }}
-              size="small"
-              icon={
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: "#E2852E",
-                  }}
-                />
-              }
-            />
-          )}
-          {loadItem.status === "delivered" && (
-            <Chip
-              label={loadItem.status}
-              variant="filled"
-              sx={{
-                bgcolor: alpha(theme.currentPalette.primary, 0.5),
-                color: theme.currentPalette.primary,
-                borderRadius: 2,
-                pl: 0.5,
-              }}
-              size="small"
-              icon={
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: theme.currentPalette.primary,
-                  }}
-                />
-              }
-            />
-          )}
-          {loadItem.status === "in_transit" && (
-            <Chip
-              label={loadItem.status}
-              variant="filled"
-              sx={{
-                bgcolor: theme.currentPalette.primary,
-                color: theme.currentPalette.background,
-                borderRadius: 2,
-                pl: 0.5,
-              }}
-              size="small"
-              icon={
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: theme.currentPalette.background,
-                  }}
-                />
-              }
-            />
-          )}
-          {loadItem.status === "cancelled" && (
-            <Chip
-              label={loadItem.status}
-              variant="filled"
-              sx={{
-                bgcolor: theme.currentPalette.background,
-                color: "#dc2626",
-                border: "1px solid #dc2626",
-                borderRadius: 2,
-                pl: 0.5,
-              }}
-              size="small"
-              icon={
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: "#dc2626",
-                  }}
-                />
-              }
-            />
-          )}
+          <StatusChip status={loadItem.status} theme={theme} />
         </td>
-
-        {/* Driver */}
-        <td className="p-4 text-center">
-          <div>
-            <div className="font-medium text-slate-900 text-sm">
-              {loadItem.driverId?.name || "-"}
-            </div>
-            <div className="text-xs text-slate-500">
-              {loadItem.driverId?.phone || "-"}
-            </div>
-          </div>
-        </td>
-
-        {/* Note */}
+        {/* has notes */}
         <td className="p-4 text-center">
           <div className="flex items-center justify-center">
             {hasComments ? (
-              <div
-                className="relative cursor-pointer group/note"
-                title={`${commentsCount} comment(s) - Click to view`}
-              >
+              <div className="relative cursor-pointer group/note" title={`${commentsCount} comment(s)`}>
                 <Box
                   sx={commentButtonSx}
                   className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
                 >
-                  <IoChatbubbleEllipses size={16} className="text-white" />
+                  <NotepadText size={18} className="text-white" />
                 </Box>
 
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-sm">
@@ -441,7 +475,7 @@ const LoadsPageDetails = () => {
               </div>
             ) : (
               <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center opacity-50 cursor-pointer transition-opacity">
-                <IoChatbubbleEllipses size={16} className="text-slate-500" />
+                <NotepadText size={18} color={theme.currentPalette.primary} />
               </div>
             )}
           </div>
@@ -450,124 +484,193 @@ const LoadsPageDetails = () => {
     );
   };
 
-  // Container styles
-  const containerSx: SxProps = {
-    p: 3,
-  };
-  const headerContainerSx: SxProps = {
-    mb: 4,
-  };
+  const containerSx: SxProps = { p: 3 };
+  const headerContainerSx: SxProps = { mb: 4 };
+
   const searchFilterContainerSx: SxProps = {
-    display: "flex",
-    flexDirection: { xs: "column", md: "row" },
-    alignItems: { xs: "flex-start", md: "center" },
-    justifyContent: "space-between",
-    gap: { xs: 2, md: 0 },
+    display: "grid",
+    gridTemplateColumns: { xs: "1fr", md: "1fr 3fr" }, 
+    alignItems: { xs: "start", md: "center" },
+    gap: 2,
     p: 2,
     my: 2,
-    border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
+    border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
     borderRadius: 2,
-    backgroundColor: theme.currentPalette.background,
+    backgroundColor: alpha(theme.currentPalette.primary, 0.02),
     width: "100%",
+    overflow: "hidden",
+  };
+
+  const controlsRowSx: SxProps = {
+    display: "flex",
+    flexDirection: { xs: "column", sm: "row" },
+    alignItems: { xs: "stretch", sm: "center" },
+    justifyContent: "flex-end",
+    gap: 1.5,
+    width: { xs: "100%", md: "auto" },
+  };
+
+  const searchInputSx = {
+    "& .MuiOutlinedInput-root": {
+      width: { xs: "100%", md: 360 },
+      height: CONTROL_H,
+      borderRadius: 2,
+      backgroundColor: "#fff",
+      "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.28) },
+      "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.55) },
+      "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+    },
+  };
+
+  const filterSx: SxProps = {
+    width: { xs: "100%", sm: 110 },
+    height: CONTROL_H,
+    borderRadius: 2,
+    backgroundColor: "#fff",
+    "& .MuiSelect-select": {
+      height: CONTROL_H,
+      display: "flex",
+      alignItems: "center",
+      py: 0,
+      fontSize: 14,
+      fontWeight: 800,
+      color: alpha(theme.currentPalette.text, 0.8),
+    },
+    "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.38) },
+    "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.6) },
+    "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+  };
+
+  const addButtonSx: SxProps = {
+    height: CONTROL_H,
+    minHeight: CONTROL_H,
+    borderRadius: 2,
+    px: 2.25,
+    fontWeight: 900,
+    letterSpacing: 0.2,
+    width: { xs: "100%", sm: 130 },
+    textTransform: "uppercase",
+    boxShadow: "0 10px 20px rgba(2, 56, 140, 0.18)",
+  };
+
+  const onChangeStatus = (e: SelectChangeEvent) => {
+    setPage(1);
+    setStatusFilter(e.target.value as LoadStatusFilter);
   };
 
   return (
     <Box sx={containerSx}>
       {/* Header Section */}
       <Box sx={headerContainerSx}>
-        {/* Stats Cards */}
         <Box sx={{ mt: 4, mb: 5 }}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard
-              title="Total Loads"
-              value={statsData.totalLoads}
-              icon={IoCar}
-              iconColor={theme.currentPalette.primary}
-            />
-            <StatsCard
-              title="Pending"
-              value={statsData.pending}
-              icon={IoTime}
-              iconColor={theme.currentPalette.primary}
-            />
-            <StatsCard
-              title="In Transit"
-              value={statsData.inTransit}
-              icon={IoNavigate}
-              iconColor={theme.currentPalette.primary}
-            />
-            <StatsCard
-              title="Delivered"
-              value={statsData.delivered}
-              icon={IoCheckmark}
-              iconColor={theme.currentPalette.primary}
-            />
+            <StatsCard title="Total Loads" value={statsData.totalLoads} icon={Boxes} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="Pending" value={statsData.pending} icon={Clock} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="In Transit" value={statsData.inTransit} icon={IoNavigate} iconColor={theme.currentPalette.primary} />
+            <StatsCard title="Delivered" value={statsData.delivered} icon={Goal} iconColor={theme.currentPalette.primary} />
           </div>
         </Box>
       </Box>
 
       {/* Search & Filter */}
       <Box sx={searchFilterContainerSx}>
-        {/* Search */}
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
-          >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h6" sx={{ color: theme.currentPalette.primary, fontWeight: 900 }}>
             Load Details
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
-          >
+          <Typography variant="body2" sx={{ color: alpha(theme.currentPalette.text, 0.55), fontWeight: 500 }}>
             Check list of all loads
           </Typography>
         </Box>
-
         <Box
           sx={{
+            minWidth: 0,
+            justifySelf: "end",
             display: "flex",
-            flexDirection: { xs: "column", sm: "column", md: "row" },
-            alignItems: { xs: "stretch", md: "center" },
+            alignItems: "center",
             justifyContent: "flex-end",
-            gap: 2,
-            width: { xs: "100%", md: "auto" },
+            flexWrap: "wrap",
+            gap: 1.2,
           }}
         >
-          {/* Search */}
-          <SearchInput
-            searchHook={searchHook}
-            placeholder="Search loads by ID...."
-            showClearButton
-            inputSx={{
-              "& .MuiOutlinedInput-root": {
-                width: { xs: "100%", md: 250 },
-                borderRadius: 2,
-                backgroundColor: theme.currentPalette.background,
-                py: 0.5,
-                "&:hover": {
-                  borderColor: theme.currentPalette.primary,
-                },
-              },
-            }}
-          />
 
-          {/* Action Button */}
+          <Box sx={{ flex: "1 1 220px", minWidth: 260, maxWidth: 340 }}>
+            <SearchInput
+              searchHook={searchHook}
+              placeholder="Search Loads by ID, Driver"
+              showClearButton
+              inputSx={{
+                "& .MuiOutlinedInput-root": {
+                  width: "100%",
+                  height: CONTROL_H,
+                  borderRadius: 2,
+                  backgroundColor: "#fff",
+                  "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.28) },
+                  "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.55) },
+                  "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+                },
+              }}
+            />
+          </Box>
+          <FormControl size="small" sx={{ width: 140, flexShrink: 0 }}>
+            <Select
+              value={statusFilter}
+              onChange={onChangeStatus}
+              displayEmpty
+              fullWidth
+              sx={{
+                height: CONTROL_H,
+                borderRadius: 2,
+                backgroundColor: "#fff",
+                color: theme.currentPalette.primary,
+                "& .MuiSelect-select": {
+                  height: CONTROL_H,
+                  display: "flex",
+                  alignItems: "center",
+
+                },
+                "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.4) },
+                "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.6) },
+                "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    mt: 1,
+                    borderRadius: 2,
+                    backgroundColor: "#fff",
+                    border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
+                  },
+                },
+              }}
+            >
+              {["all", "pending", "in_transit", "delivered"].map((item) => (
+                <MenuItem
+                  key={item}
+                  value={item}
+                  sx={{
+                    color: theme.currentPalette.primary,
+                    justifyContent: "flex-start",
+                   
+                    "&.Mui-selected": { backgroundColor: alpha(theme.currentPalette.primary, 0.06) },
+                  }}
+                >
+                  {item === "all" ? "All" : item.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <Button
             onClick={() => {
               setEditingLoad(null);
               setShowCreateEditModal(true);
             }}
             variant="contained"
-            startIcon={<IoAdd size={22} />}
-            sx={{
-              width: { xs: "100%", md: "100%" },
-              borderRadius: 2,
-              px: 3,
-              py: 2,
-            }}
+            // startIcon={<IoAdd size={18} />}
+            sx={{ width: 120, flexShrink: 0, height: CONTROL_H }}
           >
-            New Load
+            ADD LOAD
           </Button>
         </Box>
       </Box>
@@ -577,10 +680,7 @@ const LoadsPageDetails = () => {
         position="top-center"
         toastOptions={{
           duration: 4000,
-          style: {
-            borderRadius: "8px",
-            fontSize: "14px",
-          },
+          style: { borderRadius: "8px", fontSize: "14px" },
         }}
       />
 
@@ -606,13 +706,7 @@ const LoadsPageDetails = () => {
       {/* Pagination */}
       {!isSearching && pagination && load.length > 0 && (
         <Box sx={{ mt: 3 }}>
-          <Pagination
-            pagination={pagination}
-            page={page}
-            setPage={setPage}
-            pageSize={10}
-            showInfo={true}
-          />
+          <Pagination pagination={pagination} page={page} setPage={setPage} pageSize={10} showInfo />
         </Box>
       )}
 
