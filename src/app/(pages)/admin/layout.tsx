@@ -193,7 +193,7 @@ export default function AdminLayout({
       </Box>
 
       {/* Navigation */}
-      <List sx={{ flex: 1, overflowY: "auto", py: 1 }}>
+      <List sx={{ flex: 1, overflowY: "auto", py: 2 }}>
         {tabs.map((tab, i) => {
           const hasChildren = !!tab.children?.length;
 
