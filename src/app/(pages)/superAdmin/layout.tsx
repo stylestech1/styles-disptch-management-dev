@@ -171,7 +171,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Box>
 
             {/* Navigation */}
-            <List sx={{ flex: 1, overflowY: "auto", py: 2 }}>
+            <List sx={{ flex: 1, overflowY: "auto", pt: 2, pb: 1 }}>
                 {tabs.map(({ label, icon }, i) => {
                     if (label === "Load Details" || label === "Notifications") return null;
 

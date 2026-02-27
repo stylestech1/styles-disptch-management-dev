@@ -140,7 +140,7 @@ export default function AdminLayout({
       </Box>
 
       {/* Navigation */}
-      <List sx={{ flex: 1, overflowY: "auto", py: 2 }}>
+      <List sx={{ flex: 1, overflowY: "auto", pt: 2, pb: 1 }}>
         {tabs.map(({ label, icon }, i) => {
           if (label !== "Load Details" && label !== "Notifications") {
             const link = `${base}/${label.replace(/\s+/g, "").toLowerCase()}`;
