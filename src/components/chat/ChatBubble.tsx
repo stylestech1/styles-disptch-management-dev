@@ -56,7 +56,7 @@ const ChatBubble = () => {
             width: 40,
             height: 40,
             borderRadius: 2,
-            bgcolor: "#fff",
+            // bgcolor: "#fff",
             border: "1px solid",
             borderColor: "#E5E7EB",
             color: theme.currentPalette.primary,
