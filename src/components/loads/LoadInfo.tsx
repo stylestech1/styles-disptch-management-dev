@@ -56,6 +56,7 @@ import CreateEditLoadModal from "@/components/loads/CreateEditLoadModal";
 import UpdateStatusModal from "@/components/loads/UpdateStatusModal";
 import { IoRefresh } from "react-icons/io5";
 import { RootState, useAppSelector } from "@/redux/store";
+import { useSearchParams } from "next/navigation";
 
 interface LoadInfoProps {
   loadId: string | undefined;
@@ -87,7 +88,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
   const theme = useAppSelector((state: RootState) => state.palette);
   // decode and clean the loadId
   const decodedLoadId = loadId ? decodeURIComponent(loadId).trim() : "";
-
+  const searchParams = useSearchParams();
   const {
     data,
     isLoading: loadLoading,
@@ -100,8 +101,17 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
   // Refetching for coming from notify
   useEffect(() => {
     refetchLoads()
-  },[])
+  }, [])
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const parsed = tab ? Number(tab) : 0;
+    if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 2) {
+      setTabValue(parsed);
+    } else {
+      setTabValue(0);
+    }
+  }, [searchParams]);
   // Handling Change Tabs
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -444,9 +454,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                   <InfoItem
                     icon={<AttachMoney fontSize="small" />}
                     primary="Price Details"
-                    secondary={`${
-                      load.distanceMiles
-                    } miles • $${load.pricePerMile.toFixed(2)}/mile`}
+                    secondary={`${load.distanceMiles
+                      } miles • $${load.pricePerMile.toFixed(2)}/mile`}
                   />
                 </List>
               </InfoCard>
@@ -814,8 +823,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                                 >
                                   {comment.createdAt
                                     ? `Added on ${new Date(
-                                        comment.createdAt
-                                      ).toLocaleString()}`
+                                      comment.createdAt
+                                    ).toLocaleString()}`
                                     : "No date available"}
                                 </Typography>
                                 {comment.addedBy && (
@@ -1064,8 +1073,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                         load.deliveredAt
                           ? "success"
                           : load.completedAt
-                          ? "info"
-                          : "warning"
+                            ? "info"
+                            : "warning"
                       }
                       icon={<CalendarToday />}
                       sx={{

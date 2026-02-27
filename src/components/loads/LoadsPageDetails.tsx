@@ -83,9 +83,9 @@ const formatLocationShort = (value?: string) => {
     .map((p) => p.trim())
     .filter(Boolean);
   if (parts.length >= 3) {
-    const city = parts[1]; 
-    const stateChunk = parts[2]; 
-    const state = stateChunk.split(/\s+/)[0]; 
+    const city = parts[1];
+    const stateChunk = parts[2];
+    const state = stateChunk.split(/\s+/)[0];
 
     if (city && state) return `${city}, ${state}`;
     if (city) return city;
@@ -390,11 +390,22 @@ const LoadsPageDetails = () => {
       ? loadItem.destination.join(" • ")
       : (loadItem.destination as any);
 
+    const goToLoadDetails = (tab?: "notes") => {
+      const base =
+        userRole === "admin"
+          ? `/admin/loadDetails/${encodeURIComponent(String(loadItem.id))}`
+          : `/dispatchers/loadDetails/${encodeURIComponent(String(loadItem.id))}`;
+
+      // tab=1 => Notes
+      const withTab = tab === "notes" ? `${base}?tab=1` : base;
+
+      router.push(withTab);
+    };
     return (
       <TableRow
         sx={tableRowSx}
         key={loadItem.id ? String(loadItem.id) : String(loadItem.loadId)}
-        onClick={navigateToLoadDetails}
+        onClick={() => goToLoadDetails()}
       >
         {/* load Id  */}
         <td className="p-4 text-center">
@@ -454,7 +465,14 @@ const LoadsPageDetails = () => {
         <td className="p-4 text-center">
           <div className="flex items-center justify-center">
             {hasComments ? (
-              <div className="relative cursor-pointer group/note" title={`${commentsCount} comment(s)`}>
+              <div
+                className="relative cursor-pointer group/note"
+                title={`${commentsCount} comment(s)`}
+                onClick={(e) => {
+                  e.stopPropagation();       
+                  goToLoadDetails("notes");   
+                }}
+              >
                 <Box
                   sx={commentButtonSx}
                   className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
@@ -474,7 +492,12 @@ const LoadsPageDetails = () => {
                 </div>
               </div>
             ) : (
-              <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center opacity-50 cursor-pointer transition-opacity">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();        
+                  goToLoadDetails("notes");   
+                }}
+                className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center opacity-50 cursor-pointer transition-opacity">
                 <NotepadText size={18} color={theme.currentPalette.primary} />
               </div>
             )}
@@ -489,7 +512,7 @@ const LoadsPageDetails = () => {
 
   const searchFilterContainerSx: SxProps = {
     display: "grid",
-    gridTemplateColumns: { xs: "1fr", md: "1fr 3fr" }, 
+    gridTemplateColumns: { xs: "1fr", md: "1fr 3fr" },
     alignItems: { xs: "start", md: "center" },
     gap: 2,
     p: 2,
@@ -651,7 +674,7 @@ const LoadsPageDetails = () => {
                   sx={{
                     color: theme.currentPalette.primary,
                     justifyContent: "flex-start",
-                   
+
                     "&.Mui-selected": { backgroundColor: alpha(theme.currentPalette.primary, 0.06) },
                   }}
                 >

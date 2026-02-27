@@ -349,9 +349,6 @@ const Users = () => {
 
   const closeCreateUserPopup = () => setPopup(false);
 
-  // ---------------------------
-  // ✅ Table Row
-  // ---------------------------
   const renderDispatcherRow = (dispatcher: TDispatcher) => {
     const tableRowSx: SxProps = {
       bgcolor: theme.currentPalette.background,
@@ -368,12 +365,13 @@ const Users = () => {
         sx={tableRowSx}
         className="hover:bg-slate-50 transition-colors group"
       >
+        {/* job id */}
         <td className="p-4 text-slate-600 font-medium text-center">
           {(dispatcher as any).jobId}
         </td>
-
+        {/* name  */}
         <td className="p-4 text-slate-700 text-center">{dispatcher.name}</td>
-
+        {/* role and position */}
         <td className="p-4">
           <div className="flex flex-col items-center gap-2 text-center">
             <span
@@ -390,10 +388,11 @@ const Users = () => {
             ) : null}
           </div>
         </td>
-
+        {/* email */}
         <td className="p-4 text-slate-700 text-center">{dispatcher.email}</td>
+        {/* phone */}
         <td className="p-4 text-slate-700 text-center">{(dispatcher as any).phone}</td>
-
+        {/* status  */}
         <td className="p-4 text-center">
           {(() => {
             const isActive = Boolean((dispatcher as any).active);
@@ -412,24 +411,23 @@ const Users = () => {
             );
           })()}
         </td>
-
+        {/* action */}
         <td className="p-4">
-          <button
-            type="button"
-            style={{ color: theme.currentPalette.primary }}
-            onClick={() => openSettingsPopup(dispatcher)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-          >
-            <UserPen size={18} />
-          </button>
+          <div className="flex justify-center">
+            <button
+              type="button"
+              style={{ color: theme.currentPalette.primary }}
+              onClick={() => openSettingsPopup(dispatcher)}
+              className="flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+            >
+              <UserPen size={18} />
+            </button>
+          </div>
         </td>
       </TableRow>
     );
   };
 
-  // ---------------------------
-  // ✅ Loading
-  // ---------------------------
   const isInitialLoading = loading && !dispatchersData && !isSearching;
   if (isInitialLoading) return <Loading />;
 
