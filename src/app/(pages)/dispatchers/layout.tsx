@@ -104,7 +104,7 @@ export default function AdminLayout({
       }}
     >
       {/* User Header */}
-      <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
+      <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Link
           href={`${base}/${user.id}`}
           display="flex"
