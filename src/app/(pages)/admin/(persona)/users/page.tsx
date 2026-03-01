@@ -41,20 +41,17 @@ import {
   Typography,
 } from "@mui/material";
 import SearchInput from "@/components/ui/SearchInput";
-import { CircleUserRound, ShieldUser, UsersRound, UserRoundPlusIcon, UserPen, UserRoundCog } from "lucide-react";
+import { CircleUserRound, ShieldUser, UsersRound, UserPen, UserRoundCog } from "lucide-react";
 
-type StatusFilter = "all" | "active" | "inactive";
-
+type RoleFilter = "all" | "employee" | "driver" | "admin";
 const Users = () => {
   const [page, setPage] = useState(1);
   const [popup, setPopup] = useState(false);
   const [popupSetting, setPopupSetting] = useState(false);
   const [selectedUser, setSelectedUser] = useState<TDispatcher | null>(null);
 
-  // ✅ Status Filter
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
 
-  // ✅ (optional existing date filter hooks you already had)
   const [fromDate, setFromDate] = useState<Dayjs | null>(null);
   const [toDate, setToDate] = useState<Dayjs | null>(null);
   const [isFiltered, setIsFiltered] = useState(false);
@@ -64,9 +61,7 @@ const Users = () => {
   const { error, setError } = useError();
   const theme = useAppSelector((state: RootState) => state.palette);
 
-  // ---------------------------
-  // ✅ Styles (MUST be here)
-  // ---------------------------
+
   const containerSx: SxProps = { p: 3 };
 
   const searchFilterContainerSx: SxProps = {
@@ -136,9 +131,7 @@ const Users = () => {
     },
   };
 
-  // ---------------------------
-  // ✅ RTK Queries
-  // ---------------------------
+
   const {
     data: dispatchersData,
     error: dispatchersError,
@@ -177,7 +170,6 @@ const Users = () => {
     },
   ] = useLazyGetUserByIdQuery();
 
-  // ✅ Search Hook (reset also resets filter)
   const searchHook = useSearchSubmit({
     onSearch: (term) => {
       setPage(1);
@@ -187,7 +179,7 @@ const Users = () => {
     },
     onReset: () => {
       setPage(1);
-      setStatusFilter("all");
+      setRoleFilter("all");
       resetSearchQuery();
       refetchLoads();
     },
@@ -195,37 +187,32 @@ const Users = () => {
 
   const { isSearching } = searchHook;
 
-  // ---------------------------
-  // ✅ Mutations
-  // ---------------------------
+
   const [createUser, { isLoading: creatingUser }] = useCreateUserMutation();
   const [updateUserRole, { isLoading: updatingRole }] = useUpdateUserRoleMutation();
   const [activateUser, { isLoading: activating }] = useActivateUserMutation();
   const [deactivateUser, { isLoading: deactivating }] = useDeactivateUserMutation();
 
-  // ---------------------------
-  // ✅ Data source (search > date filter > base list)
-  // ---------------------------
+
   const users = useMemo(() => {
     if (isSearching && Array.isArray(userByIdData?.data)) return userByIdData.data.flat();
     if (isFiltered && Array.isArray(filteredData?.data)) return filteredData.data;
     return dispatchersData?.data || [];
   }, [isSearching, isFiltered, userByIdData, filteredData, dispatchersData]);
 
-  // ✅ Status Filter (frontend)
   const filteredUsers = useMemo(() => {
-    if (statusFilter === "all") return users;
-    const wantActive = statusFilter === "active";
-    return users.filter((u: any) => Boolean(u.active) === wantActive);
-  }, [users, statusFilter]);
+    if (roleFilter === "all") return users;
 
+    return users.filter((u: any) => {
+      const role = String(u?.role ?? "").toLowerCase();
+      return role === roleFilter.toLowerCase();
+    });
+  }, [users, roleFilter]);
   const pagination = isFiltered
     ? filteredData?.paginationResult || null
     : dispatchersData?.paginationResult || null;
 
-  // ---------------------------
-  // ✅ Errors (handle ALL)
-  // ---------------------------
+
   useEffect(() => {
     const currentError = dispatchersError || userByIdError || filteredError;
     if (!currentError) return;
@@ -233,7 +220,7 @@ const Users = () => {
     const errorMessage = getErrorMessage(currentError);
     setError(errorMessage);
 
-    toast.error(errorMessage || "Failed to load data ❌", {
+    toast.error(errorMessage || "Failed to load data ", {
       style: {
         background: "#dc2626",
         color: "#fff",
@@ -244,14 +231,10 @@ const Users = () => {
     });
   }, [dispatchersError, userByIdError, filteredError, setError]);
 
-  // ---------------------------
-  // ✅ Stats
-  // ---------------------------
   const statsData = useMemo(() => {
     const statsUsersData: any = dispatchersData?.stats;
     if (!statsUsersData) return { totalUsers: 0, drivers: 0, admins: 0, employees: 0 };
 
-    // support both "object" or "array" shapes safely
     const s = Array.isArray(statsUsersData) ? statsUsersData[0] : statsUsersData;
 
     return {
@@ -262,9 +245,7 @@ const Users = () => {
     };
   }, [dispatchersData?.stats]);
 
-  // ---------------------------
-  // ✅ Actions
-  // ---------------------------
+
   const handleCreateUser = async (userData: {
     name: string;
     email: string;
@@ -284,7 +265,7 @@ const Users = () => {
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
-      toast.error(errorMessage || "Creating user failed ❌");
+      toast.error(errorMessage || "Creating user failed ");
       throw err;
     }
   };
@@ -302,7 +283,7 @@ const Users = () => {
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
-      toast.error(errorMessage || "Updating role failed ❌");
+      toast.error(errorMessage || "Updating role failed ");
       throw err;
     }
   };
@@ -317,7 +298,7 @@ const Users = () => {
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
-      toast.error(errorMessage || "Activating user failed ❌");
+      toast.error(errorMessage || "Activating user failed ");
       throw err;
     }
   };
@@ -332,7 +313,7 @@ const Users = () => {
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
-      toast.error(errorMessage || "Deactivating user failed ❌");
+      toast.error(errorMessage || "Deactivating user failed ");
       throw err;
     }
   };
@@ -493,29 +474,30 @@ const Users = () => {
             inputSx={searchInputSx}
           />
 
-          {/* Status Filter */}
+          {/* role Filter */}
           <Box sx={{ width: { xs: "100%", md: "auto" } }}>
             <Box sx={selectSx}>
               <FormControl fullWidth>
                 <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
                   displayEmpty
                   input={<OutlinedInput />}
                   MenuProps={{
                     PaperProps: {
                       sx: {
                         borderRadius: 2,
+                        color: theme.currentPalette.primary,
                         mt: 1,
                         bgcolor: "#fff",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
                       },
                     },
                   }}
                 >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem  value="all">All</MenuItem>
+                  <MenuItem value="employee">Employee</MenuItem>
+                  <MenuItem value="driver">Driver</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -561,7 +543,7 @@ const Users = () => {
         isLoading={updatingRole || activating || deactivating}
       />
 
-      {!isFiltered && !isSearching && pagination && filteredUsers.length > 0 && (
+      {!isFiltered && !isSearching && roleFilter === "all" && pagination && filteredUsers.length > 0 && (
         <Pagination
           pagination={pagination}
           page={page}
