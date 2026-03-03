@@ -1,26 +1,31 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import LocationAutocomplete, {
-  TPlace,
-} from "@/components/sections/LocationAutocomplete";
-import Modal from "@/components/ui/Modals";
-
+import toast from "react-hot-toast";
 import {
-  IoLocationOutline,
-  IoDocumentText,
-  IoCar,
-  IoClose,
-  IoAdd,
-  IoEllipseOutline,
-  IoCheckmarkCircleOutline,
-  IoCheckmarkCircle,
-} from "react-icons/io5";
+  alpha,
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  Divider,
+  IconButton,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { IoAdd, IoClose } from "react-icons/io5";
+
+import LocationAutocomplete, { TPlace } from "@/components/sections/LocationAutocomplete";
 import {
   calculateDhoToOriginDistance,
   calculateFullRouteDistance,
 } from "@/utils/googleDistanceCalculator";
 import { geocodeAddress } from "@/utils/geocoding";
+
 import {
   setDho,
   setOrigin,
@@ -41,42 +46,36 @@ import {
   setTruckId,
   setTruckType,
   setTruckTemp,
-  setActiveTab,
   setIsEditing,
   setEditingLoad,
   resetForm,
 } from "@/redux/slices/loadsFormSlice";
-import {
-  useCreateLoadsMutation,
-  useUpdateLoadsMutation,
-} from "@/redux/slices/apiSlice";
+
+import { useCreateLoadsMutation, useGetDriversQuery, useUpdateLoadsMutation } from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
-import {
-  CreateEditLoadModalProps,
-  TLoads,
-  TTruckType,
-} from "@/types/globalTypes";
-import toast from "react-hot-toast";
-import {
-  Alert,
-  alpha,
-  Box,
-  Button,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { CreateEditLoadModalProps, TLoads, TTruckType, Adjustment } from "@/types/globalTypes";
+
 import LoadDetailsTab from "./tabsModal/LoadDetailsTab";
 import AssignmentTab from "./tabsModal/AssignmentTab";
 import FinancialTab from "./tabsModal/FinancialTab";
-import { Adjustment } from "@/types/globalTypes";
 
 // Lazy load the map components
-const LazyGoogleMapsLoader = lazy(
-  () => import("@/components/ui/GoogleMapsLoader"),
-);
+const LazyGoogleMapsLoader = lazy(() => import("@/components/ui/GoogleMapsLoader"));
 const LazyMapWithRoute = lazy(() => import("@/components/ui/MapWithRoute"));
+
+type StepKey = "locations" | "assignment" | "timeline" | "financials";
+type StepItem = {
+  key: StepKey;
+  title: string;
+  desc: string;
+  canGo: () => boolean;
+};
+// name driver to be two words 
+const twoWords = (value?: string | null) => {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+  return s.split(/\s+/).slice(0, 2).join(" ");
+};
 
 const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   isOpen,
@@ -84,6 +83,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   editingLoad = null,
 }) => {
   const dispatch = useDispatch();
+
   const {
     dho,
     origin,
@@ -101,95 +101,170 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     truckId,
     truckType,
     truckTemp,
-    activeTab,
     isEditing,
   } = useSelector((state: RootState) => state.loadsForm);
 
   const theme = useAppSelector((state: RootState) => state.palette);
+  const { data: driversData } = useGetDriversQuery(undefined as any, {
+    skip: !isOpen,
+  });
+  const [createLoad, { isLoading: creatingLoad }] = useCreateLoadsMutation();
+  const [updateLoad, { isLoading: updatingLoad }] = useUpdateLoadsMutation();
 
-  // For Documents
+  // Documents
   const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string>("");
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
 
-  // Days.js
-  const pickupAtDayjs = pickupAt ? dayjs(pickupAt) : null;
-  const completedAtDayjs = completedAt ? dayjs(completedAt) : null;
-  const arrivalAtShipperDayjs = arrivalAtShipper
-    ? dayjs(arrivalAtShipper)
-    : null;
-  const arrivalAtReceiverDayjs = arrivalAtReceiver
-    ? dayjs(arrivalAtReceiver)
-    : null;
-  const leftShipperDayjs = leftShipper ? dayjs(leftShipper) : null;
-  const leftReceiverDayjs = leftReceiver ? dayjs(leftReceiver) : null;
-
-  const [createLoad, { isLoading: creatingLoad }] = useCreateLoadsMutation();
-  const [updateLoad, { isLoading: updatingLoad }] = useUpdateLoadsMutation();
-
-  const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(
-    null,
-  );
+  // Maps / distance
+  const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(null);
   const [averageTime, setAverageTime] = useState<number | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [allDistance, setAllDistance] = useState<string>("");
   const [pricePerMile, setPricePerMile] = useState<number | null>(null);
   const [showMaps, setShowMaps] = useState(false);
 
-  // Drag Handlers
-  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
+  // Dayjs
+  const pickupAtDayjs = pickupAt ? dayjs(pickupAt) : null;
+  const completedAtDayjs = completedAt ? dayjs(completedAt) : null;
+  const arrivalAtShipperDayjs = arrivalAtShipper ? dayjs(arrivalAtShipper) : null;
+  const arrivalAtReceiverDayjs = arrivalAtReceiver ? dayjs(arrivalAtReceiver) : null;
+  const leftShipperDayjs = leftShipper ? dayjs(leftShipper) : null;
+  const leftReceiverDayjs = leftReceiver ? dayjs(leftReceiver) : null;
 
-  // Drag Leave Handlers
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
+  const isEditMode = Boolean(isEditing && editingLoad);
 
-  // Drag Over Handlers
-  const handleDragOver = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!isDragging) {
-        setIsDragging(true);
-      }
-    },
-    [isDragging],
-  );
 
-  // Drop Handlers
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const isLocationsValid = (): boolean => {
+    const hasValidOrigin = !!origin;
+    const hasAtLeastOneDestination = destinations.filter(Boolean).length > 0;
+    return hasValidOrigin && hasAtLeastOneDestination;
+  };
+  const headerDriverName = useMemo(() => {
+    // edit mode: جيبي الاسم من editingLoad.driverId.name
+    if (isEditMode && (editingLoad as any)?.driverId?.name) {
+      return twoWords((editingLoad as any).driverId.name);
+    }
 
-    const files = e.dataTransfer.files;
-    if (!files || files.length === 0) return;
+    // add mode: لو عندك name مخزن في state ممكن ترجعيه هنا (اختياري)
+    return "";
+  }, [isEditMode, editingLoad]);
 
-    processFiles(Array.from(files));
-  }, []);
+  const isTimelineValid = (): boolean => {
+    const hasValidPickupAt = pickupAt !== null;
+    const hasValidCompletedAt = completedAt !== null;
+    return hasValidPickupAt && hasValidCompletedAt;
+  };
 
-  // Process Files (used by both drag & drop and file input)
+  const isFinancialValid = (): boolean => {
+    const hasValidPrice = price.trim() !== "";
+    const hasValidLoadID = loadIDInp.trim() !== "";
+    return hasValidPrice && hasValidLoadID;
+  };
+
+  const isAssignmentValid = (): boolean => {
+    if (isEditMode) return true;
+    const hasValidDriverId = driverId.trim() !== "";
+    const hasValidTruckType = truckType?.trim?.() ? truckType.trim() !== "" : true;
+    const hasValidTruckId = truckId.trim() !== "";
+    return hasValidDriverId && hasValidTruckType && hasValidTruckId;
+  };
+
+  const steps: StepItem[] = useMemo(() => {
+    if (isEditMode) {
+      return [
+        {
+          key: "locations",
+          title: "Locations",
+          desc: "Define pickup & delivery addresses",
+          canGo: () => true,
+        },
+        {
+          key: "timeline",
+          title: "Timeline & Milestones",
+          desc: "Set planned schedules",
+          canGo: () => isLocationsValid(),
+        },
+        {
+          key: "financials",
+          title: "Financials",
+          desc: "Configure pricing & documents",
+          canGo: () => isLocationsValid() && isTimelineValid(),
+        },
+      ];
+    }
+    return [
+      {
+        key: "locations",
+        title: "Locations",
+        desc: "Define pickup & delivery addresses",
+        canGo: () => true,
+      },
+      {
+        key: "assignment",
+        title: "Ride Assignment",
+        desc: "Assign driver & truck",
+        canGo: () => isLocationsValid(),
+      },
+      {
+        key: "timeline",
+        title: "Timeline & Milestones",
+        desc: "Set planned schedules",
+        canGo: () => isLocationsValid() && isAssignmentValid(),
+      },
+      {
+        key: "financials",
+        title: "Financials",
+        desc: "Configure pricing & documents",
+        canGo: () => isLocationsValid() && isAssignmentValid() && isTimelineValid(),
+      },
+    ];
+  }, [
+    isEditMode,
+    origin,
+    destinations,
+    pickupAt,
+    completedAt,
+    price,
+    loadIDInp,
+    driverId,
+    truckId,
+    truckType,
+  ]);
+
+  const [activeStep, setActiveStep] = useState(0);
+  const isLastStep = activeStep === steps.length - 1;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // reset to first step on open
+    setActiveStep(0);
+  }, [isOpen, isEditMode]);
+
+  const stepKey: StepKey = steps[activeStep]?.key || "locations";
+  const stepTitle = steps[activeStep]?.title || "Locations";
+
+  const goToStep = (idx: number) => {
+    if (idx < 0 || idx > steps.length - 1) return;
+    if (!steps[idx].canGo()) return;
+    setActiveStep(idx);
+  };
+
+  const nextStep = () => goToStep(activeStep + 1);
+  const prevStep = () => goToStep(activeStep - 1);
+
   const processFiles = (files: File[]) => {
     setUploadError("");
-
-    // Check documents limit
     const totalFiles = selectedDocuments.length + files.length;
     if (totalFiles > 2) {
       setUploadError("You can only upload maximum 2 files 😢");
       return;
     }
 
-    // Validate PDF files
     const invalidFiles = files.filter((file) => {
-      const fileExtension = file.name.toLowerCase().split(".").pop();
-      return fileExtension !== "pdf" && file.type !== "application/pdf";
+      const ext = file.name.toLowerCase().split(".").pop();
+      return ext !== "pdf" && file.type !== "application/pdf";
     });
 
     if (invalidFiles.length > 0) {
@@ -197,70 +272,50 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       return;
     }
 
-    // Add files
     setSelectedDocuments((prev) => [...prev, ...files]);
   };
 
-  // Handle File Selection (for file input)
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isDragging) setIsDragging(true);
+    },
+    [isDragging],
+  );
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    processFiles(Array.from(files));
+  }, []);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
     processFiles(Array.from(files));
-    e.target.value = ""; // Reset input
+    e.target.value = "";
   };
 
-  // Remove a file
   const handleRemoveFile = (index: number) => {
     setSelectedDocuments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Loading when open modal
-  useEffect(() => {
-    if (isOpen && editingLoad) {
-      dispatch(resetForm());
-      setSelectedDocuments([]);
-      setUploadError("");
-
-      setTimeout(() => {
-        loadEditData(editingLoad);
-      }, 50);
-    } else if (isOpen && !editingLoad) {
-      dispatch(resetForm());
-      setSelectedDocuments([]);
-      setUploadError("");
-    }
-  }, [isOpen, editingLoad]);
-
-  const [isInitializing, setIsInitializing] = useState(false);
-
-  useEffect(() => {
-    const loadData = async () => {
-      if (isOpen && editingLoad) {
-        setIsInitializing(true);
-        try {
-          await loadEditData(editingLoad);
-        } catch (error) {
-          console.error("Error loading edit data:", error);
-        } finally {
-          setTimeout(() => setIsInitializing(false), 500);
-        }
-      }
-    };
-
-    loadData();
-  }, [isOpen, editingLoad]);
-
-  // loading Maps on mounting
-  useEffect(() => {
-    if (isOpen && activeTab === 1) {
-      setShowMaps(true);
-    } else {
-      setShowMaps(false);
-    }
-  }, [isOpen, activeTab]);
-
-  // loading when edit
   const loadEditData = async (loadItem: TLoads) => {
     if (!loadItem?.id) return;
 
@@ -346,7 +401,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     dispatch(setLeftShipper(loadItem.leftShipper || null));
     dispatch(setLeftReceiver(loadItem.leftReceiver || null));
 
-    dispatch(setDriverId(loadItem.driverId?.id || ""));
+    // Assignment
+    dispatch(setDriverId(String((loadItem as any)?.driverId?.driverId ?? "")));
     dispatch(setTruckType((loadItem.truckType as TTruckType) || "reefer"));
     dispatch(setTruckId(loadItem.truckId?.truckId?.toString() || ""));
     dispatch(setTruckTemp(loadItem.truckTemp?.toString() || ""));
@@ -356,15 +412,36 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     }
   };
 
-  // Calculate distances
   useEffect(() => {
-    const calculateDhoToOrigin = async () => {
+    if (!isOpen) return;
+
+    dispatch(resetForm());
+    setSelectedDocuments([]);
+    setUploadError("");
+    setIsDragging(false);
+    setAllDistance("");
+    setPricePerMile(null);
+
+    if (editingLoad) {
+      setTimeout(() => loadEditData(editingLoad), 50);
+    } else {
+      dispatch(setIsEditing(false));
+      dispatch(setEditingLoad(null as any));
+    }
+  }, [isOpen, editingLoad]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setShowMaps(stepKey === "locations");
+  }, [isOpen, stepKey]);
+
+  useEffect(() => {
+    const run = async () => {
       if (!dho || !origin) {
         setDhoToOriginDistance(null);
         setAverageTime(null);
         return;
       }
-
       try {
         const result = await calculateDhoToOriginDistance(
           { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) },
@@ -372,28 +449,20 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         );
         setDhoToOriginDistance(result.distance);
         setAverageTime(result.duration);
-      } catch (error) {
-        console.error("Error calculating DHO to Origin distance:", error);
+      } catch (e) {
+        console.error("Error calculating DHO to Origin distance:", e);
         setDhoToOriginDistance(null);
         setAverageTime(null);
       }
     };
-
-    calculateDhoToOrigin();
+    run();
   }, [dho, origin]);
 
   useEffect(() => {
-    const calculateTotalDistance = async () => {
-      const isValidPlace = (place: TPlace | null): place is TPlace => {
-        return place !== null;
-      };
+    const run = async () => {
+      const validDestinations = destinations.filter(Boolean) as TPlace[];
 
-      const validDestinations = destinations.filter(isValidPlace);
-
-      if (
-        (dho && origin && validDestinations.length > 0) ||
-        (origin && validDestinations.length > 0)
-      ) {
+      if ((origin && validDestinations.length > 0) || (dho && origin && validDestinations.length > 0)) {
         try {
           const destinationsCoords = validDestinations.map((dest) => ({
             lat: parseFloat(dest.lat),
@@ -402,9 +471,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
 
           const result = await calculateFullRouteDistance(
             dho ? { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) } : null,
-            origin
-              ? { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) }
-              : null,
+            origin ? { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) } : null,
             destinationsCoords,
           );
 
@@ -415,8 +482,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
             const perMile = Number(price) / result.distance;
             setPricePerMile(perMile);
           }
-        } catch (error) {
-          console.error("Error calculating total distance:", error);
+        } catch (e) {
+          console.error("Error calculating total distance:", e);
           setDistance(null);
           setAllDistance("");
         }
@@ -426,22 +493,59 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       }
     };
 
-    calculateTotalDistance();
+    run();
   }, [origin, destinations, dho, price]);
 
-  // Handle form submission
+  const formatTime = (hours: number): string => {
+    const totalMinutes = hours * 60;
+    const h = Math.floor(totalMinutes / 60);
+    const m = Math.round(totalMinutes % 60);
+    if (h === 0) return `${m} minutes`;
+    if (m === 0) return `${h} hours`;
+    return `${h}h ${m}m`;
+  };
+
+  const handlePriceChange = (value: string) => {
+    dispatch(setPrice(value));
+    if (allDistance && Number(allDistance) > 0 && Number(value) > 0) {
+      setPricePerMile(Number(value) / Number(allDistance));
+    } else {
+      setPricePerMile(null);
+    }
+  };
+  const validDestCount = destinations.filter(Boolean).length;
+
+  const handleAddDestination = () => dispatch(addDestination());
+  const handleUpdateDestination = (index: number, place: TPlace | null) =>
+    dispatch(updateDestination({ index, place }));
+  const handleRemoveDestination = (index: number) => dispatch(removeDestination(index));
+
+  const extractErrorMessage = (error: unknown): string => {
+    if (typeof error === "string") return error;
+    if (error instanceof Error) return error.message;
+    if (typeof error === "object" && error !== null && "data" in error) {
+      const rtk = error as { data?: { message?: string } };
+      if (rtk.data?.message) return rtk.data.message;
+    }
+    if (typeof error === "object" && error !== null && "message" in error) {
+      return (error as { message: string }).message;
+    }
+    return "An unknown error occurred";
+  };
+
   const handleCreateLoad = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const total = Number(price);
-    const validDestinations = destinations.filter((dest) => dest !== null);
+    const validDestinations = destinations.filter(Boolean) as TPlace[];
 
     if (!origin || validDestinations.length === 0) {
       toast.error("Please select origin and at least one destination");
       return;
     }
 
-    if (!isEditing && (!driverId || !truckId)) {
+    // assignment only required on ADD
+    if (!isEditMode && (!driverId || !truckId)) {
       toast.error("Please select driver and truck");
       return;
     }
@@ -451,10 +555,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       return;
     }
 
-    const finalDistance = allDistance
-      ? parseInt(allDistance)
-      : Math.round(distance || 0);
-
+    const finalDistance = allDistance ? parseFloat(allDistance) : Math.round(distance || 0);
     if (!finalDistance || finalDistance <= 0) {
       toast.error("Invalid distance calculated");
       return;
@@ -462,40 +563,21 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
 
     const formData = new FormData();
 
-    if (origin && origin.display_name) {
-      formData.append("origin[address]", origin.display_name);
-    } else {
-      console.error("❌ Origin is missing or invalid");
+    formData.append("origin[address]", origin.display_name);
+
+    validDestinations.forEach((dest, index) => {
+      formData.append(`destination[${index}][address]`, dest.display_name);
+    });
+
+    if (dho?.display_name) formData.append("DHO[address]", dho.display_name);
+
+    // assignment only on ADD
+    if (!isEditMode) {
+      if (driverId) formData.append("driverId", driverId);
+      if (truckId) formData.append("truckId", truckId);
     }
 
-    if (validDestinations.length > 0) {
-      validDestinations.forEach((dest, index) => {
-        if (dest && dest.display_name) {
-          formData.append(`destination[${index}][address]`, dest.display_name);
-        } else {
-          console.error(`❌ Destination ${index} is missing or invalid`);
-        }
-      });
-    } else {
-      console.error("❌ No valid destinations found");
-    }
-
-    if (dho && dho.display_name) {
-      formData.append("DHO[address]", dho.display_name);
-    } else {
-      console.log("ℹ️ DHO is optional, not added");
-    }
-
-    if (!isEditing) {
-      if (driverId) {
-        formData.append("driverId", driverId);
-      }
-      if (truckId) {
-        formData.append("truckId", truckId);
-      }
-    }
-
-    const commonFields = {
+    const commonFields: Record<string, any> = {
       pickupAt,
       completedAt,
       arrivalAtShipper,
@@ -518,585 +600,340 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     });
 
     if (selectedDocuments.length > 0) {
-      selectedDocuments.forEach((file) => {
-        formData.append("documents", file);
-      });
-    } else {
-      console.log("ℹ️ No documents to add");
+      selectedDocuments.forEach((file) => formData.append("documents", file));
     }
 
+    // adjustments
+    (adjustments || []).forEach((adj) => {
+      if (adj.type === "Bonus") formData.append("bonus", adj.amount.toString());
+      if (adj.type === "Detention") formData.append("detention", adj.amount.toString());
+      if (adj.type === "Deduction") formData.append("deduction", adj.amount.toString());
+    });
+
     try {
-      let createdLoadId: string | undefined;
-
-      // Ensure adjustments array is always defined
-      const loadAdjustments: Adjustment[] = adjustments || [];
-
-      if (isEditing && editingLoad) {
-        console.log("Load adjustments:", loadAdjustments);
-
-        loadAdjustments.forEach((adj) => {
-          if (adj.type === "Bonus") {
-            formData.append("bonus", adj.amount.toString());
-          } else if (adj.type === "Detention") {
-            formData.append("detention", adj.amount.toString());
-          } else if (adj.type === "Deduction") {
-            formData.append("deduction", adj.amount.toString());
-          }
-        });
-
-        await updateLoad({
-          id: editingLoad.id,
-          formData,
-        }).unwrap();
-
+      if (isEditMode && editingLoad?.id) {
+        await updateLoad({ id: editingLoad.id, formData } as any).unwrap();
         toast.success("Load updated ✅");
-
-        createdLoadId = editingLoad.id;
       } else {
-        console.log("🆕 Sending CREATE request...");
-        const result = await createLoad(formData).unwrap();
+        await createLoad(formData as any).unwrap();
         toast.success("Load created ✅");
-        createdLoadId = result?.data?.id || result?.id;
       }
 
       handleClose();
-    } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err);
+    } catch (err) {
+      const msg = extractErrorMessage(err);
       console.error("❌ Request failed:", err);
-      toast.error(
-        errorMessage || `Load ${isEditing ? "update" : "creation"} failed ❌`,
-      );
+      toast.error(msg || `Load ${isEditMode ? "update" : "creation"} failed ❌`);
     }
   };
 
-  // Handling Errors
-  const getErrorMessage = (error: unknown): string => {
-    if (typeof error === "string") {
-      return error;
-    }
-
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    if (typeof error === "object" && error !== null && "data" in error) {
-      const rtkError = error as { data?: { message?: string } };
-      if (rtkError.data?.message) {
-        return rtkError.data.message;
-      }
-    }
-
-    if (typeof error === "object" && error !== null && "message" in error) {
-      return (error as { message: string }).message;
-    }
-
-    return "An unknown error occurred";
-  };
-
-  // Handling Close
   const handleClose = () => {
     dispatch(resetForm());
     setSelectedDocuments([]);
     setUploadError("");
     setIsDragging(false);
     setShowMaps(false);
+    setAllDistance("");
+    setPricePerMile(null);
     onClose();
   };
 
-  // Handle Price Change
-  const handlePriceChange = (value: string) => {
-    dispatch(setPrice(value));
+  const selectedDriverName = useMemo(() => {
+    // edit mode
+    const editName = (editingLoad as any)?.driverId?.name;
+    if (isEditMode && editName) return twoWords(String(editName));
 
-    if (allDistance && Number(allDistance) > 0 && Number(value) > 0) {
-      const perMile = Number(value) / Number(allDistance);
-      setPricePerMile(perMile);
-    } else {
-      setPricePerMile(null);
-    }
-  };
+    // add mode
+    const list = (driversData as any)?.data || (driversData as any)?.drivers || [];
+    const found = list.find((d: any) => {
+      const id1 = String(d?.driverId ?? ""); // ✅ 501 غالبًا
+      const id2 = String(d?._id ?? d?.id ?? "");
+      return id1 === String(driverId) || id2 === String(driverId);
+    });
 
-  // Handle Foramting Time
-  const formatTime = (hours: number): string => {
-    const totalMinutes = hours * 60;
-    const hoursPart = Math.floor(totalMinutes / 60);
-    const minutesPart = Math.round(totalMinutes % 60);
+    const name = found?.name || found?.fullName || found?.username || "";
+    return twoWords(String(name));
+  }, [driversData, driverId, isEditMode, editingLoad]);
 
-    if (hoursPart === 0) {
-      return `${minutesPart} minutes`;
-    } else if (minutesPart === 0) {
-      return `${hoursPart} hours`;
-    } else {
-      return `${hoursPart}h ${minutesPart}m`;
-    }
-  };
-
-  // Tab 1
-  const isTab1Valid = (): boolean => {
-    const hasValidDho = dho !== null && dho !== undefined;
-    const hasValidOrigin = origin !== null && origin !== undefined;
-    const hasValidDestinations =
-      destinations.length > 0 &&
-      destinations.every((dest) => dest !== null && dest !== undefined);
-
-    return hasValidDho && hasValidOrigin && hasValidDestinations;
-  };
-
-  // Tab 2
-  const isTab2Valid = (): boolean => {
-    const hasValidPickupAt = pickupAt !== null;
-    const hasValidCompletedAt = completedAt !== null;
-
-    return hasValidPickupAt && hasValidCompletedAt;
-  };
-
-  // Tab 3
-  const isTab3Valid = (): boolean => {
-    const hasValidPrice = price.trim() !== "";
-    const hasValidLoadID = loadIDInp.trim() !== "";
-
-    return hasValidPrice && hasValidLoadID;
-  };
-
-  // Tab 4
-  const isTab4Valid = (): boolean => {
-    if (isEditing) {
-      return !!(
-        editingLoad?.driverId &&
-        editingLoad?.truckId &&
-        editingLoad?.truckType
-      );
-    } else {
-      const hasValidDriverId = driverId.trim() !== "";
-      const hasValidTruckType = truckType.trim() !== "";
-      const hasValidTruckId = truckId.trim() !== "";
-
-      return hasValidDriverId && hasValidTruckType && hasValidTruckId;
-    }
-  };
-
-  // handling Destinations Action
-  const handleAddDestination = () => {
-    dispatch(addDestination());
-  };
-  const handleUpdateDestination = (index: number, place: TPlace | null) => {
-    dispatch(updateDestination({ index, place }));
-  };
-  const handleRemoveDestination = (index: number) => {
-    dispatch(removeDestination(index));
-  };
-
-  // Map fallback component
   const MapFallback = () => (
     <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg border border-gray-200">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2" />
         <p className="text-gray-600">Loading Maps...</p>
       </div>
     </div>
   );
 
+
+  const chipSx = {
+    px: 1.5,
+    py: 0.75,
+    borderRadius: 999,
+    border: `1px solid ${alpha(theme.currentPalette.text, 0.15)}`,
+    bgcolor: alpha(theme.currentPalette.text, 0.03),
+    fontSize: 12,
+    fontWeight: 800,
+  } as const;
+
+  const greenChipSx = {
+    ...chipSx,
+    border: `1px solid ${alpha("#2e7d32", 0.35)}`,
+    bgcolor: alpha("#2e7d32", 0.08),
+    color: "#2e7d32",
+  } as const;
+
   return (
-    <Modal
-      isOpen={isOpen}
+    <Dialog
+      open={isOpen}
       onClose={handleClose}
-      title={isEditing && editingLoad ? `Edit Load` : "Create New Load"}
-      desc="Complete all steps"
-      size="xxl"
-      closeOnOutsideClick={false}
+      fullWidth
+      maxWidth="lg"
+      scroll="paper"
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+          overflow: "auto",
+          height: "100vh",
+        },
+      }}
     >
-      <div className="flex flex-col h-full">
-        <div className="flex">
-          {/* Sidebar Navigation */}
+      <IconButton
+        onClick={handleClose}
+        sx={{ position: "absolute", top: -3, right: 8, zIndex: 20, mb: 2 }}
+      >
+        <IoClose />
+      </IconButton>
+
+      <DialogContent sx={{ p: 0, height: "100%" }}>
+        <Box
+          sx={{
+            height: "100%",
+            display: "flex",
+            bgcolor: theme.currentPalette.background,
+          }}
+        >
+          {/* LEFT SIDEBAR STEPS */}
           <Box
-            className="w-64 p-5 border-r border-gray-200"
-            sx={{ bgcolor: alpha(theme.currentPalette.text, 0.05) }}
+            sx={{
+              width: 320,
+              borderRight: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+              // bgcolor: alpha(theme.currentPalette.text, 0.03),
+              pt: 1.3,
+            }}
           >
-            {/* Step 1: Locations */}
-            <div className="relative">
-              <div
-                className="absolute left-1/9 top-8.5 -translate-x-1/2 h-full w-px"
-                style={{ backgroundColor: theme.currentPalette.primary }}
-              />
+            <Box sx={{ px: 3, pb: 2 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: 20 }}>
+                {isEditMode ? "Edit Load" : "Add New Load"}
+              </Typography>
+              <Typography sx={{ mt: 0.5, color: alpha(theme.currentPalette.text, 0.55), fontSize: 13 }}>
+                Complete all steps
+              </Typography>
+            </Box>
 
-              <div
-                className={`mb-4 p-3 rounded-lg cursor-pointer transition-colors`}
-                onClick={() => dispatch(setActiveTab(1))}
-              >
-                <div className="flex items-start">
-                  <div className="mr-3">
-                    {activeTab === 1 ? (
+            <Divider
+              sx={{
+                width: "100%",
+                m: 0,
+                borderColor: alpha(theme.currentPalette.text, 0.12), // نفس لون اللي في الـ header right
+              }}
+            />
+
+            <Box sx={{ px: 3, py: 2, flex: 1 }}>
+              {steps.map((s, idx) => {
+                const isActive = idx === activeStep;
+                const done =
+                  idx === 0
+                    ? false
+                    : idx === 1
+                      ? steps[1].canGo()
+                      : idx === 2
+                        ? steps[2].canGo()
+                        : steps[3]?.canGo?.() || false;
+
+                const disabled = !s.canGo();
+
+                return (
+                  <Box
+                    key={s.key}
+                    onClick={() => {
+                      if (!disabled) goToStep(idx);
+                    }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      p: 2,
+                      borderRadius: 2,
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      opacity: disabled ? 0.45 : 1,
+                      bgcolor: isActive ? alpha(theme.currentPalette.primary, 0.12) : "transparent",
+                      position: "relative",
+                      mb: 1.2,
+                      transition: "0.15s",
+                    }}
+                  >
+                    {/* connector line */}
+                    {idx !== steps.length - 1 && (
                       <Box
-                        className={`h-6 w-6 rounded-full border-2 flex items-center justify-center`}
                         sx={{
-                          color: theme.currentPalette.background,
-                          bgcolor: theme.currentPalette.primary,
-                          borderColor: theme.currentPalette.primary,
+                          position: "absolute",
+                          left: 28,
+                          top: 52,
+                          height: 36,
+                          width: 2,
+                          bgcolor: alpha(theme.currentPalette.primary, 0.25),
                         }}
-                      >
-                        <Typography variant="subtitle2" fontSize={12}>
-                          1
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <IoCheckmarkCircle
-                        style={{ color: theme.currentPalette.primary }}
-                        size={24}
                       />
                     )}
-                  </div>
-                  <div>
-                    <Typography
-                      sx={{
-                        fontWeight: 600,
-                        color:
-                          activeTab === 1
-                            ? theme.currentPalette.primary
-                            : "inherit",
-                      }}
-                    >
-                      Locations
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      Define pricing & delivery addresses
-                    </Typography>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Step 2: Load Details */}
-            <div className="relative">
-              <div
-                className="absolute left-1/9 top-8.5 -translate-x-1/2 h-full w-px"
-                style={{ backgroundColor: theme.currentPalette.primary }}
-              />
-
-              <div
-                className={`mb-4 p-3 rounded-lg cursor-pointer transition-colors`}
-                onClick={() => isTab1Valid() && dispatch(setActiveTab(2))}
-              >
-                <div className="flex items-start">
-                  <div className="mr-3">
-                    {activeTab === 2 ? (
-                      <Box
-                        className={`h-6 w-6 rounded-full border-2 flex items-center justify-center`}
-                        sx={{
-                          color: theme.currentPalette.background,
-                          bgcolor: theme.currentPalette.primary,
-                          borderColor: theme.currentPalette.primary,
-                        }}
-                      >
-                        <Typography variant="subtitle2" fontSize={12}>
-                          2
-                        </Typography>
-                      </Box>
-                    ) : isTab1Valid() ? (
-                      <IoCheckmarkCircle
-                        style={{ color: theme.currentPalette.primary }}
-                        size={24}
-                      />
-                    ) : (
-                      <IoEllipseOutline
-                        style={{
-                          backgroundColor: alpha(
-                            theme.currentPalette.text,
-                            0.01,
-                          ),
-                        }}
-                        size={24}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <Typography
-                      sx={{
-                        fontWeight: 600,
-                        color:
-                          activeTab === 2
-                            ? theme.currentPalette.primary
-                            : isTab1Valid()
-                              ? "inherit"
-                              : "text.disabled",
-                      }}
-                    >
-                      Timeline & Milestones
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: isTab1Valid()
-                          ? "text.secondary"
-                          : "text.disabled",
-                      }}
-                    >
-                      Set planned schedules
-                    </Typography>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3: Financials */}
-            <div className="relative">
-              <div
-                className="absolute left-1/9 top-8.5 -translate-x-1/2 h-full w-px"
-                style={{ backgroundColor: theme.currentPalette.primary }}
-              />
-
-              <div
-                className={`mb-4 p-3 rounded-lg cursor-pointer transition-colors`}
-                onClick={() =>
-                  isTab1Valid() && isTab2Valid() && dispatch(setActiveTab(3))
-                }
-              >
-                <div className="flex items-start">
-                  <div className="mr-3">
-                    {activeTab === 3 ? (
-                      <Box
-                        className={`h-6 w-6 rounded-full border-2 flex items-center justify-center`}
-                        sx={{
-                          color: theme.currentPalette.background,
-                          bgcolor: theme.currentPalette.primary,
-                          borderColor: theme.currentPalette.primary,
-                        }}
-                      >
-                        <Typography variant="subtitle2" fontSize={12}>
-                          3
-                        </Typography>
-                      </Box>
-                    ) : isTab1Valid() && isTab2Valid() ? (
-                      <IoCheckmarkCircle
-                        style={{ color: theme.currentPalette.primary }}
-                        size={24}
-                      />
-                    ) : (
-                      <IoEllipseOutline
-                        style={{
-                          backgroundColor: alpha(
-                            theme.currentPalette.text,
-                            0.01,
-                          ),
-                        }}
-                        size={24}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <Typography
-                      sx={{
-                        fontWeight: 600,
-                        color:
-                          activeTab === 3
-                            ? theme.currentPalette.primary
-                            : isTab1Valid() && isTab2Valid()
-                              ? "inherit"
-                              : "text.disabled",
-                      }}
-                    >
-                      Financials
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color:
-                          isTab1Valid() && isTab2Valid()
-                            ? "text.secondary"
-                            : "text.disabled",
-                      }}
-                    >
-                      Configure pricing & documents
-                    </Typography>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 4: Assignment */}
-            <div
-              className={`mb-4 p-3 rounded-lg cursor-pointer transition-colors`}
-              onClick={() =>
-                isTab1Valid() &&
-                isTab2Valid() &&
-                isTab3Valid() &&
-                dispatch(setActiveTab(4))
-              }
-            >
-              <div className="flex items-start">
-                <div className="mr-3">
-                  {activeTab === 4 ? (
+                    {/* circle */}
                     <Box
-                      className={`h-6 w-6 rounded-full border-2 flex items-center justify-center`}
                       sx={{
-                        color: theme.currentPalette.background,
-                        bgcolor: theme.currentPalette.primary,
-                        borderColor: theme.currentPalette.primary,
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        display: "grid",
+                        placeItems: "center",
+                        border: `2px solid ${isActive || done
+                          ? theme.currentPalette.primary
+                          : alpha(theme.currentPalette.text, 0.25)
+                          }`,
+                        bgcolor: isActive ? theme.currentPalette.primary : "transparent",
+                        color: isActive ? theme.currentPalette.background : theme.currentPalette.primary,
+                        fontWeight: 900,
+                        mt: 0.2,
+                        flexShrink: 0,
                       }}
                     >
-                      <Typography variant="subtitle2" fontSize={12}>
-                        4
+                      <Typography sx={{ fontSize: 12, fontWeight: 900 }}>
+                        {idx + 1}
                       </Typography>
                     </Box>
-                  ) : isTab1Valid() && isTab2Valid() && isTab3Valid() ? (
-                    <IoCheckmarkCircle
-                      style={{ color: theme.currentPalette.primary }}
-                      size={24}
-                    />
-                  ) : (
-                    <IoEllipseOutline
-                      style={{
-                        backgroundColor: alpha(theme.currentPalette.text, 0.01),
-                      }}
-                      size={24}
-                    />
-                  )}
-                </div>
-                <div>
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      color:
-                        activeTab === 4
-                          ? theme.currentPalette.primary
-                          : isTab1Valid() && isTab2Valid() && isTab3Valid()
-                            ? "inherit"
-                            : "text.disabled",
-                    }}
-                  >
-                    Assignment
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color:
-                        isTab1Valid() && isTab2Valid() && isTab3Valid()
-                          ? "text.secondary"
-                          : "text.disabled",
-                    }}
-                  >
-                    Configure pricing & documents
-                  </Typography>
-                </div>
-              </div>
-            </div>
+
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontWeight: 900,
+                          fontSize: 15,
+                          color: isActive ? theme.currentPalette.primary : theme.currentPalette.text,
+                        }}
+                      >
+                        {s.title}
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: alpha(theme.currentPalette.text, 0.55), mt: 0.3 }}>
+                        {s.desc}
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
 
-          {/* Main Content Area */}
-          <div className="flex-1 p-5">
-            <form
-              onSubmit={handleCreateLoad}
-              className="flex-1 overflow-auto p-4"
+          {/* RIGHT CONTENT */}
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            {/* HEADER BAR */}
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+              }}
             >
-              {/* Tab 1: Locations */}
-              {activeTab === 1 && (
-                <div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="flex flex-col">
-                      {/* Information Message */}
-                      {allDistance && (
-                        <Box
-                          sx={{
-                            border: `2px solid ${theme.currentPalette.primary}`,
-                            borderRadius: 2,
-                            p: 2,
-                            mb: 2,
-                          }}
-                        >
-                          <Box>
-                            <Typography
-                              variant="h4"
-                              sx={{ fontSize: "18px", fontWeight: "bold" }}
-                            >
-                              Route Distance Information
-                            </Typography>
+              <Box>
+                <Typography sx={{ fontWeight: 900, fontSize: 20 }}>{stepTitle}</Typography>
+                <Typography sx={{ fontSize: 12, color: alpha(theme.currentPalette.text, 0.55) }}>
+                  Step {activeStep + 1} of {steps.length}
+                </Typography>
+              </Box>
 
-                            <div className="flex items-center justify-between">
-                              <p
-                                style={{
-                                  color: alpha(theme.currentPalette.text, 0.7),
-                                }}
-                              >
-                                Total distance:
-                              </p>
-                              {destinations.filter((d) => d !== null).length >
-                                0 ? (
-                                <p style={{ color: theme.currentPalette.text }}>
-                                  {
-                                    destinations.filter((d) => d !== null)
-                                      .length
-                                  }{" "}
-                                  destination(s)
-                                </p>
-                              ) : (
-                                <p style={{ color: theme.currentPalette.text }}>
-                                  Not calculated yet
-                                </p>
-                              )}
-                            </div>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={chipSx}>#{loadIDInp?.trim() ? loadIDInp : "0"}</Box>
+                <Box sx={chipSx}>
+                  {selectedDriverName
+                    ? selectedDriverName
+                    : (driverId?.trim() ? "Driver selected" : "No Driver")}
+                </Box>
+                <Box sx={greenChipSx}>${price?.trim() ? price : "0"}</Box>
+              </Box>
+            </Box>
 
-                            <div className="flex items-center justify-between">
-                              <p
-                                style={{
-                                  color: alpha(theme.currentPalette.text, 0.7),
-                                }}
-                              >
-                                DHO to Origin:
-                              </p>
-                              {dho && origin ? (
-                                <p style={{ color: theme.currentPalette.text }}>
-                                  {dhoToOriginDistance?.toFixed(2) || "0"} miles
-                                </p>
-                              ) : (
-                                <p style={{ color: theme.currentPalette.text }}>
-                                  Not calculated yet
-                                </p>
-                              )}
-                            </div>
+            {/* BODY */}
+            <Box sx={{ flex: 1, overflow: "auto", p: 3 }}>
+              <form id="load-form" onSubmit={handleCreateLoad}>
+                {/* LOCATIONS */}
+                {stepKey === "locations" && (
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", lg: "1.05fr 0.95fr" },
+                      gap: 3,
+                    }}
+                  >
+                    {/* LEFT */}
+                    <Box>
+                      {/* Route info card */}
+                      <Box
+                        sx={{
+                          border: `2px solid ${alpha(theme.currentPalette.primary, 0.85)}`,
+                          borderRadius: 2,
+                          p: 2,
+                          mb: 2,
+                          bgcolor: alpha(theme.currentPalette.primary, 0.03),
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: 900, fontSize: 15, mb: 1 }}>
+                          Route Distance Information
+                        </Typography>
 
-                            <div className="flex items-center justify-between">
-                              <p
-                                style={{
-                                  color: alpha(theme.currentPalette.text, 0.7),
-                                }}
-                              >
-                                Including:
-                              </p>
-                              {allDistance ? (
-                                <p style={{ color: theme.currentPalette.text }}>
-                                  {allDistance} miles
-                                </p>
-                              ) : (
-                                <p style={{ color: theme.currentPalette.text }}>
-                                  0 destination(s)
-                                </p>
-                              )}
-                            </div>
-                          </Box>
+                        <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto", rowGap: 0.75 }}>
+                          <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
+                            Total distance:
+                          </Typography>
+                          <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
+                            {allDistance ? `${allDistance} miles` : "Not calculated yet"}
+                          </Typography>
+
+                          <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
+                            DHO to Origin:
+                          </Typography>
+                          <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
+                            {dho && origin && dhoToOriginDistance
+                              ? `${dhoToOriginDistance.toFixed(2)} miles`
+                              : "Not calculated yet"}
+                          </Typography>
+
+                          <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
+                            Including:
+                          </Typography>
+                          <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
+                            {destinations.filter(Boolean).length} destination(s)
+                          </Typography>
                         </Box>
-                      )}
+                      </Box>
 
-                      {/* Direction */}
-                      <div className="space-y-6">
+                      {/* Inputs */}
+                      <Box sx={{ display: "grid", gap: 2 }}>
                         <LocationAutocomplete
                           label="DHO (Driver Home Origin)"
                           value={dho}
+                          required
                           setValue={(place) => dispatch(setDho(place))}
                           placeholder="Enter driver's starting location"
-                          // googleMapsApiKey={googleMapsApiKey!}
-                          showZipCode={true}
+                          showZipCode
                         />
 
                         <LocationAutocomplete
                           label="Pick Up (Origin)"
                           value={origin}
+                          required
                           setValue={(place) => dispatch(setOrigin(place))}
                           placeholder="Enter origin address"
-                          // googleMapsApiKey={googleMapsApiKey!}
-                          showZipCode={true}
+                          showZipCode
                         />
-
                         {/* Destinations Section */}
                         <div className="space-y-4">
                           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
@@ -1128,20 +965,21 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                               className="flex items-center gap-3"
                             >
                               <div className="flex-1">
-                           
 
-                                  <LocationAutocomplete
-                                    label={`Destination ${index + 1}`}
-                                    value={destination}
-                                    setValue={(place) =>
-                                      handleUpdateDestination(index, place)
-                                    }
-                                    placeholder={`Enter destination ${index + 1
-                                      } address`}
-                                    // googleMapsApiKey={googleMapsApiKey!}
-                                    showZipCode={true}
-                                  />
-                           
+
+                                <LocationAutocomplete
+                                  label={`Destination ${index + 1}`}
+                                  value={destination}
+                                  required
+                                  setValue={(place) =>
+                                    handleUpdateDestination(index, place)
+                                  }
+                                  placeholder={`Enter destination ${index + 1
+                                    } address`}
+                                  // googleMapsApiKey={googleMapsApiKey!}
+                                  showZipCode={true}
+                                />
+
                               </div>
 
                               {destinations.length > 1 && (
@@ -1156,85 +994,68 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                             </div>
                           ))}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <Typography
-                              sx={{
-                                color: theme.currentPalette.primary,
-                                fontSize: "14px",
-                                fontWeight: "bold",
-                                display: "block",
-                                mb: 1,
-                              }}
-                            >
+
+
+                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+                          <Box>
+                            <Typography sx={{ color: theme.currentPalette.primary, fontSize: 13, fontWeight: 900, mb: 0.8 }}>
                               DHO to Origin Distance
                             </Typography>
-                            <div className="relative">
-                              <TextField
-                                type="text"
-                                value={
-                                  dhoToOriginDistance
-                                    ? `${dhoToOriginDistance.toFixed(2)} miles`
-                                    : ""
-                                }
-                                sx={{
-                                  bgcolor: theme.currentPalette.background,
-                                  color: theme.currentPalette.primary,
-                                }}
-                                className="block w-full px-3 py-3 border border-slate-300 rounded-lg font-medium"
-                                aria-readonly
-                                placeholder="Distance will auto-calculate"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <Typography
+                            <TextField
+                              fullWidth
+                              placeholder="Auto Calculated Distance"
+                              value={
+                                dhoToOriginDistance
+                                  ? `${dhoToOriginDistance.toFixed(2)} miles`
+                                  : ""
+                              }
+                              inputProps={{ readOnly: true }}
                               sx={{
-                                color: theme.currentPalette.primary,
-                                fontSize: "14px",
-                                fontWeight: "bold",
-                                display: "block",
-                                mb: 1,
+                                "& .MuiOutlinedInput-root": {
+                                  bgcolor: alpha(theme.currentPalette.text, 0.03),
+                                  borderRadius: 2,
+                                },
                               }}
-                            >
+                            />
+                          </Box>
+
+                          <Box>
+                            <Typography sx={{ color: theme.currentPalette.primary, fontSize: 13, fontWeight: 900, mb: 0.8 }}>
                               Average Time To Pickup
                             </Typography>
-                            <div className="relative">
-                              <TextField
-                                type="text"
-                                value={
-                                  averageTime
-                                    ? `${formatTime(averageTime)}`
-                                    : ""
-                                }
-                                sx={{
-                                  bgcolor: theme.currentPalette.background,
-                                  color: theme.currentPalette.primary,
-                                }}
-                                className="block w-full px-3 py-3 border border-slate-300 rounded-lg font-medium"
-                                aria-readonly
-                                placeholder="Time will auto-calculate"
-                              />
-                            </div>
-                          </div>
-                        </div>
+                            <TextField
+                              placeholder="Auto Calculated Time"
+                              fullWidth
+                              value={averageTime ? formatTime(averageTime) : ""}
+                              inputProps={{ readOnly: true }}
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  bgcolor: alpha(theme.currentPalette.text, 0.03),
+                                  borderRadius: 2,
+                                },
+                              }}
+                            />
+                          </Box>
+                        </Box>
 
+                      </Box>
+                    </Box>
 
-                      </div>
-                    </div>
-
-                    {/* Maps - Load only when needed */}
-                    <div className="grid grid-cols-1 gap-6">
+                    {/* RIGHT MAP */}
+                    <Box
+                      sx={{
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+                        overflow: "hidden",
+                        minHeight: 520,
+                        bgcolor: alpha(theme.currentPalette.text, 0.02),
+                      }}
+                    >
                       {showMaps ? (
                         <Suspense fallback={<MapFallback />}>
                           <LazyGoogleMapsLoader
-                            onLoad={() =>
-                              console.log("Maps loaded successfully")
-                            }
-                            onError={(error) =>
-                              console.error("Failed to load maps:", error)
-                            }
+                            onLoad={() => console.log("Maps loaded successfully")}
+                            onError={(error) => console.error("Failed to load maps:", error)}
                           >
                             <LazyMapWithRoute
                               dho={dho}
@@ -1245,132 +1066,150 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           </LazyGoogleMapsLoader>
                         </Suspense>
                       ) : (
-                        <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg border border-gray-200">
-                          <div className="text-center text-gray-500">
-                            <p>Map will load when needed</p>
-                          </div>
-                        </div>
+                        <Box
+                          sx={{
+                            height: "100%",
+                            display: "grid",
+                            placeItems: "center",
+                            color: alpha(theme.currentPalette.text, 0.6),
+                          }}
+                        >
+                          Map will load when needed
+                        </Box>
                       )}
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
+                )}
 
-                  <div className="flex justify-end pt-4">
-                    <Button
-                      sx={{
-                        bgcolor: theme.currentPalette.primary,
-                        color: theme.currentPalette.background,
-                        "&.Mui-disabled": {
-                          bgcolor: alpha(theme.currentPalette.primary, 0.4),
-                          color: "white",
-                          cursor: "not-allowed",
-                        },
-                      }}
-                      type="button"
-                      onClick={() => dispatch(setActiveTab(2))}
-                      disabled={!isTab1Valid()}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
+                {/* ASSIGNMENT (ONLY IN ADD MODE) */}
+                {stepKey === "assignment" && !isEditMode && (
+                  <AssignmentTab
+                    isEditing={isEditing}
+                    editingLoad={editingLoad}
+                    driverId={driverId}
+                    truckId={truckId}
+                    truckType={truckType}
+                    truckTemp={truckTemp}
+                    onDriverIdChange={(value) => dispatch(setDriverId(value))}
+                    onTruckIdChange={(value) => dispatch(setTruckId(value))}
+                    onTruckTypeChange={(value) => dispatch(setTruckType(value as TTruckType))}
+                    onTruckTempChange={(value) => dispatch(setTruckTemp(value))}
+                    isTabValid={isAssignmentValid()}
+                    onPrevTab={prevStep}
+                    onSubmit={handleCreateLoad}
+                    isLoading={creatingLoad || updatingLoad}
+                  />
+                )}
 
-              {/* Tab 2: Load Details */}
-              {activeTab === 2 && (
-                <LoadDetailsTab
-                  pickupAt={pickupAtDayjs}
-                  completedAt={completedAtDayjs}
-                  arrivalAtShipper={arrivalAtShipperDayjs}
-                  arrivalAtReceiver={arrivalAtReceiverDayjs}
-                  leftShipper={leftShipperDayjs}
-                  leftReceiver={leftReceiverDayjs}
-                  onPickupAtChange={(value) =>
-                    dispatch(setPickupAt(value ? value.toISOString() : null))
-                  }
-                  onCompletedAtChange={(value) =>
-                    dispatch(setCompletedAt(value ? value.toISOString() : null))
-                  }
-                  onArrivalAtShipperChange={(value) =>
-                    dispatch(
-                      setArrivalAtShipper(value ? value.toISOString() : null),
-                    )
-                  }
-                  onArrivalAtReceiverChange={(value) =>
-                    dispatch(
-                      setArrivalAtReceiver(value ? value.toISOString() : null),
-                    )
-                  }
-                  onLeftShipperChange={(value) =>
-                    dispatch(setLeftShipper(value ? value.toISOString() : null))
-                  }
-                  onLeftReceiverChange={(value) =>
-                    dispatch(
-                      setLeftReceiver(value ? value.toISOString() : null),
-                    )
-                  }
-                  isEditing={isEditing}
-                  isTabValid={isTab2Valid()}
-                  onPrevTab={() => dispatch(setActiveTab(1))}
-                  onNextTab={() => dispatch(setActiveTab(3))}
-                />
-              )}
+                {/* TIMELINE */}
+                {stepKey === "timeline" && (
+                  <LoadDetailsTab
+                    pickupAt={pickupAtDayjs}
+                    completedAt={completedAtDayjs}
+                    arrivalAtShipper={arrivalAtShipperDayjs}
+                    arrivalAtReceiver={arrivalAtReceiverDayjs}
+                    leftShipper={leftShipperDayjs}
+                    leftReceiver={leftReceiverDayjs}
+                    onPickupAtChange={(value) => dispatch(setPickupAt(value ? value.toISOString() : null))}
+                    onCompletedAtChange={(value) => dispatch(setCompletedAt(value ? value.toISOString() : null))}
+                    onArrivalAtShipperChange={(value) =>
+                      dispatch(setArrivalAtShipper(value ? value.toISOString() : null))
+                    }
+                    onArrivalAtReceiverChange={(value) =>
+                      dispatch(setArrivalAtReceiver(value ? value.toISOString() : null))
+                    }
+                    onLeftShipperChange={(value) => dispatch(setLeftShipper(value ? value.toISOString() : null))}
+                    onLeftReceiverChange={(value) => dispatch(setLeftReceiver(value ? value.toISOString() : null))}
+                    isEditing={isEditing}
+                    isTabValid={isTimelineValid()}
+                    onPrevTab={prevStep}
+                    onNextTab={nextStep}
+                  />
+                )}
 
-              {/* Tab 3: Financial */}
-              {activeTab === 3 && (
-                <FinancialTab
-                  allDistance={allDistance}
-                  price={price}
-                  fees={fees}
-                  loadIDInp={loadIDInp}
-                  pricePerMile={pricePerMile}
-                  destinations={destinations}
-                  onPriceChange={handlePriceChange}
-                  onFeesChange={(value) => dispatch(setFees(value))}
-                  onLoadIDChange={(value) => dispatch(setLoadIDInp(value))}
-                  onFileSelect={handleFileSelect}
-                  onDragEnter={handleDragEnter}
-                  onDragLeave={handleDragLeave}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onRemoveFile={handleRemoveFile}
-                  uploadError={uploadError}
-                  adjustments={adjustments}
-                  onAdjustmentsChange={setAdjustments}
-                  isDragging={isDragging}
-                  selectedDocuments={selectedDocuments}
-                  isEditing={isEditing}
-                  isTabValid={isTab3Valid()}
-                  onPrevTab={() => dispatch(setActiveTab(2))}
-                  onNextTab={() => dispatch(setActiveTab(4))}
-                />
-              )}
+                {/* FINANCIAL */}
+                {stepKey === "financials" && (
+                  <FinancialTab
+                    allDistance={allDistance}
+                    price={price}
+                    fees={fees}
+                    loadIDInp={loadIDInp}
+                    pricePerMile={pricePerMile}
+                    destinations={destinations}
+                    onPriceChange={handlePriceChange}
+                    onFeesChange={(value) => dispatch(setFees(value))}
+                    onLoadIDChange={(value) => dispatch(setLoadIDInp(value))}
+                    onFileSelect={handleFileSelect}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onRemoveFile={handleRemoveFile}
+                    uploadError={uploadError}
+                    adjustments={adjustments}
+                    onAdjustmentsChange={setAdjustments}
+                    isDragging={isDragging}
+                    selectedDocuments={selectedDocuments}
+                    isEditing={isEditing}
+                    isTabValid={isFinancialValid()}
+                    onPrevTab={prevStep}
+                    onNextTab={nextStep}
+                  />
+                )}
+              </form>
+            </Box>
 
-              {/* Tab 4: Assignment */}
-              {activeTab === 4 && (
-                <AssignmentTab
-                  isEditing={isEditing}
-                  editingLoad={editingLoad}
-                  driverId={driverId}
-                  truckId={truckId}
-                  truckType={truckType}
-                  truckTemp={truckTemp}
-                  onDriverIdChange={(value) => dispatch(setDriverId(value))}
-                  onTruckIdChange={(value) => dispatch(setTruckId(value))}
-                  onTruckTypeChange={(value) =>
-                    dispatch(setTruckType(value as TTruckType))
-                  }
-                  onTruckTempChange={(value) => dispatch(setTruckTemp(value))}
-                  isTabValid={isTab4Valid()}
-                  onPrevTab={() => dispatch(setActiveTab(3))}
-                  onSubmit={handleCreateLoad}
-                  isLoading={creatingLoad || updatingLoad}
-                />
-              )}
-            </form>
-          </div>
-        </div>
-      </div>
-    </Modal>
+            {/* footer */}
+            <Box
+              sx={{
+                // mt: 3,
+                display: "flex",
+                pb: 2,
+                px: 2,
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={prevStep}
+                disabled={activeStep === 0}
+                sx={{ borderRadius: 2, textTransform: "none", px: 3 }}
+              >
+                Back
+              </Button>
+
+              <Button
+                type={isLastStep ? "submit" : "button"}
+                form={isLastStep ? "load-form" : undefined} // ✅ يشتغل حتى لو الزرار خارج الفورم
+                onClick={isLastStep ? undefined : nextStep}
+                disabled={
+                  isLastStep
+                    ? !steps[activeStep].canGo() || creatingLoad || updatingLoad
+                    : !steps[Math.min(activeStep + 1, steps.length - 1)]?.canGo?.()
+                }
+                variant="contained"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  px: 3,
+                  "&.Mui-disabled": {
+                    bgcolor: alpha(theme.currentPalette.primary, 0.35),
+                    color: "white",
+                  },
+                }}
+              >
+                {isLastStep
+                  ? (isEditMode ? "Update Load" : "Create Load")
+                  : "Next"}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </DialogContent >
+    </Dialog >
   );
 };
+
 export default CreateEditLoadModal;

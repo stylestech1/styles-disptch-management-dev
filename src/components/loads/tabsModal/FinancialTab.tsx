@@ -340,7 +340,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
                   },
                 }}
                 placeholder="0.00"
-                required
+                // required
                 slotProps={{
                   input: {
                     startAdornment: (
@@ -584,7 +584,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-between pt-4">
+        {/* <div className="flex justify-between pt-4">
           <Button
             sx={{
               bgcolor: theme.currentPalette.primary,
@@ -606,7 +606,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
           >
             Next
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

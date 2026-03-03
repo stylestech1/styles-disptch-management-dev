@@ -1,13 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
+import React, { useMemo, useState } from "react";
 import { RootState, useAppSelector } from "@/redux/store";
 import { LoadDetailsTabProps } from "@/types/globalTypes";
-import { alpha, Box, Button, Stack, Typography } from "@mui/material";
+import {
+  alpha,
+  Box,
+  Collapse,
+  Divider,
+  IconButton,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LandPlot, MapPin, Navigation } from "lucide-react";
+import { ChevronDown, LandPlot, MapPin, Navigation } from "lucide-react";
 
-// Load Details Tab Component
+type SectionKey = "pickup" | "transit" | "delivery";
+
 const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   pickupAt,
   completedAt,
@@ -22,416 +34,265 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   onArrivalAtReceiverChange,
   onLeftShipperChange,
   onLeftReceiverChange,
-  isTabValid,
-  onPrevTab,
-  onNextTab,
 }) => {
   const theme = useAppSelector((state: RootState) => state.palette);
+  const [open, setOpen] = useState<Record<SectionKey, boolean>>({
+    pickup: false,
+    transit: false,
+    delivery: false,
+  });
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 space-y-6 overflow-y-auto">
-        <Box className="flex flex-col md:flex-row items-center justify-between">
-          <Typography>Timeline & Milestones</Typography>
-          <Typography
-            fontSize={13}
-            color={alpha(theme.currentPalette.text, 0.5)}
-          >
-            Set planned pickup and delivery times
-          </Typography>
-        </Box>
+  const toggle = (key: SectionKey) => setOpen((p) => ({ ...p, [key]: !p[key] }));
 
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <div className="flex flex-col gap-5">
-            {/* Pickup */}
+  const borderBlue = alpha(theme.currentPalette.primary, 0.1);
+  const headerBlue = theme.currentPalette.primary;
+  // const iconPeachBg = "rgba(255, 140, 100, 0.15)";
+  // const iconPeach = "rgba(255, 120, 80, 1)";
+
+
+  const pickerSx = {
+    "& .MuiInputBase-root": {
+      borderRadius: 2,
+      bgcolor: "#fff",
+      height: 44,
+      fontSize: 13,
+    },
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: alpha(theme.currentPalette.text, 0.18),
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: alpha(theme.currentPalette.primary, 0.55),
+    },
+    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: theme.currentPalette.primary,
+    },
+    "& .MuiInputAdornment-root svg": {
+      color: alpha(theme.currentPalette.text, 0.55),
+    },
+  } as const;
+
+  const sections = useMemo(
+    () => [
+      {
+        key: "pickup" as const,
+        title: "Pickup",
+        subtitle: open.pickup ? "Click to collapse" : "Click to expand",
+        icon: MapPin,
+        leftLabel: "Pickup",
+        leftValue: pickupAt,
+        onLeftChange: onPickupAtChange,
+        rightLabel: "Arrived At Shipper",
+        rightValue: arrivalAtShipper,
+        onRightChange: onArrivalAtShipperChange,
+      },
+      {
+        key: "transit" as const,
+        title: "Transit",
+        subtitle: open.transit ? "Click to collapse" : "Click to expand",
+        icon: Navigation,
+        leftLabel: "Left Shipper",
+        leftValue: leftShipper,
+        onLeftChange: onLeftShipperChange,
+        rightLabel: "Arrival At Receiver",
+        rightValue: arrivalAtReceiver,
+        onRightChange: onArrivalAtReceiverChange,
+      },
+      {
+        key: "delivery" as const,
+        title: "Delivery",
+        subtitle: open.delivery ? "Click to collapse" : "Click to expand",
+        icon: LandPlot,
+        leftLabel: "Delivery",
+        leftValue: completedAt,
+        onLeftChange: onCompletedAtChange,
+        rightLabel: "Left Receiver",
+        rightValue: leftReceiver,
+        onRightChange: onLeftReceiverChange,
+      },
+    ],
+    [
+      open.pickup,
+      open.transit,
+      open.delivery,
+      pickupAt,
+      arrivalAtShipper,
+      leftShipper,
+      arrivalAtReceiver,
+      completedAt,
+      leftReceiver,
+      onPickupAtChange,
+      onArrivalAtShipperChange,
+      onLeftShipperChange,
+      onArrivalAtReceiverChange,
+      onCompletedAtChange,
+      onLeftReceiverChange,
+    ]
+  );
+
+  const Card = ({
+    sectionKey,
+    title,
+    subtitle,
+    Icon,
+    children,
+  }: {
+    sectionKey: SectionKey;
+    title: string;
+    subtitle: string;
+    Icon: any;
+    children: React.ReactNode;
+  }) => {
+    const expanded = open[sectionKey];
+
+    return (
+      <Box
+        sx={{
+          borderRadius: 2.5,
+          border: `2px solid ${borderBlue}`,
+          bgcolor: "#fff",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <Box
+          onClick={() => toggle(sectionKey)}
+          sx={{
+            px: 2,
+            py: 1.75,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            cursor: "pointer",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            {/* Icon circle like screenshot */}
             <Box
               sx={{
-                border: `2px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-                borderRadius: 2,
-                p: 2,
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                bgcolor: borderBlue,
               }}
             >
-              <Stack direction="row" alignItems="center" spacing={0.5} mb={1}>
-                <MapPin
-                  size={30}
-                  style={{
-                    color: theme.currentPalette.secondary,
-                    backgroundColor: alpha(theme.currentPalette.secondary, 0.1),
-                    borderRadius: "50%",
-                    padding: 7,
-                  }}
-                />
-                <Typography
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    fontSize: "18px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Pickup
-                </Typography>
-              </Stack>
-
-              <Stack direction="row" alignItems="center" gap={2} mt={2}>
-                {/* Pickup */}
-                <Stack
-                  direction="column"
-                  alignItems="start"
-                  spacing={0.5}
-                  sx={{ width: "100%" }}
-                >
-                  <Typography
-                    sx={{
-                      color: theme.currentPalette.text,
-                      fontSize: "12px",
-                    }}
-                  >
-                    Pickup <span className="text-red-600">*</span>
-                  </Typography>
-
-                  <DateTimePicker
-                    value={pickupAt}
-                    onChange={onPickupAtChange}
-                    views={["year", "month", "day", "hours", "minutes"]}
-                    slotProps={{
-                      textField: {
-                        required: true,
-                        fullWidth: true,
-                        sx: {
-                          bgcolor: theme.currentPalette.background,
-                          "& .MuiInputBase-root": {
-                            bgcolor: theme.currentPalette.background,
-                          },
-                        },
-                      },
-                      popper: {
-                        sx: {
-                          "& .MuiPaper-root": {
-                            bgcolor: theme.currentPalette.background,
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Stack>
-
-                {/* ArrivalAtShipper */}
-                {isEditing && (
-                  <Stack
-                    direction={"column"}
-                    alignItems={"start"}
-                    spacing={0.5}
-                    sx={{ width: "100%" }}
-                  >
-                    <Typography
-                      sx={{
-                        color: theme.currentPalette.text,
-                        fontSize: "12px",
-                      }}
-                    >
-                      Arrived At Shipper
-                    </Typography>
-
-                    <DateTimePicker
-                      value={arrivalAtShipper}
-                      onChange={onArrivalAtShipperChange}
-                      views={["year", "month", "day", "hours", "minutes"]}
-                      slotProps={{
-                        textField: {
-                          required: true,
-                          fullWidth: true,
-                          sx: {
-                            bgcolor: theme.currentPalette.background,
-                            "& .MuiInputBase-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </Stack>
-                )}
-              </Stack>
+              <Icon size={18} color={headerBlue} />
             </Box>
 
-            {/* Transit */}
-            {isEditing && (
-              <Box
+            <Box>
+              <Typography
                 sx={{
-                  border: `2px solid ${alpha(
-                    theme.currentPalette.primary,
-                    0.3
-                  )}`,
-                  borderRadius: 2,
-                  p: 2,
+                  fontWeight: 800,
+                  color: headerBlue,
+                  fontSize: 16,
+                  lineHeight: 1.1,
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={0.5} mb={1}>
-                  <Navigation
-                    size={30}
-                    style={{
-                      color: theme.currentPalette.secondary,
-                      backgroundColor: alpha(
-                        theme.currentPalette.secondary,
-                        0.1
-                      ),
-                      borderRadius: "50%",
-                      padding: 7,
-                    }}
-                  />
-                  <Typography
-                    sx={{
-                      color: theme.currentPalette.primary,
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Transit
-                  </Typography>
-                </Stack>
+                {title}
+              </Typography>
 
-                <Stack direction="row" alignItems="center" gap={2} mt={2}>
-                  {/* leftShipper */}
-                  <Stack
-                    direction="column"
-                    alignItems="start"
-                    spacing={0.5}
-                    sx={{ width: "100%" }}
-                  >
-                    <Typography
-                      sx={{
-                        color: theme.currentPalette.text,
-                        fontSize: "12px",
-                      }}
-                    >
-                      Left Shipper
-                    </Typography>
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: alpha(headerBlue, 0.9), // blue like link
+                  mt: 0.25,
+                }}
+              >
+                {subtitle}
+              </Typography>
+            </Box>
+          </Box>
 
-                    <DateTimePicker
-                      value={leftShipper}
-                      onChange={onLeftShipperChange}
-                      views={["year", "month", "day", "hours", "minutes"]}
-                      slotProps={{
-                        textField: {
-                          required: true,
-                          fullWidth: true,
-                          sx: {
-                            bgcolor: theme.currentPalette.background,
-                            "& .MuiInputBase-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </Stack>
+          <IconButton
+            size="small"
+            sx={{
+              color: headerBlue,
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "0.2s",
+            }}
+          >
+            <ChevronDown size={18} />
+          </IconButton>
+        </Box>
 
-                  {/* arrivalAtReceiver */}
-                  <Stack
-                    direction={"column"}
-                    alignItems={"start"}
-                    spacing={0.5}
-                    sx={{ width: "100%" }}
-                  >
-                    <Typography
-                      sx={{
-                        color: theme.currentPalette.text,
-                        fontSize: "12px",
-                      }}
-                    >
-                      Arrival At Receiver
-                    </Typography>
+        <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.18) }} />
 
-                    <DateTimePicker
-                      value={arrivalAtReceiver}
-                      onChange={onArrivalAtReceiverChange}
-                      views={["year", "month", "day", "hours", "minutes"]}
-                      slotProps={{
-                        textField: {
-                          required: true,
-                          fullWidth: true,
-                          sx: {
-                            bgcolor: theme.currentPalette.background,
-                            "& .MuiInputBase-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </Stack>
-                </Stack>
-              </Box>
-            )}
+        {/* Body */}
+        <Collapse in={expanded} timeout={180} unmountOnExit>
+          <Box sx={{ p: 2 }}>
+            {children}
+          </Box>
+        </Collapse>
+      </Box>
+    );
+  };
 
-            {/* Completed */}
-            <Box
-              sx={{
-                border: `2px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Stack direction="row" alignItems="center" spacing={0.5} mb={1}>
-                <LandPlot
-                  size={30}
-                  style={{
-                    color: theme.currentPalette.secondary,
-                    backgroundColor: alpha(theme.currentPalette.secondary, 0.1),
-                    borderRadius: "50%",
-                    padding: 7,
-                  }}
-                />
-                <Typography
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    fontSize: "18px",
-                    fontWeight: "bold",
-                    display: "block",
-                    mb: 1,
-                  }}
-                >
-                  Delivery
-                </Typography>
-              </Stack>
+  const Label = ({ text }: { text: string }) => (
+    <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.75, color: alpha(theme.currentPalette.text, 0.8) }}>
+      {text}{" "}
+      <Box component="span" sx={{ color: "#d32f2f", fontWeight: 900 }}>
+        *
+      </Box>
+    </Typography>
+  );
 
-              <Stack direction="row" alignItems="center" gap={2} mt={2}>
-                {/* Completed */}
-                <Stack
-                  direction="column"
-                  alignItems="start"
-                  spacing={0.5}
-                  sx={{ width: "100%" }}
-                >
-                  <Typography
-                    sx={{
-                      color: theme.currentPalette.text,
-                      fontSize: "12px",
-                    }}
-                  >
-                    Delivery <span className="text-red-600">*</span>
-                  </Typography>
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", mb: 2 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: 18, color: alpha(theme.currentPalette.text, 0.9) }}>
+          Timeline & Milestones
+        </Typography>
 
+        <Typography sx={{ fontSize: 12, color: alpha(theme.currentPalette.text, 0.55) }}>
+          Track planned vs actual times at each location
+        </Typography>
+      </Box>
+
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Stack spacing={2} sx={{ flex: 1 }}>
+          {sections.map((s) => (
+            <Card key={s.key} sectionKey={s.key} title={s.title} subtitle={s.subtitle} Icon={s.icon}>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <Box sx={{ flex: 1 }}>
+                  <Label text={s.leftLabel} />
                   <DateTimePicker
-                    value={completedAt}
-                    onChange={onCompletedAtChange}
-                    views={["year", "month", "day", "hours", "minutes"]}
+                    value={s.leftValue}
+                    onChange={s.onLeftChange}
+                    // disabled={!isEditing}
                     slotProps={{
-                      textField: {
-                        required: true,
-                        fullWidth: true,
-                        sx: {
-                          bgcolor: theme.currentPalette.background,
-                          "& .MuiInputBase-root": {
-                            bgcolor: theme.currentPalette.background,
-                          },
-                        },
-                      },
+                      textField: { fullWidth: true, required: true, sx: pickerSx },
                       popper: {
                         sx: {
-                          "& .MuiPaper-root": {
-                            bgcolor: theme.currentPalette.background,
-                          },
+                          "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
                         },
                       },
                     }}
                   />
-                </Stack>
+                </Box>
 
-                {/* leftReceiver */}
-                {isEditing && (
-                  <Stack
-                    direction={"column"}
-                    alignItems={"start"}
-                    spacing={0.5}
-                    sx={{ width: "100%" }}
-                  >
-                    <Typography
-                      sx={{
-                        color: theme.currentPalette.text,
-                        fontSize: "12px",
-                      }}
-                    >
-                      Left Receiver
-                    </Typography>
-
-                    <DateTimePicker
-                      value={leftReceiver}
-                      onChange={onLeftReceiverChange}
-                      views={["year", "month", "day", "hours", "minutes"]}
-                      slotProps={{
-                        textField: {
-                          required: true,
-                          fullWidth: true,
-                          sx: {
-                            bgcolor: theme.currentPalette.background,
-                            "& .MuiInputBase-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
+                <Box sx={{ flex: 1 }}>
+                  <Label text={s.rightLabel} />
+                  <DateTimePicker
+                    value={s.rightValue}
+                    onChange={s.onRightChange}
+                    // disabled={!isEditing}
+                    slotProps={{
+                      textField: { fullWidth: true, required: true, sx: pickerSx },
+                      popper: {
+                        sx: {
+                          "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
                         },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": {
-                              bgcolor: theme.currentPalette.background,
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </Stack>
-                )}
+                      },
+                    }}
+                  />
+                </Box>
               </Stack>
-            </Box>
-          </div>
-        </LocalizationProvider>
-
-        <div className="flex justify-between pt-4">
-          <Button
-            sx={{
-              bgcolor: theme.currentPalette.primary,
-              color: theme.currentPalette.background,
-            }}
-            type="button"
-            onClick={onPrevTab}
-          >
-            Back
-          </Button>
-          <Button
-            sx={{
-              bgcolor: theme.currentPalette.primary,
-              color: theme.currentPalette.background,
-            }}
-            type="button"
-            onClick={onNextTab}
-            disabled={!isTabValid}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    </div>
+            </Card>
+          ))}
+        </Stack>
+      </LocalizationProvider>
+    </Box>
   );
 };
 

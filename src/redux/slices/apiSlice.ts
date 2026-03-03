@@ -134,7 +134,53 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["Settings"],
     }),
+    // ! ========== Auth ==========
+    logIn: builder.mutation<
+      any,
+      { email: string; password: string; 
+        // rememberMe: boolean
+       }
+    >({
+      query: (body) => ({
+        url: `/api/v1/auth/logIn`,
+        method: "POST",
+        body,
+        credentials: "include", 
+      }),
+    }),
 
+    // ! ========== Forget Password Flow ==========
+    sendResetCode: builder.mutation<any, { email: string }>({
+      query: (body) => ({
+        url: `/api/v1/forgetpassword/sendResetCode`,
+        method: "POST",
+        body,
+      }),
+    }),
+    resendResetCode: builder.mutation<any, { email: string }>({
+      query: (body) => ({
+        url: `/api/v1/forgetpassword/resendResetCode`,
+        method: "POST",
+        body,
+      }),
+    }),
+    verifyResetCode: builder.mutation<any, { resetCode: string }>({
+      query: (body) => ({
+        url: `/api/v1/forgetpassword/verifyResetCode`,
+        method: "POST",
+        body,
+      }),
+    }),
+    resetPassword: builder.mutation<
+      any,
+      { email: string; newPassword: string; confirmNewPassword: string }
+    >({
+      query: (body) => ({
+        url: `/api/v1/forgetpassword/resetPassword`,
+        method: "PUT",
+        body,
+      }),
+    }),
     // ! ========== Companies ==========
     getCompanies: builder.query<
       {
@@ -1049,5 +1095,11 @@ export const {
   useGetSettingsQuery,
   useCreateSettingMutation,
   useUpdateSettingMutation,
+  // login
+  useLogInMutation,
+  useSendResetCodeMutation,
+  useResendResetCodeMutation,
+  useVerifyResetCodeMutation,
+  useResetPasswordMutation,
 
 } = apiSlice;

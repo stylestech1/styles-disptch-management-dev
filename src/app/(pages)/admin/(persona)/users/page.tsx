@@ -143,7 +143,7 @@ const Users = () => {
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
-    }
+    } 
   );
 
   const {
@@ -170,21 +170,36 @@ const Users = () => {
     },
   ] = useLazyGetUserByIdQuery();
 
+  const isNumericId = (v: string) => /^\d+$/.test(v.trim());
+
   const searchHook = useSearchSubmit({
     onSearch: (term) => {
+      const t = term.trim();
       setPage(1);
-      if (term.trim()) {
-        triggerSearchQuery(encodeURIComponent(term));
+      if (!t) {
+        setRoleFilter("all");
+        resetSearchQuery();
+        setError("");
+        refetchLoads();
+        return;
       }
+      if (!isNumericId(t)) {
+        resetSearchQuery();
+        setError("Search users by ID");
+        return;
+      }
+      setError("");
+      triggerSearchQuery(encodeURIComponent(t));
     },
+
     onReset: () => {
       setPage(1);
       setRoleFilter("all");
       resetSearchQuery();
+      setError("");
       refetchLoads();
     },
   });
-
   const { isSearching } = searchHook;
 
 
@@ -212,24 +227,16 @@ const Users = () => {
     ? filteredData?.paginationResult || null
     : dispatchersData?.paginationResult || null;
 
-
   useEffect(() => {
     const currentError = dispatchersError || userByIdError || filteredError;
     if (!currentError) return;
 
     const errorMessage = getErrorMessage(currentError);
-    setError(errorMessage);
 
-    toast.error(errorMessage || "Failed to load data ", {
-      style: {
-        background: "#dc2626",
-        color: "#fff",
-        borderRadius: "8px",
-        fontSize: "14px",
-      },
-      duration: 4000,
-    });
+    setError(errorMessage);
+    toast.error(errorMessage || "Failed to load data", { duration: 4000 });
   }, [dispatchersError, userByIdError, filteredError, setError]);
+
 
   const statsData = useMemo(() => {
     const statsUsersData: any = dispatchersData?.stats;
@@ -258,9 +265,7 @@ const Users = () => {
     if (!token) return router.replace("/");
     try {
       await createUser(userData).unwrap();
-      toast.success("User created successfully!", {
-        style: { background: "#16a34a", color: "#fff" },
-      });
+      toast.success("User created successfully!");
       setPopup(false);
       await refetchLoads();
     } catch (err: unknown) {
@@ -277,9 +282,7 @@ const Users = () => {
     if (!token) return router.replace("/");
     try {
       await updateUserRole({ id: userId, role: newRole }).unwrap();
-      toast.success(`Role updated to ${newRole} successfully!`, {
-        style: { background: "#16a34a", color: "#fff" },
-      });
+      toast.success(`Role updated to ${newRole} successfully!`);
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
@@ -292,9 +295,7 @@ const Users = () => {
     if (!token) return router.replace("/");
     try {
       await activateUser({ id: userId }).unwrap();
-      toast.success("User activated successfully!", {
-        style: { background: "#16a34a", color: "#fff" },
-      });
+      toast.success("User activated successfully!");
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
@@ -307,9 +308,7 @@ const Users = () => {
     if (!token) return router.replace("/");
     try {
       await deactivateUser({ id: userId }).unwrap();
-      toast.success("User deactivated successfully!", {
-        style: { background: "#16a34a", color: "#fff" },
-      });
+      toast.success("User deactivated successfully!");
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
@@ -468,7 +467,7 @@ const Users = () => {
           {/* Search */}
           <SearchInput
             searchHook={searchHook}
-            placeholder="Search users by ID, Name .."
+            placeholder="Search users by ID"
             showClearButton
             sx={{ width: { xs: "100%", md: 360 } }}
             inputSx={searchInputSx}
@@ -494,7 +493,7 @@ const Users = () => {
                     },
                   }}
                 >
-                  <MenuItem  value="all">All</MenuItem>
+                  <MenuItem value="all">All</MenuItem>
                   <MenuItem value="employee">Employee</MenuItem>
                   <MenuItem value="driver">Driver</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>

@@ -1,12 +1,36 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import Loading from "@/components/ui/Loading";
 import Titles from "@/components/ui/Titles";
-import { RootState, useAppDispatch, useAppSelector } from "@/redux/store";
-import { useState, useEffect } from "react";
 import Erros from "@/components/ui/Erros";
 import toast, { Toaster } from "react-hot-toast";
-import { IoKeyOutline } from "react-icons/io5";
+import { RootState, useAppDispatch, useAppSelector } from "@/redux/store";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { setError, clearError } from "@/redux/slices/uiSlice";
+import { getErrorMessage } from "@/utils/getErrorMessage";
+
 import {
+  useGetUserInfoQuery,
+  useUpdateUserInfoMutation,
+  useUpdateUserPasswordMutation,
+} from "@/redux/slices/apiSlice";
+
+import {
+  alpha,
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import {
+  IoKeyOutline,
   IoPersonCircleOutline,
   IoMailOutline,
   IoCallOutline,
@@ -15,34 +39,28 @@ import {
   IoCheckmarkCircleOutline,
   IoRefresh,
   IoPersonOutline,
+  IoClose,
 } from "react-icons/io5";
+
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import {
-  useGetUserInfoQuery,
-  useUpdateUserInfoMutation,
-  useUpdateUserPasswordMutation,
-} from "@/redux/slices/apiSlice";
-import { useRouter } from "next/navigation";
-import { setError, clearError } from "@/redux/slices/uiSlice";
-import { getErrorMessage } from "@/utils/getErrorMessage";
-import { alpha, Button, FormControl, IconButton, InputAdornment, InputLabel, OutlinedInput, TextField } from "@mui/material";
-import Modal from "../ui/Modals";
+import { UserRoundPen } from "lucide-react";
 
 const UserProfile = () => {
   const [popup, setPopup] = useState(false);
+  const [changePasswordPopup, setChangePasswordPopup] = useState(false);
+
   const [showPassword, setShowPassword] = useState({
     currentPassword: false,
     newPassword: false,
     newPasswordConfirm: false,
   });
-  const [changePasswordPopup, setChangePasswordPopup] = useState(false);
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     newPasswordConfirm: "",
   });
 
-  // State for form data
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -59,9 +77,10 @@ const UserProfile = () => {
     data: userData,
     isLoading: userLoading,
     error: userError,
-  } = useGetUserInfoQuery({ skip: !token });
+    refetch,
+  } = useGetUserInfoQuery(undefined as any, { skip: !token });
 
-  const profile = userData?.data || [];
+  const profile = useMemo(() => userData?.data ?? null, [userData]);
 
   const [updateUser, { isLoading: updatingUser }] = useUpdateUserInfoMutation();
   const [updatePassword, { isLoading: updatingPassword }] =
@@ -77,14 +96,32 @@ const UserProfile = () => {
 
   // handling Errors
   useEffect(() => {
-    if (userError) {
-      const errorMessage = getErrorMessage(userError);
-      setError(errorMessage);
-      toast.error(errorMessage || "Loading failed ❌", {
-        style: { background: "#dc2626", color: "#fff" },
+    if (!userError) return;
+
+    const errorMessage = getErrorMessage(userError);
+    dispatch(setError(errorMessage));
+
+    toast.error(errorMessage || "Loading failed");
+  }, [userError, dispatch]);
+
+  // Open Update popup and set form data
+  const openUpdatePopup = () => {
+    if (profile) {
+      setFormData({
+        name: profile.name ?? "",
+        email: profile.email ?? "",
+        phone: profile.phone ?? "",
       });
     }
-  }, [userError, setError]);
+    dispatch(clearError());
+    setPopup(true);
+  };
+
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   // Update My Data Function
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -98,39 +135,16 @@ const UserProfile = () => {
         phone: formData.phone,
       }).unwrap();
 
-      toast.success("User Updated successfully!", {
-        style: { background: "#16a34a", color: "#fff" },
-      });
+      toast.success("User Updated successfully!");
 
       setPopup(false);
+      refetch?.();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       dispatch(setError(errorMessage));
-      toast.error(errorMessage || "Updating user failed ❌");
+      toast.error(errorMessage || "Updating user failed");
       throw err;
     }
-  };
-
-  // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Open popup and set form data
-  const openUpdatePopup = () => {
-    if (profile) {
-      setFormData({
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-      });
-    }
-    setPopup(true);
-    dispatch(clearError());
   };
 
   // Change Password
@@ -141,11 +155,8 @@ const UserProfile = () => {
     try {
       await updatePassword(passwordData).unwrap();
 
-      toast.success("Password Updated successfully!", {
-        style: { background: "#16a34a", color: "#fff" },
-      });
+      toast.success("Password Updated successfully!");
 
-      // Reset and close popup
       setChangePasswordPopup(false);
       setPasswordData({
         currentPassword: "",
@@ -155,16 +166,86 @@ const UserProfile = () => {
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       dispatch(setError(errorMessage));
-      toast.error(errorMessage || "Updating user failed ❌");
+      toast.error(errorMessage || "Updating password failed");
       throw err;
     }
+  };
+
+  const dialogPaperSx = {
+    borderRadius: 2,
+    overflow: "auto",
+    width: "450px"
+  };
+
+  const headerSx = {
+    px: 2.2,
+    py: 1.6,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottom: `1px solid ${alpha("#000", 0.08)}`,
+    bgcolor: "#fff",
+  };
+
+  const titleRowSx = {
+    display: "flex",
+    alignItems: "center",
+    gap: 1,
+    color: theme.currentPalette.primary,
+  };
+
+  const fieldSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      backgroundColor: "#fff",
+    },
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: alpha("#000", 0.15),
+    },
+    "& .MuiInputLabel-root": {
+      color: alpha("#000", 0.55),
+    },
+    mb: 2,
+    "& .MuiFormLabel-asterisk": { color: "red" }
+  };
+
+  const footerSx = {
+    px: 2,
+    pb: 2,
+    pt: 0.5,
+    display: "flex",
+    gap: 2,
+    justifyContent: "space-between",
+  };
+
+  const cancelBtnSx = {
+    flex: 1,
+    py: 1.2,
+    borderRadius: 2,
+    borderColor: alpha(theme.currentPalette.primary, 0.45),
+    color: theme.currentPalette.primary,
+    bgcolor: "#fff",
+    "&:hover": {
+      borderColor: theme.currentPalette.primary,
+      bgcolor: alpha(theme.currentPalette.primary, 0.06),
+    },
+  };
+
+  const saveBtnSx = {
+    flex: 1,
+    py: 1.2,
+    borderRadius: 2,
+    bgcolor: theme.currentPalette.primary,
+    color: "#fff",
+    "&:hover": {
+      bgcolor: alpha(theme.currentPalette.primary, 0.9),
+    },
   };
 
   if (userLoading || updatingUser || updatingPassword) return <Loading />;
 
   return (
     <section className="container mx-auto p-6">
-      {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Titles>User Profile</Titles>
@@ -172,59 +253,62 @@ const UserProfile = () => {
             You can Update or View your information
           </p>
         </div>
+
         <div className="flex flex-wrap gap-4">
           <Button
             variant="outlined"
             sx={{
               borderRadius: 2,
-              fontWeight: 500,
+              fontWeight: 600,
               py: 1,
               color: theme.currentPalette.primary,
-              borderColor: theme.currentPalette.primary,
+              borderColor: alpha(theme.currentPalette.primary, 0.6),
               "&:hover": {
                 color: theme.currentPalette.background,
                 background: alpha(theme.currentPalette.primary, 0.85),
               },
             }}
             onClick={openUpdatePopup}
-            className="flex items-center gap-2 py-5 px-5 cursor-pointer text-white bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg shadow-sm font-medium"
           >
-            <IoRefresh size={18} />
-            Update Profile
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <IoRefresh size={18} />
+              Update Profile
+            </Box>
           </Button>
 
           <Button
             sx={{
               borderRadius: 2,
-              fontWeight: 500,
+              fontWeight: 600,
               py: 1,
-              color: theme.currentPalette.background,
+              color: "#fff",
               background: theme.currentPalette.primary,
               "&:hover": {
                 background: alpha(theme.currentPalette.primary, 0.85),
               },
             }}
-            onClick={() => setChangePasswordPopup(true)}
-            className="flex items-center gap-2 py-5 px-5 cursor-pointer text-white bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-lg shadow-sm font-medium"
+            onClick={() => {
+              dispatch(clearError());
+              setChangePasswordPopup(true);
+            }}
           >
-            <IoKeyOutline size={18} />
-            Change Password
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <IoKeyOutline size={18} />
+              Change Password
+            </Box>
           </Button>
         </div>
       </div>
 
       <Toaster position="top-center" />
 
-      {/* Errors */}
       {error && (
         <div className="mb-6">
           <Erros message={error} />
         </div>
       )}
 
-      {/* Profile and Summary Cards */}
       <div className="grid grid-cols-1 gap-6 mb-8">
-        {/* Driver Profile Card */}
         {profile && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-4 mb-5">
@@ -243,50 +327,37 @@ const UserProfile = () => {
 
             <div className="space-y-3.5">
               <div className="flex items-center gap-3 text-sm">
-                <IoMailOutline
-                  className="text-slate-400 flex-shrink-0"
-                  size={16}
-                />
+                <IoMailOutline className="text-slate-400" size={16} />
                 <span className="text-slate-600 truncate">{profile.email}</span>
               </div>
 
               <div className="flex items-center gap-3 text-sm">
-                <IoCallOutline
-                  className="text-slate-400 flex-shrink-0"
-                  size={16}
-                />
+                <IoCallOutline className="text-slate-400" size={16} />
                 <span className="text-slate-600">{profile.phone}</span>
               </div>
 
               <div className="flex items-center gap-3 text-sm">
-                <IoIdCardOutline
-                  className="text-slate-400 flex-shrink-0"
-                  size={16}
-                />
+                <IoIdCardOutline className="text-slate-400" size={16} />
                 <span className="text-slate-600 capitalize">
                   {profile.role}
                 </span>
               </div>
 
               <div className="flex items-center gap-3 text-sm">
-                <IoCalendarOutline
-                  className="text-slate-400 flex-shrink-0"
-                  size={16}
-                />
+                <IoCalendarOutline className="text-slate-400" size={16} />
                 <span className="text-slate-600">{profile.position}</span>
               </div>
 
               <div className="flex items-center gap-3 text-sm">
                 <IoCheckmarkCircleOutline
-                  className="text-slate-400 flex-shrink-0"
+                  className="text-slate-400"
                   size={16}
                 />
                 <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                    profile.active
-                      ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                      : "bg-slate-100 text-slate-800 border border-slate-200"
-                  }`}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${profile.active
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                    : "bg-slate-100 text-slate-800 border border-slate-200"
+                    }`}
                 >
                   {profile.active ? "Active" : "Inactive"}
                 </span>
@@ -295,235 +366,314 @@ const UserProfile = () => {
           </div>
         )}
       </div>
-
-      {/* Update Profile Popup */}
-      <Modal
-        isOpen={popup}
+      {/* update profile popup */}
+      <Dialog
+        open={popup}
         onClose={() => setPopup(false)}
-        title={"Update Profile"}
-        size="md"
-        closeOnOutsideClick={false}
+        PaperProps={{ sx: dialogPaperSx }}
+        maxWidth="sm"
+
       >
-        <form onSubmit={handleUpdateProfile} className="space-y-4">
-          <div className="mt-5">
-            <div className="relative">
-              <TextField
-                fullWidth
-                label="Full Name"
-                size="medium"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter full name"
-                required
-                disabled={updatingUser}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoPersonOutline className="h-5 w-5 text-slate-400" />{" "}
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="relative">
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                name="email"
-                size="medium"
-                value={formData.email}
-                onChange={handleInputChange}
-                disabled={updatingUser}
-                required
-                placeholder="Enter email address"
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoMailOutline className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="relative">
-              <TextField
-                fullWidth
-                label="Phone"
-                name="phone"
-                size="medium"
-                placeholder="Enter phone number"
-                value={formData.phone}
-                onChange={handleInputChange}
-                disabled={updatingUser}
-                required
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoCallOutline className="h-5 w-5 text-slate-400" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="submit"
-              fullWidth
-              onClick={() => setPopup(false)}
-              className="flex-1 py-3 px-4 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
-              disabled={updatingUser}
-              variant="outlined"
+        <Box sx={headerSx}>
+          <Box sx={titleRowSx}>
+            <Box
               sx={{
-                mt: 2,
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 500,
-                color: theme.currentPalette.primary,
-                borderColor: theme.currentPalette.primary,
-                "&:hover": {
-                  color: theme.currentPalette.background,
-                  background: alpha(theme.currentPalette.primary, 0.85),
-                },
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                bgcolor: alpha(theme.currentPalette.primary, 0.12),
               }}
             >
-              Cancel
-            </Button>
+              <UserRoundPen size={18} />
+            </Box>
+            <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+              Update Profile
+            </Typography>
+          </Box>
 
-            <Button
-              type="submit"
+          <IconButton onClick={() => setPopup(false)} size="small">
+            <IoClose />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 2.2, pt: 2, pb: 0, bgcolor: "#fff" }}>
+          <Box
+            component="form"
+            id="update-profile-form"
+            onSubmit={handleUpdateProfile}
+            sx={{ display: "grid", gap: 2 }}
+          >
+            <TextField
               fullWidth
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              label="Full Name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter full name"
+              required
               disabled={updatingUser}
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IoPersonOutline color={theme.currentPalette.primary} size={22} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Email Address"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="e.g. test@gmail.com"
+              required
+              disabled={updatingUser}
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IoMailOutline color={theme.currentPalette.primary} size={22} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Phone Number"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="e.g. +2010xxxxxxx"
+              required
+              disabled={updatingUser}
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IoCallOutline color={theme.currentPalette.primary} size={22} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Typography
               sx={{
-                mt: 2,
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 500,
-                color: theme.currentPalette.background,
-                background: theme.currentPalette.primary,
-                "&:hover": {
-                  background: alpha(theme.currentPalette.primary, 0.85),
-                },
+                my: 1,
+                fontSize: 12,
+                color: alpha("#000", 0.55),
               }}
             >
-              {updatingUser ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <IoRefresh size={18} />
-                  Update Profile
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+              <b>Note:</b> Managed fields (Role, Position, and Status) can only be updated by the system administrator for security reasons.
+            </Typography>
+          </Box>
+        </DialogContent>
 
-        {/* Read-only fields info */}
-        <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-          <h4 className="text-sm font-medium text-slate-700 mb-2">Note:</h4>
-          <p className="text-xs text-slate-600">
-            Role, Position, and Status cannot be changed from this form. Please
-            contact administrator for these changes.
-          </p>
-        </div>
-      </Modal>
-
-      {/* Update Password Popup */}
-      <Modal
-        isOpen={changePasswordPopup}
-        onClose={() => setChangePasswordPopup(false)}
-        title={"Change Password"}
-        size="md"
-        closeOnOutsideClick={false}
-      >
-        <form onSubmit={handleChangePassword} className="space-y-4 mt-5">
-          {["currentPassword", "newPassword", "newPasswordConfirm"].map(
-            (key) => (
-              <FormControl key={key} fullWidth sx={{ mb: 2 }}>
-                <InputLabel sx={{ textTransform: "capitalize" }}>
-                  {key.replace(/([A-Z])/g, " $1")}
-                </InputLabel>
-                <OutlinedInput
-                  type={
-                    showPassword[key as keyof typeof showPassword]
-                      ? "text"
-                      : "password"
-                  }
-                  value={passwordData[key as keyof typeof passwordData]}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      [key]: e.target.value,
-                    })
-                  }
-                  endAdornment={
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() =>
-                          setShowPassword((prev) => ({
-                            ...prev,
-                            [key]: !prev[key as keyof typeof showPassword],
-                          }))
-                        }
-                        edge="end"
-                        sx={{
-                          color: "grey.400",
-                          "&:hover": { color: "grey.600" },
-                        }}
-                      >
-                        {showPassword[key as keyof typeof showPassword] ? (
-                          <FaEyeSlash size={18} />
-                        ) : (
-                          <FaEye size={18} />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  label={key.replace(/([A-Z])/g, " $1")}
-                  required
-                />
-              </FormControl>
-            )
-          )}
+        <Box sx={footerSx}>
+          <Button
+            variant="outlined"
+            sx={cancelBtnSx}
+            onClick={() => setPopup(false)}
+            disabled={updatingUser}
+          >
+            Cancel
+          </Button>
 
           <Button
-            type="submit"
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all"
-            sx={{
-              mt: 2,
-              py: 1.5,
-              borderRadius: 2,
-              fontWeight: 500,
-              color: theme.currentPalette.background,
-              background: theme.currentPalette.primary,
-              "&:hover": {
-                background: alpha(theme.currentPalette.primary, 0.85),
-              },
+            variant="contained"
+            sx={saveBtnSx}
+            onClick={() => {
+              const form = document.querySelector("#update-profile-form") as HTMLFormElement | null;
             }}
+            type="submit"
+            form="update-profile-form"
+            disabled={updatingUser}
           >
-            Update Password
+            Save
           </Button>
-        </form>
-      </Modal>
+        </Box>
+      </Dialog>
+
+      <style jsx global>{`
+        #update-profile-form {
+          display: contents;
+        }
+      `}</style>
+
+      {/* Change Password */}
+
+      <Dialog
+        open={changePasswordPopup}
+        onClose={() => setChangePasswordPopup(false)}
+        PaperProps={{ sx: dialogPaperSx }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <Box sx={headerSx}>
+          <Box sx={titleRowSx}>
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                bgcolor: alpha(theme.currentPalette.primary, 0.12),
+              }}
+            >
+              <IoKeyOutline />
+            </Box>
+            <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+              Change Password
+            </Typography>
+          </Box>
+
+          <IconButton onClick={() => setChangePasswordPopup(false)} size="small">
+            <IoClose />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 2.2, pt: 2, pb: 0, bgcolor: "#fff" }}>
+          <Box
+            component="form"
+            onSubmit={handleChangePassword}
+            sx={{ display: "grid", gap: 2 }}
+            id="change-password-form"
+          >
+            <TextField
+              fullWidth
+              label="Current Password"
+              placeholder="Enter current password"
+              type={showPassword.currentPassword ? "text" : "password"}
+              value={passwordData.currentPassword}
+              onChange={(e) =>
+                setPasswordData((p) => ({ ...p, currentPassword: e.target.value }))
+              }
+              required
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IoKeyOutline style={{ color: "rgba(0,0,0,0.45)" }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() =>
+                        setShowPassword((s) => ({
+                          ...s,
+                          currentPassword: !s.currentPassword,
+                        }))
+                      }
+                      size="small"
+                      sx={{ color: "rgba(0,0,0,0.45)" }}
+                    >
+                      {showPassword.currentPassword ? <FaEyeSlash /> : <FaEye />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="New Password"
+              placeholder="Enter new password"
+              type={showPassword.newPassword ? "text" : "password"}
+              value={passwordData.newPassword}
+              onChange={(e) =>
+                setPasswordData((p) => ({ ...p, newPassword: e.target.value }))
+              }
+              required
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IoKeyOutline style={{ color: "rgba(0,0,0,0.45)" }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() =>
+                        setShowPassword((s) => ({ ...s, newPassword: !s.newPassword }))
+                      }
+                      size="small"
+                      sx={{ color: "rgba(0,0,0,0.45)" }}
+                    >
+                      {showPassword.newPassword ? <FaEyeSlash /> : <FaEye />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Confirm New Password"
+              placeholder="Confirm new password"
+              type={showPassword.newPasswordConfirm ? "text" : "password"}
+              value={passwordData.newPasswordConfirm}
+              onChange={(e) =>
+                setPasswordData((p) => ({ ...p, newPasswordConfirm: e.target.value }))
+              }
+              required
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IoKeyOutline style={{ color: "rgba(0,0,0,0.45)" }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() =>
+                        setShowPassword((s) => ({
+                          ...s,
+                          newPasswordConfirm: !s.newPasswordConfirm,
+                        }))
+                      }
+                      size="small"
+                      sx={{ color: "rgba(0,0,0,0.45)" }}
+                    >
+                      {showPassword.newPasswordConfirm ? <FaEyeSlash /> : <FaEye />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+        </DialogContent>
+
+        <Box sx={footerSx}>
+          <Button
+            variant="outlined"
+            sx={cancelBtnSx}
+            onClick={() => setChangePasswordPopup(false)}
+            disabled={updatingPassword}
+          >
+            CANCEL
+          </Button>
+
+          <Button
+            variant="contained"
+            sx={saveBtnSx}
+            type="submit"
+            form="change-password-form"
+            disabled={updatingPassword}
+          >
+            Save
+          </Button>
+        </Box>
+      </Dialog>
     </section>
   );
 };
