@@ -4,21 +4,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { RootState, useAppSelector } from "@/redux/store";
 import { LoadDetailsTabProps } from "@/types/globalTypes";
-import {
-  alpha,
-  Box,
-  Collapse,
-  Divider,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { alpha, Box, Collapse, Divider, IconButton, Stack, Typography } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ChevronDown, LandPlot, MapPin, Navigation } from "lucide-react";
 
 type SectionKey = "pickup" | "transit" | "delivery";
+
+type FieldKey =
+  | "pickupAt"
+  | "arrivalAtShipper"
+  | "leftShipper"
+  | "arrivalAtReceiver"
+  | "completedAt"
+  | "leftReceiver";
 
 const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   pickupAt,
@@ -36,27 +36,45 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   onLeftReceiverChange,
 }) => {
   const theme = useAppSelector((state: RootState) => state.palette);
+
   const [open, setOpen] = useState<Record<SectionKey, boolean>>({
     pickup: true,
     transit: false,
     delivery: false,
   });
 
+  const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
+
   const toggle = (key: SectionKey) => setOpen((p) => ({ ...p, [key]: !p[key] }));
 
   const borderBlue = alpha(theme.currentPalette.primary, 0.1);
   const headerBlue = theme.currentPalette.primary;
-  // const iconPeachBg = "rgba(255, 140, 100, 0.15)";
-  // const iconPeach = "rgba(255, 120, 80, 1)";
 
-  const isFilled = (v: any) => Boolean(v); // Dayjs object or null
+  const isFilled = (v: any) => Boolean(v); 
+
+  const requiredMap: Record<FieldKey, boolean> = {
+    pickupAt: true,            
+    arrivalAtShipper: false,   
+    leftShipper: false,
+    arrivalAtReceiver: false,
+    completedAt: true,           
+    leftReceiver: false,
+  };
+
+  const getError = (key: FieldKey, value: any) => {
+    const required = requiredMap[key];
+    if (!required) return false;
+    if (!touched[key]) return false;
+    return !isFilled(value);
+  };
 
   useEffect(() => {
     const pickupDone = isFilled(pickupAt) && isFilled(arrivalAtShipper);
     const transitDone = isFilled(leftShipper) && isFilled(arrivalAtReceiver);
+
     if (pickupDone) {
       setOpen((p) => ({
-        pickup: p.pickup,      
+        pickup: p.pickup,
         transit: true,
         delivery: p.delivery,
       }));
@@ -64,16 +82,11 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
     if (transitDone) {
       setOpen((p) => ({
         pickup: p.pickup,
-        transit: p.transit,    
+        transit: p.transit,
         delivery: true,
       }));
     }
-  }, [
-    pickupAt,
-    arrivalAtShipper,
-    leftShipper,
-    arrivalAtReceiver,
-  ]);
+  }, [pickupAt, arrivalAtShipper, leftShipper, arrivalAtReceiver]);
 
   const pickerSx = {
     "& .MuiInputBase-root": {
@@ -103,9 +116,13 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         title: "Pickup",
         subtitle: open.pickup ? "Click to collapse" : "Click to expand",
         icon: MapPin,
+
+        leftKey: "pickupAt" as const,
         leftLabel: "Pickup",
         leftValue: pickupAt,
         onLeftChange: onPickupAtChange,
+
+        rightKey: "arrivalAtShipper" as const,
         rightLabel: "Arrived At Shipper",
         rightValue: arrivalAtShipper,
         onRightChange: onArrivalAtShipperChange,
@@ -115,9 +132,13 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         title: "Transit",
         subtitle: open.transit ? "Click to collapse" : "Click to expand",
         icon: Navigation,
+
+        leftKey: "leftShipper" as const,
         leftLabel: "Left Shipper",
         leftValue: leftShipper,
         onLeftChange: onLeftShipperChange,
+
+        rightKey: "arrivalAtReceiver" as const,
         rightLabel: "Arrival At Receiver",
         rightValue: arrivalAtReceiver,
         onRightChange: onArrivalAtReceiverChange,
@@ -127,9 +148,13 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         title: "Delivery",
         subtitle: open.delivery ? "Click to collapse" : "Click to expand",
         icon: LandPlot,
+
+        leftKey: "completedAt" as const, 
         leftLabel: "Delivery",
         leftValue: completedAt,
         onLeftChange: onCompletedAtChange,
+
+        rightKey: "leftReceiver" as const, 
         rightLabel: "Left Receiver",
         rightValue: leftReceiver,
         onRightChange: onLeftReceiverChange,
@@ -191,7 +216,6 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            {/* Icon circle like screenshot */}
             <Box
               sx={{
                 width: 36,
@@ -220,7 +244,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
               <Typography
                 sx={{
                   fontSize: 12,
-                  color: alpha(headerBlue, 0.9), // blue like link
+                  color: alpha(headerBlue, 0.9),
                   mt: 0.25,
                 }}
               >
@@ -245,20 +269,30 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
 
         {/* Body */}
         <Collapse in={expanded} timeout={180} unmountOnExit>
-          <Box sx={{ p: 2 }}>
-            {children}
-          </Box>
+          <Box sx={{ p: 2 }}>{children}</Box>
         </Collapse>
       </Box>
     );
   };
 
-  const Label = ({ text }: { text: string }) => (
-    <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.75, color: alpha(theme.currentPalette.text, 0.8) }}>
-      {text}{" "}
-      <Box component="span" sx={{ color: "#d32f2f", fontWeight: 900 }}>
-        *
-      </Box>
+  const Label = ({ text, required }: { text: string; required?: boolean }) => (
+    <Typography
+      sx={{
+        fontSize: 12,
+        fontWeight: 700,
+        mb: 0.75,
+        color: alpha(theme.currentPalette.text, 0.8),
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+      }}
+    >
+      {text}
+      {required ? (
+        <Box component="span" sx={{ color: "#d32f2f", fontWeight: 900, lineHeight: 1 }}>
+          *
+        </Box>
+      ) : null}
     </Typography>
   );
 
@@ -276,45 +310,71 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
 
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Stack spacing={2} sx={{ flex: 1 }}>
-          {sections.map((s) => (
-            <Card key={s.key} sectionKey={s.key} title={s.title} subtitle={s.subtitle} Icon={s.icon}>
-              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <Box sx={{ flex: 1 }}>
-                  <Label text={s.leftLabel} />
-                  <DateTimePicker
-                    value={s.leftValue}
-                    onChange={s.onLeftChange}
-                    // disabled={!isEditing}
-                    slotProps={{
-                      textField: { fullWidth: true, required: true, sx: pickerSx },
-                      popper: {
-                        sx: {
-                          "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
+          {sections.map((s) => {
+            const leftRequired = requiredMap[s.leftKey];
+            const rightRequired = requiredMap[s.rightKey];
 
-                <Box sx={{ flex: 1 }}>
-                  <Label text={s.rightLabel} />
-                  <DateTimePicker
-                    value={s.rightValue}
-                    onChange={s.onRightChange}
-                    // disabled={!isEditing}
-                    slotProps={{
-                      textField: { fullWidth: true, required: true, sx: pickerSx },
-                      popper: {
-                        sx: {
-                          "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
+            const leftError = getError(s.leftKey, s.leftValue);
+            const rightError = getError(s.rightKey, s.rightValue);
+
+            return (
+              <Card key={s.key} sectionKey={s.key} title={s.title} subtitle={s.subtitle} Icon={s.icon}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                  <Box sx={{ flex: 1 }}>
+                    <Label text={s.leftLabel} required={leftRequired} />
+                    <DateTimePicker
+                      value={s.leftValue}
+                      onChange={(val) => {
+                        setTouched((p) => ({ ...p, [s.leftKey]: true }));
+                        s.onLeftChange(val);
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: leftRequired,
+                          error: leftError,
+                          helperText: leftError ? "This field is required" : " ",
+                          onBlur: () => setTouched((p) => ({ ...p, [s.leftKey]: true })),
+                          sx: pickerSx,
                         },
-                      },
-                    }}
-                  />
-                </Box>
-              </Stack>
-            </Card>
-          ))}
+                        popper: {
+                          sx: {
+                            "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ flex: 1 }}>
+                    <Label text={s.rightLabel} required={rightRequired} />
+                    <DateTimePicker
+                      value={s.rightValue}
+                      onChange={(val) => {
+                        setTouched((p) => ({ ...p, [s.rightKey]: true }));
+                        s.onRightChange(val);
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: rightRequired,
+                          error: rightError,
+                          helperText: rightError ? "This field is required" : " ",
+                          onBlur: () => setTouched((p) => ({ ...p, [s.rightKey]: true })),
+                          sx: pickerSx,
+                        },
+                        popper: {
+                          sx: {
+                            "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                </Stack>
+              </Card>
+            );
+          })}
         </Stack>
       </LocalizationProvider>
     </Box>
