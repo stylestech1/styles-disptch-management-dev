@@ -29,10 +29,19 @@ import {
   useLogInMutation,
 } from "@/redux/slices/apiSlice";
 
-type ViewMode = "login" | "verify" | "reset";
+type ViewMode = "login" | "verify" | "reset" | "success";
 
 const OTP_LEN = 6;
 const RESEND_SECONDS = 120;
+
+const SuccessCheckSvg = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={{ width: "100%", height: "100%", display: "block" }}>
+    <path
+      fill="#5390DF"
+      d="M19.96 8.52c.02-.17.04-.35.04-.52c0-2.38-2.14-4.29-4.52-3.96C14.79 2.81 13.47 2 12 2s-2.79.8-3.48 2.04C6.14 3.72 4 5.63 4 8c0 .17.01.35.04.52C2.81 9.21 2 10.53 2 12s.8 2.79 2.04 3.48c-.02.17-.04.35-.04.52c0 2.38 2.14 4.29 4.52 3.96C9.21 21.19 10.53 22 12 22s2.79-.8 3.48-2.04C17.86 20.28 20 18.37 20 16c0-.17-.01-.35-.04-.52C21.19 14.79 22 13.47 22 12s-.8-2.79-2.04-3.48m-8.97 6.89l-2.7-2.7L9.7 11.3l1.3 1.3l3.33-3.3l1.41 1.42l-4.75 4.7Z"
+    />
+  </svg>
+);
 
 const Login = () => {
   const dispatch = useAppDispatch();
@@ -64,21 +73,12 @@ const Login = () => {
   const MSG_INVALID_CODE = "Invalid code. Please check your email and try again.";
   const MSG_SESSION_EXPIRED = "Session expired. Please click 'Resend code' for new OTP.";
 
-  const [sendResetCode, { isLoading: sendingCode }] =
-    useSendResetCodeMutation();
-  const [resendResetCode, { isLoading: resendingCode }] =
-    useResendResetCodeMutation();
-  const [verifyResetCode, { isLoading: verifyingCode }] =
-    useVerifyResetCodeMutation();
-  const [resetPassword, { isLoading: resettingPassword }] =
-    useResetPasswordMutation();
+  const [sendResetCode, { isLoading: sendingCode }] = useSendResetCodeMutation();
+  const [resendResetCode, { isLoading: resendingCode }] = useResendResetCodeMutation();
+  const [verifyResetCode, { isLoading: verifyingCode }] = useVerifyResetCodeMutation();
+  const [resetPassword, { isLoading: resettingPassword }] = useResetPasswordMutation();
 
-  const isBusy =
-    loginLoading ||
-    sendingCode ||
-    resendingCode ||
-    verifyingCode ||
-    resettingPassword;
+  const isBusy = loginLoading || sendingCode || resendingCode || verifyingCode || resettingPassword;
 
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
@@ -129,7 +129,7 @@ const Login = () => {
 
     try {
       await sendResetCode({ email: em }).unwrap();
-      toast.success("Verification code sent!");
+      // toast.success("Verification code sent!");
       setMode("verify");
       setOtp(Array(OTP_LEN).fill(""));
       setNewPassword("");
@@ -159,7 +159,6 @@ const Login = () => {
           textAlign: "center",
         }}
       >
-        {/* icon */}
         <Box
           sx={{
             width: 22,
@@ -201,7 +200,7 @@ const Login = () => {
 
   // ---------- OTP behavior ----------
   const handleOtpChange = (idx: number, value: string) => {
-    const v = value.replace(/\D/g, "").slice(-1); // 1 digit
+    const v = value.replace(/\D/g, "").slice(-1);
     const next = [...otp];
     next[idx] = v;
     setOtp(next);
@@ -223,8 +222,7 @@ const Login = () => {
     }
 
     if (e.key === "ArrowLeft" && idx > 0) otpRefs.current[idx - 1]?.focus();
-    if (e.key === "ArrowRight" && idx < OTP_LEN - 1)
-      otpRefs.current[idx + 1]?.focus();
+    if (e.key === "ArrowRight" && idx < OTP_LEN - 1) otpRefs.current[idx + 1]?.focus();
   };
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
@@ -232,7 +230,9 @@ const Login = () => {
     if (!text) return;
     e.preventDefault();
 
-    const next = Array(OTP_LEN).fill("").map((_, i) => text[i] ?? "");
+    const next = Array(OTP_LEN)
+      .fill("")
+      .map((_, i) => text[i] ?? "");
     setOtp(next);
 
     const last = Math.min(text.length - 1, OTP_LEN - 1);
@@ -245,7 +245,7 @@ const Login = () => {
 
     try {
       await resendResetCode({ email: em }).unwrap();
-      toast.success("Code resent!");
+      // toast.success("Code resent!");
       setTimer(RESEND_SECONDS);
       setErr("");
       setOtp(Array(OTP_LEN).fill(""));
@@ -272,7 +272,7 @@ const Login = () => {
 
     try {
       await verifyResetCode({ resetCode: code }).unwrap();
-      toast.success("Code verified!");
+      // toast.success("Code verified!");
       setMode("reset");
     } catch (e: any) {
       const status = e?.status;
@@ -288,12 +288,12 @@ const Login = () => {
         return;
       }
 
-      // fallback
       const fallback = backendMsg || MSG_INVALID_CODE;
       setErr(fallback);
       toast.error(fallback);
     }
   };
+
   const handleResetPassword = async () => {
     setErr("");
     const em = email.trim();
@@ -316,15 +316,14 @@ const Login = () => {
         confirmNewPassword,
       }).unwrap();
 
-      toast.success("Password changed successfully!");
-      setMode("login");
+      // ✅ 4th step: success screen
+      setMode("success");
       setPassword("");
       setOtp(Array(OTP_LEN).fill(""));
       setNewPassword("");
       setConfirmNewPassword("");
     } catch (e: any) {
-      const msg =
-        e?.data?.message || e?.message || "Failed to reset password";
+      const msg = e?.data?.message || e?.message || "Failed to reset password";
       setErr(msg);
       toast.error(msg);
     }
@@ -343,9 +342,7 @@ const Login = () => {
         body: JSON.stringify({
           email: email.trim(),
           password,
-          // rememberMe, 
         }),
-        // credentials: "include", 
       });
 
       const result = await res.json();
@@ -386,15 +383,14 @@ const Login = () => {
       padding: 0,
     },
     "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: err
-        ? "rgba(220, 38, 38, 0.55)"
-        : alpha(theme.currentPalette.primary, 0.35),
+      borderColor: err ? "rgba(220, 38, 38, 0.55)" : alpha(theme.currentPalette.primary, 0.35),
     },
     "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
       borderColor: err ? "rgb(220, 38, 38)" : theme.currentPalette.primary,
       borderWidth: 2,
     },
   };
+
   const passwordFieldSx = {
     "& .MuiFormLabel-asterisk": { color: "red" },
     "& .MuiOutlinedInput-root": {
@@ -460,7 +456,7 @@ const Login = () => {
     "& .MuiInputLabel-root.Mui-focused": {
       color: theme.currentPalette.primary,
     },
-    "& .MuiFormLabel-asterisk": { color: "red" }
+    "& .MuiFormLabel-asterisk": { color: "red" },
   };
 
   const titleSx = {
@@ -476,7 +472,6 @@ const Login = () => {
     fontSize: 13,
   };
 
-
   const btnSx = {
     mt: 2,
     py: 1.4,
@@ -485,100 +480,61 @@ const Login = () => {
     bgcolor: theme.currentPalette.primary,
     "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.9) },
   };
+
   if (isBusy && mode === "login" && loginLoading) return <Loading />;
+  if (isBusy && (sendingCode || resendingCode || verifyingCode || resettingPassword)) return <Loading />;
 
-  // if (mode === "sent") {
-  //   return (
-  //     <Box sx={pageSx}>
-  //       <Toaster position="top-center" />
-  //       <Paper sx={smallCardSx}>
-  //         <Box sx={{ p: 3 }}>
-  //           <Button
-  //             onClick={backToLogin}
-  //             startIcon={<IoArrowBack />}
-  //             sx={{ textTransform: "none", mb: 2 }}
-  //           >
-  //             Back to Login
-  //           </Button>
+  if (mode === "success") {
+    return (
+      <Box sx={pageSx}>
+        <Toaster position="top-center" />
 
-  //           <Box sx={{ textAlign: "center", mt: 2 }}>
-  //             <Box
-  //               sx={{
-  //                 display: "inline-flex",
-  //                 alignItems: "center",
-  //                 gap: 1,
-  //                 color: theme.currentPalette.primary,
-  //                 fontWeight: 800,
-  //               }}
-  //             >
-  //               <IoCheckmarkCircle />
-  //               <Typography sx={{ fontWeight: 800 }}>
-  //                 Verification Code Sent!
-  //               </Typography>
-  //             </Box>
+        <Box sx={{ width: "100%", maxWidth: 520, textAlign: "center" }}>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
+            {/* same size behavior as your other icons */}
+            <Box sx={{ width: 80, height: 80 }}>
+              <SuccessCheckSvg />
+            </Box>
+          </Box>
 
-  //             <Typography sx={{ mt: 1, color: alpha("#000", 0.6), fontSize: 13 }}>
-  //               A new 6-digit code has been sent to your email.
-  //               <br />
-  //               It may take a few moments to arrive.
-  //               <br />
-  //               Check your spam folder if you donot see it soon.
-  //             </Typography>
+          <Typography sx={{ fontWeight: 500, fontSize: 24, color: "#0f172a" }}>
+            Password reset
+          </Typography>
 
-  //             <Typography sx={{ mt: 2, color: alpha("#000", 0.55), fontSize: 12 }}>
-  //               This code expires in 10 minutes
-  //             </Typography>
+          <Typography sx={{ mt: 0.75, fontSize: 16, color: "rgba(0,0,0,0.55)" }}>
+            Your password has been successfully reset.
+            <br />
+            Click below to log in magically.
+          </Typography>
 
-  //             <Button
-  //               variant="contained"
-  //               sx={{ ...primaryBtnSx, mt: 3, width: 280 }}
-  //               onClick={goToVerify}
-  //             >
-  //               Continue
-  //             </Button>
-  //           </Box>
-  //         </Box>
-  //       </Paper>
-  //     </Box>
-  //   );
-  // }
-  const AuthPageWrapper = ({ children }: { children: React.ReactNode }) => (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        bgcolor: "#fff",
-        px: 2,
-        py: 3,
-        overflow: "hidden",
-      }}
-    >
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {children}
+          <Button
+            variant="contained"
+            sx={{
+              mt: 3,
+              width: "100%",
+              maxWidth: 314,
+              py: 1.25,
+              borderRadius: 2,
+              fontWeight: 400,
+              bgcolor: theme.currentPalette.primary,
+              "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.9) },
+              textTransform: "none !important",
+              "&.MuiButton-root": { textTransform: "none !important" },
+            }}
+            onClick={backToLogin}
+          >
+            Back to Login
+          </Button>
+
+          {/* <Box sx={{ mt: 8, textAlign: "center" }}>
+            <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
+              © 2026 Styles Trucking. All rights reserved.
+            </Typography>
+          </Box> */}
+        </Box>
       </Box>
-
-      {/* Footer */}
-      <Box sx={{ textAlign: "center", pb: 1 }}>
-        <Typography
-          sx={{
-            fontSize: 12,
-            color: theme.currentPalette.primary,
-          }}
-        >
-          © 2026 Styles Trucking. All rights reserved.
-        </Typography>
-      </Box>
-    </Box>
-  );
+    );
+  }
 
   if (mode === "verify") {
     return (
@@ -589,11 +545,7 @@ const Login = () => {
           {/* Icon */}
           <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
             <Box sx={{ width: 80, height: 80 }}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 14 14"
-                style={{ width: "100%", height: "100%", display: "block" }}
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" style={{ width: "100%", height: "100%", display: "block" }}>
                 <g fill="none">
                   <path
                     fill="#205DAC"
@@ -616,9 +568,7 @@ const Login = () => {
             </Box>
           </Box>
 
-          <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#0f172a" }}>
-            Verify your email
-          </Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#0f172a" }}>Verify your email</Typography>
           <Typography sx={{ mt: 0.5, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
             We&apos;ve sent a 6-digit code to your email.
           </Typography>
@@ -627,12 +577,7 @@ const Login = () => {
 
           {/* OTP */}
           <Box
-            sx={{
-              mt: 3,
-              display: "flex",
-              justifyContent: "center",
-              gap: 1,
-            }}
+            sx={{ mt: 3, display: "flex", justifyContent: "center", gap: 1 }}
             onPaste={handleOtpPaste}
           >
             {Array.from({ length: OTP_LEN }).map((_, i) => (
@@ -649,40 +594,19 @@ const Login = () => {
           </Box>
 
           {/* Resend */}
-          <Box
-            sx={{
-              mt: 1.5,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              px: 1,
-            }}
-          >
-            <Typography sx={{ fontSize: 11, color: "rgba(0,0,0,0.55)" }}>
-              Didn&apos;t receive the code?
-            </Typography>
+          <Box sx={{ mt: 1.5, display: "flex", justifyContent: "space-between", alignItems: "center", px: 1 }}>
+            <Typography sx={{ fontSize: 11, color: "rgba(0,0,0,0.55)" }}>Didn&apos;t receive the code?</Typography>
 
             <Button
               disabled={timer > 0 || resendingCode}
               onClick={handleResend}
-              sx={{
-                textTransform: "none",
-                fontSize: 11,
-                color: theme.currentPalette.primary,
-                fontWeight: 700,
-              }}
+              sx={{ textTransform: "none", fontSize: 11, color: theme.currentPalette.primary, fontWeight: 700 }}
             >
               {timer > 0 ? `Resend code in ${mmss}` : "Resend code"}
             </Button>
           </Box>
 
-          {/* Verify button with spinner */}
-          <Button
-            variant="contained"
-            sx={{ ...btnSx, width: "100%", mt: 2 }}
-            onClick={handleVerify}
-            disabled={verifyingCode}
-          >
+          <Button variant="contained" sx={{ ...btnSx, width: "100%", mt: 2 }} onClick={handleVerify} disabled={verifyingCode}>
             {verifyingCode ? (
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <span>Verifying</span>
@@ -694,10 +618,7 @@ const Login = () => {
                     border: "2px solid rgba(255,255,255,0.45)",
                     borderTopColor: "#fff",
                     animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": {
-                      from: { transform: "rotate(0deg)" },
-                      to: { transform: "rotate(360deg)" },
-                    },
+                    "@keyframes spin": { from: { transform: "rotate(0deg)" }, to: { transform: "rotate(360deg)" } },
                   }}
                 />
               </Box>
@@ -706,10 +627,7 @@ const Login = () => {
             )}
           </Button>
 
-          <Button
-            onClick={backToLogin}
-            sx={{ mt: 2, textTransform: "none", fontSize: 12, color: theme.currentPalette.primary }}
-          >
+          <Button onClick={backToLogin} sx={{ mt: 2, textTransform: "none", fontSize: 12, color: theme.currentPalette.primary }}>
             Back to Login
           </Button>
         </Box>
@@ -719,17 +637,7 @@ const Login = () => {
 
   if (mode === "reset") {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          bgcolor: "#fff",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          px: 2,
-          pt: 4,
-        }}
-      >
+      <Box sx={pageSx}>
         <Toaster position="top-center" />
 
         <Box sx={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
@@ -763,9 +671,7 @@ const Login = () => {
             </Box>
           </Box>
 
-          <Typography sx={{ fontWeight: 500, fontSize: 24, color: "#0f172a", mt: 0 }}>
-            Set new password
-          </Typography>
+          <Typography sx={{ fontWeight: 500, fontSize: 24, color: "#0f172a", mt: 0 }}>Set new password</Typography>
 
           <Typography sx={{ mt: 0.5, fontSize: 14, color: "rgba(0,0,0,0.55)" }}>
             Enter a strong password to secure your account
@@ -777,7 +683,6 @@ const Login = () => {
             </Alert>
           )}
 
-          {/* Fields */}
           <Box sx={{ mt: 2, display: "grid", gap: 2, textAlign: "left" }}>
             <TextField
               fullWidth
@@ -822,13 +727,11 @@ const Login = () => {
             />
           </Box>
 
-          {/* Buttons (stacked) */}
           <Box sx={{ mt: 2.5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.25 }}>
             <Button
               variant="contained"
               onClick={handleResetPassword}
               disabled={resettingPassword}
-
               sx={{
                 width: "100%",
                 maxWidth: 420,
@@ -860,138 +763,121 @@ const Login = () => {
     );
   }
 
-  if (isBusy && (sendingCode || resendingCode || verifyingCode || resettingPassword)) {
-    return <Loading />;
-  }
-
   return (
-    <>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "auto",
+      }}
+    >
+      <Toaster position="top-center" />
 
       <Box
         sx={{
-          minHeight: "100vh",
-          bgcolor: "#fff",
+          flex: 1,
           display: "flex",
-          flexDirection: "column",
-          overflow: "auto",
+          alignItems: "center",
+          justifyContent: "center",
+          px: 2,
         }}
       >
-        <Toaster position="top-center" />
+        <Box sx={formWrapSx}>
+          <Typography sx={titleSx}>Styles Trucking</Typography>
+          <Typography sx={subTitleSx}>Professional Load Management System</Typography>
 
-        {/* ✅ Content */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            px: 2,
-          }}
-        >
-          <Box sx={formWrapSx}>
-            <Typography sx={titleSx}>Styles Trucking</Typography>
-            <Typography sx={subTitleSx}>Professional Load Management System</Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4, textAlign: "left" }}>
+            {err && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {err}
+              </Alert>
+            )}
 
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4, textAlign: "left" }}>
-              {err && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {err}
-                </Alert>
-              )}
+            <TextField
+              fullWidth
+              label="Email Address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="e.g. test@gmail.com"
+              InputLabelProps={{ shrink: true }}
+              sx={fieldSx}
+            />
 
-              <TextField
-                fullWidth
-                label="Email Address"
-                type="email"
+            <TextField
+              fullWidth
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Enter your password"
+              InputLabelProps={{ shrink: true }}
+              sx={{ ...fieldSx, mt: 2 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((p) => !p)}
+                      edge="end"
+                      sx={{ color: "rgba(0,0,0,0.45)" }}
+                    >
+                      {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="e.g. test@gmail.com"
-                InputLabelProps={{ shrink: true }}
-                sx={fieldSx}
+            <Box sx={{ mt: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={rememberMe}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setRememberMe(checked);
+                      if (!checked) clearRememberEmail();
+                    }}
+                    size="small"
+                  />
+                }
+                label={<Typography sx={{ fontSize: 13 }}>Remember me</Typography>}
               />
 
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Enter your password"
-                InputLabelProps={{ shrink: true }}
-                sx={{ ...fieldSx, mt: 2 }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword((p) => !p)}
-                        edge="end"
-                        sx={{ color: "rgba(0,0,0,0.45)" }}
-                      >
-                        {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              {/* Remember + Forgot */}
-              <Box
+              <Button
+                onClick={openForgotPassword}
                 sx={{
-                  mt: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  textTransform: "none",
+                  fontSize: 13,
+                  color: theme.currentPalette.primary,
+                  fontWeight: 600,
+                  p: 0,
+                  minWidth: "auto",
                 }}
               >
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={rememberMe}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setRememberMe(checked);
-                        if (!checked) clearRememberEmail();
-                      }}
-                      size="small"
-                    />
-                  }
-                  label={<Typography sx={{ fontSize: 13 }}>Remember me</Typography>}
-                />
-
-                <Button
-                  onClick={openForgotPassword}
-                  sx={{
-                    textTransform: "none",
-                    fontSize: 13,
-                    color: theme.currentPalette.primary,
-                    fontWeight: 600,
-                    p: 0,
-                    minWidth: "auto",
-                  }}
-                >
-                  Forgot password?
-                </Button>
-              </Box>
-
-              <Button type="submit" fullWidth variant="contained" disabled={loginLoading} sx={btnSx}>
-                {loginLoading ? "Signing In..." : "SIGN IN"}
+                Forgot password?
               </Button>
             </Box>
-          </Box>
-        </Box>
 
-        {/* ✅ Footer */}
-        <Box sx={{ textAlign: "center", pb: 2 }}>
-          <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
-            © 2026 Styles Trucking. All rights reserved.
-          </Typography>
+            <Button type="submit" fullWidth variant="contained" disabled={loginLoading} sx={btnSx}>
+              {loginLoading ? "Signing In..." : "SIGN IN"}
+            </Button>
+          </Box>
         </Box>
       </Box>
 
-    </>
+      <Box sx={{ textAlign: "center", pb: 2 }}>
+        <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
+          © 2026 Styles Trucking. All rights reserved.
+        </Typography>
+      </Box>
+    </Box>
+
+
   );
 };
 

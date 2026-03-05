@@ -163,7 +163,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     const hasValidLoadID = loadIDInp.trim() !== "";
     return hasValidPrice && hasValidLoadID;
   };
-
+  const submitIntentRef = React.useRef(false);
   const isAssignmentValid = (): boolean => {
     if (isEditMode) return true;
     const hasValidDriverId = driverId.trim() !== "";
@@ -537,6 +537,13 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   const handleCreateLoad = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // ✅ block any automatic submit
+    if (!submitIntentRef.current) return;
+
+    // reset immediately so it can't double submit
+    submitIntentRef.current = false;
+
+    // ... your current code continues here
     const total = Number(price);
     const validDestinations = destinations.filter(Boolean) as TPlace[];
 
@@ -561,7 +568,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       toast.error("Invalid distance calculated");
       return;
     }
-
     const formData = new FormData();
 
     formData.append("origin[address]", origin.display_name);
@@ -627,7 +633,11 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       toast.error(msg || `Load ${isEditMode ? "update" : "creation"} failed `);
     }
   };
-
+  const submitNow = () => {
+    submitIntentRef.current = true;
+    const form = document.getElementById("load-form") as HTMLFormElement | null;
+    form?.requestSubmit();
+  };
   const handleClose = () => {
     dispatch(resetForm());
     setSelectedDocuments([]);
@@ -673,13 +683,14 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     // height: 52,
     px: 2.2,
     borderRadius: 999,
-    fontSize: 16,
+    fontSize: 14,
     // fontWeight: 800,
     whiteSpace: "nowrap",
+    py: 0.5,
 
     "& svg": {
-      width: 20,
-      height: 20,
+      width: 10,
+      height: 10,
       flexShrink: 0,
       display: "block",
     },
@@ -695,7 +706,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
 
   const blueChipSx = {
     ...baseChipSx,
-    border: `2px solid ${alpha(theme.currentPalette.primary, 0.7)}`,
+    border: `2px solid ${alpha(theme.currentPalette.primary, 0.1)}`,
     bgcolor: alpha(theme.currentPalette.primary, 0.1),
     color: theme.currentPalette.primary,
     "& svg": { color: theme.currentPalette.primary },
@@ -732,12 +743,12 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         },
       }}
     >
-      <IconButton
+      {/* <IconButton
         onClick={handleClose}
-        sx={{ position: "absolute", top: 2, right: 2, zIndex: 20, mb: 2 }}
+        sx={{ position: "absolute", top: 24, right: 4, zIndex: 20, mb: 2 }}
       >
         <IoClose />
-      </IconButton>
+      </IconButton> */}
 
       <DialogContent sx={{ pt: 1, height: "100%" }}>
         <Box
@@ -885,16 +896,16 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.2 }}>
                 <Box sx={chipSx}>
-                  <KeyRound />
-                  #{loadIDInp?.trim() ? loadIDInp : "0"}
+                  <KeyRound size={20} />{" "}
+                  {loadIDInp?.trim() ? loadIDInp : "0"}
                 </Box>
 
                 <Box sx={chipDividerSx} />
 
                 <Box sx={blueChipSx}>
-                  <ShieldUser />
+                  <ShieldUser size={20} />
                   {selectedDriverName
                     ? selectedDriverName
                     : driverId?.trim()
@@ -905,15 +916,36 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 <Box sx={chipDividerSx} />
 
                 <Box sx={greenChipSx}>
-                  <DollarSign />
+                  <DollarSign size={20} />
                   {price?.trim() ? `$${Number(price).toLocaleString()}` : "$0"}
                 </Box>
+                <IconButton
+                  onClick={handleClose}
+                  sx={{
+                    ml: 1,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    // border: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+                  }}
+                >
+                  <IoClose />
+                </IconButton>
               </Box>
             </Box>
 
             {/* BODY */}
             <Box sx={{ flex: 1, overflow: "auto", p: 3 }}>
-              <form id="load-form" onSubmit={handleCreateLoad}>
+              <form
+                id="load-form"
+                onSubmit={handleCreateLoad}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isLastStep) {
+                    e.preventDefault();
+                    nextStep();
+                  }
+                }}
+              >
                 {/* LOCATIONS */}
                 {stepKey === "locations" && (
                   <Box
@@ -1221,7 +1253,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 // mt: 3,
                 display: "flex",
                 pb: 2,
-                px: 2,
+                px: 3,
                 alignItems: "center",
                 justifyContent: "space-between",
               }}
@@ -1237,9 +1269,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
               </Button>
 
               <Button
-                type={isLastStep ? "submit" : "button"}
-                form={isLastStep ? "load-form" : undefined}
-                onClick={isLastStep ? undefined : nextStep}
+                type="button"
+                onClick={isLastStep ? submitNow : nextStep}
                 disabled={
                   isLastStep
                     ? !steps[activeStep].canGo() || creatingLoad || updatingLoad
@@ -1256,9 +1287,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   },
                 }}
               >
-                {isLastStep
-                  ? (isEditMode ? "Update Load" : "Create Load")
-                  : "Next"}
+                {isLastStep ? (isEditMode ? "Update Load" : "Create Load") : "Next"}
               </Button>
             </Box>
           </Box>

@@ -134,22 +134,22 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["Settings"],
     }),
-    // ! ========== Auth ==========
+    // login 
     logIn: builder.mutation<
       any,
-      { email: string; password: string; 
+      {
+        email: string; password: string;
         // rememberMe: boolean
-       }
+      }
     >({
       query: (body) => ({
         url: `/api/v1/auth/logIn`,
         method: "POST",
         body,
-        credentials: "include", 
+        credentials: "include",
       }),
     }),
 
-    // ! ========== Forget Password Flow ==========
     sendResetCode: builder.mutation<any, { email: string }>({
       query: (body) => ({
         url: `/api/v1/forgetpassword/sendResetCode`,
