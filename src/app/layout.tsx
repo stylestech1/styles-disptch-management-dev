@@ -35,8 +35,8 @@ export default function RootLayout({
             <ChatProvider>
               <NotificationListener />
               <SpeedInsights />
-              <Toaster position="top-center" reverseOrder={false} />
               {children}
+              <Toaster position="top-center" reverseOrder={false} />
               {/* <ChatBubble /> */}
             </ChatProvider>
           </MuiThemeProvider>

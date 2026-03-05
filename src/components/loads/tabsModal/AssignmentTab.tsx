@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useGetDriversQuery, useGetTrucksQuery } from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
 import {
@@ -30,7 +30,7 @@ import { User, Truck as TruckIcon, Snowflake, Thermometer } from "lucide-react";
 const INPUT_HEIGHT = 56;
 
 const helperSx = (theme: any) => ({
-  mt: "1px",
+  mb: 2,
   fontSize: 13,
   color: alpha(theme.currentPalette.text, 0.45),
 });
@@ -60,10 +60,14 @@ const outlinedSx = (theme: any) => ({
 });
 
 const labelFloatingSx = (theme: any) => ({
-  fontSize: 12,
-  fontWeight: 700,
+  fontSize: 13,
+  lineHeight: 1,
   color: alpha(theme.currentPalette.text, 0.55),
   "&.Mui-focused": { color: theme.currentPalette.primary },
+  "&.MuiInputLabel-shrink": {
+    fontSize: 13,
+    transform: "translate(14px, -8px) scale(1)",
+  },
 });
 
 type LabeledSelectProps = {
@@ -77,6 +81,8 @@ type LabeledSelectProps = {
   placeholder: string;
   startIcon: React.ReactNode;
   children: React.ReactNode;
+
+  mb?: number;
 };
 
 const LabeledSelect = ({
@@ -90,6 +96,7 @@ const LabeledSelect = ({
   placeholder,
   startIcon,
   children,
+  mb = 0,
 }: LabeledSelectProps) => {
   const id = `${label.replace(/\s+/g, "-").toLowerCase()}-select`;
 
@@ -99,10 +106,11 @@ const LabeledSelect = ({
       disabled={disabled}
       variant="outlined"
       sx={{
+        mb,
         "& .MuiFormLabel-asterisk": { display: "none" },
       }}
     >
-      <InputLabel id={`${id}-label`} sx={labelFloatingSx(theme)}>
+      <InputLabel shrink id={`${id}-label`} sx={labelFloatingSx(theme)}>
         {label}
         {required ? <span style={{ color: "#d32f2f" }}> *</span> : null}
       </InputLabel>
@@ -122,7 +130,8 @@ const LabeledSelect = ({
             alignItems: "center",
             gap: 10,
             height: INPUT_HEIGHT,
-            padding: "0 14px",
+            padding: "0 10px",
+            lineHeight: 1,
           },
         }}
         startAdornment={
@@ -164,10 +173,10 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
   const theme = useAppSelector((state: RootState) => state.palette);
 
   const { data: driversData, refetch: driverRefetch } = useGetDriversQuery(
-    { skip: !token } as any,
+    { skip: !token } as any
   );
   const { data: trucksData, refetch: truckRefetch } = useGetTrucksQuery(
-    { skip: !token } as any,
+    { skip: !token } as any
   );
 
   const drivers: TDriver[] = driversData?.data || [];
@@ -175,12 +184,13 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
 
   const selectedTruck = useMemo(
     () => trucks.find((t) => String(t.id) === String(truckId)),
-    [trucks, truckId],
+    [trucks, truckId]
   );
 
   const isReefer = (selectedTruck?.type || truckType || "")
     .toLowerCase()
     .includes("reefer");
+
   if (isEditing) {
     const readonlyFieldSx = {
       "& .MuiOutlinedInput-root": outlinedSx(theme),
@@ -288,22 +298,6 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
               }
               inputProps={{ readOnly: true }}
               sx={readonlyFieldSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Box sx={iconPillSx(theme)}>
-                        <Snowflake size={16} />
-                      </Box>
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IoCheckmark className="h-5 w-5 text-green-600" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
             />
           </Box>
 
@@ -314,22 +308,6 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
               value={editingLoad?.truckTemp ? `${editingLoad.truckTemp}` : "-"}
               inputProps={{ readOnly: true }}
               sx={readonlyFieldSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Box sx={iconPillSx(theme)}>
-                        <Thermometer size={16} />
-                      </Box>
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IoCheckmark className="h-5 w-5 text-green-600" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
             />
           </Box>
         </Box>
@@ -341,7 +319,7 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
             border: `1px solid ${alpha(theme.currentPalette.primary, 0.18)}`,
           }}
         >
-          <Typography sx={{ fontWeight: 900, mb: 0.5 }}>
+          <Typography sx={{ mb: 0.5 }}>
             Driver & Truck Information
           </Typography>
           <Typography sx={{ fontSize: 13 }}>
@@ -351,14 +329,15 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
       </Box>
     );
   }
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {/* Driver */}
+    <Box sx={{ display: "flex", flexDirection: "column" }}>
       <LabeledSelect
         theme={theme}
         label="Driver"
         required
         value={driverId}
+        mb={2}
         onOpen={() => {
           driverRefetch();
           truckRefetch();
@@ -374,12 +353,12 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
         ))}
       </LabeledSelect>
 
-      {/* Truck Type */}
       <LabeledSelect
         theme={theme}
         label="Truck Type"
         required
         value={truckType}
+        mb={2}
         onChange={(v) => onTruckTypeChange(v as TTruckType)}
         placeholder="Select type"
         startIcon={<Snowflake size={16} />}
@@ -387,66 +366,68 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
         <MenuItem value="reefer">Reefer</MenuItem>
         <MenuItem value="van">Van</MenuItem>
       </LabeledSelect>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+        <LabeledSelect
+          theme={theme}
+          label="Truck"
+          required
+          value={truckId}
+          disabled={!truckType}
+          onChange={onTruckIdChange}
+          placeholder="Select Truck"
+          startIcon={<TruckIcon size={16} />}
+        >
+          {trucks
+            .filter((t) => !truckType || t.type === truckType)
+            .map((t) => (
+              <MenuItem key={t.id} value={String(t.id)}>
+                {t.model} ({t.plateNumber})
+              </MenuItem>
+            ))}
+        </LabeledSelect>
 
-      {/* Truck */}
-      <LabeledSelect
-        theme={theme}
-        label="Truck"
-        required
-        value={truckId}
-        disabled={!truckType}
-        onChange={onTruckIdChange}
-        placeholder="Select Truck"
-        startIcon={<TruckIcon size={16} />}
-      >
-        {trucks
-          .filter((t) => !truckType || t.type === truckType)
-          .map((t) => (
-            <MenuItem key={t.id} value={String(t.id)}>
-              {t.model} ({t.plateNumber})
-            </MenuItem>
-          ))}
-      </LabeledSelect>
-
-      <Typography sx={helperSx(theme)}>
-        Select from dropdown or type your own
-      </Typography>
-
-      {/* Temperature (editable) */}
-      <FormControl
-        fullWidth
-        variant="outlined"
-        sx={{
-          "& .MuiFormLabel-asterisk": { display: "none" }, 
-        }}
-      >
-        <InputLabel id="temp-label" sx={labelFloatingSx(theme)}>
-          Required Temperature (°F)<span style={{ color: "#d32f2f" }}> *</span>
-        </InputLabel>
-
-        <OutlinedInput
-          id="temp"
-          label="Required Temperature (°F)"
-          type="number"
-          value={truckTemp}
-          onChange={(e) => onTruckTempChange(e.target.value)}
-          placeholder="-10"
-          startAdornment={
-            <InputAdornment position="start">
-              <Box sx={iconPillSx(theme)}>
-                <Thermometer size={16} />
-              </Box>
-            </InputAdornment>
-          }
-          sx={outlinedSx(theme)}
-        />
-      </FormControl>
-
-      {!isReefer && truckType && (
         <Typography sx={helperSx(theme)}>
-          Temperature is usually required for Reefer trucks, but you can still set it.
+          Select from dropdown or type your own
         </Typography>
-      )}
+      </Box>
+
+      {/* Temperature */}
+      <Box sx={{ mt: 1 }}>
+        <FormControl
+          fullWidth
+          variant="outlined"
+          sx={{
+            "& .MuiFormLabel-asterisk": { display: "none" },
+          }}
+        >
+          <InputLabel shrink id="temp-label" sx={labelFloatingSx(theme)}>
+            Required Temperature (°F)<span style={{ color: "#d32f2f" }}> *</span>
+          </InputLabel>
+
+          <OutlinedInput
+            id="temp"
+            label="Required Temperature (°F)"
+            type="number"
+            value={truckTemp}
+            onChange={(e) => onTruckTempChange(e.target.value)}
+            placeholder="-10"
+            startAdornment={
+              <InputAdornment position="start">
+                <Box sx={iconPillSx(theme)}>
+                  <Thermometer size={16} />
+                </Box>
+              </InputAdornment>
+            }
+            sx={outlinedSx(theme)}
+          />
+        </FormControl>
+
+        {!isReefer && truckType && (
+          <Typography sx={{ ...helperSx(theme), mt: 0.5 }}>
+            Temperature is usually required for Reefer trucks, but you can still set it.
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };

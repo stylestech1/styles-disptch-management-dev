@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { RootState, useAppSelector } from "@/redux/store";
 import { LoadDetailsTabProps } from "@/types/globalTypes";
 import {
@@ -37,7 +37,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
 }) => {
   const theme = useAppSelector((state: RootState) => state.palette);
   const [open, setOpen] = useState<Record<SectionKey, boolean>>({
-    pickup: false,
+    pickup: true,
     transit: false,
     delivery: false,
   });
@@ -49,6 +49,31 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   // const iconPeachBg = "rgba(255, 140, 100, 0.15)";
   // const iconPeach = "rgba(255, 120, 80, 1)";
 
+  const isFilled = (v: any) => Boolean(v); // Dayjs object or null
+
+  useEffect(() => {
+    const pickupDone = isFilled(pickupAt) && isFilled(arrivalAtShipper);
+    const transitDone = isFilled(leftShipper) && isFilled(arrivalAtReceiver);
+    if (pickupDone) {
+      setOpen((p) => ({
+        pickup: p.pickup,      
+        transit: true,
+        delivery: p.delivery,
+      }));
+    }
+    if (transitDone) {
+      setOpen((p) => ({
+        pickup: p.pickup,
+        transit: p.transit,    
+        delivery: true,
+      }));
+    }
+  }, [
+    pickupAt,
+    arrivalAtShipper,
+    leftShipper,
+    arrivalAtReceiver,
+  ]);
 
   const pickerSx = {
     "& .MuiInputBase-root": {

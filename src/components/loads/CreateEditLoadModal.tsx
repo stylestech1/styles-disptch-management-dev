@@ -58,6 +58,7 @@ import { CreateEditLoadModalProps, TLoads, TTruckType, Adjustment } from "@/type
 import LoadDetailsTab from "./tabsModal/LoadDetailsTab";
 import AssignmentTab from "./tabsModal/AssignmentTab";
 import FinancialTab from "./tabsModal/FinancialTab";
+import { DollarSign, KeyRound, ShieldUser } from "lucide-react";
 
 // Lazy load the map components
 const LazyGoogleMapsLoader = lazy(() => import("@/components/ui/GoogleMapsLoader"));
@@ -613,17 +614,17 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     try {
       if (isEditMode && editingLoad?.id) {
         await updateLoad({ id: editingLoad.id, formData } as any).unwrap();
-        toast.success("Load updated ✅");
+        toast.success("Load updated ");
       } else {
         await createLoad(formData as any).unwrap();
-        toast.success("Load created ✅");
+        toast.success("Load created ");
       }
 
       handleClose();
     } catch (err) {
       const msg = extractErrorMessage(err);
-      console.error("❌ Request failed:", err);
-      toast.error(msg || `Load ${isEditMode ? "update" : "creation"} failed ❌`);
+      console.error(" Request failed:", err);
+      toast.error(msg || `Load ${isEditMode ? "update" : "creation"} failed `);
     }
   };
 
@@ -646,7 +647,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     // add mode
     const list = (driversData as any)?.data || (driversData as any)?.drivers || [];
     const found = list.find((d: any) => {
-      const id1 = String(d?.driverId ?? ""); // ✅ 501 غالبًا
+      const id1 = String(d?.driverId ?? "");
       const id2 = String(d?._id ?? d?.id ?? "");
       return id1 === String(driverId) || id2 === String(driverId);
     });
@@ -665,21 +666,55 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   );
 
 
-  const chipSx = {
-    px: 1.5,
-    py: 0.75,
+  const baseChipSx = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 1,
+    // height: 52,
+    px: 2.2,
     borderRadius: 999,
-    border: `1px solid ${alpha(theme.currentPalette.text, 0.15)}`,
-    bgcolor: alpha(theme.currentPalette.text, 0.03),
-    fontSize: 12,
-    fontWeight: 800,
+    fontSize: 16,
+    // fontWeight: 800,
+    whiteSpace: "nowrap",
+
+    "& svg": {
+      width: 20,
+      height: 20,
+      flexShrink: 0,
+      display: "block",
+    },
+  } as const;
+
+  const chipSx = {
+    ...baseChipSx,
+    border: `2px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+    bgcolor: "#fff",
+    color: theme.currentPalette.text,
+    "& svg": { color: theme.currentPalette.primary },
+  } as const;
+
+  const blueChipSx = {
+    ...baseChipSx,
+    border: `2px solid ${alpha(theme.currentPalette.primary, 0.7)}`,
+    bgcolor: alpha(theme.currentPalette.primary, 0.1),
+    color: theme.currentPalette.primary,
+    "& svg": { color: theme.currentPalette.primary },
   } as const;
 
   const greenChipSx = {
-    ...chipSx,
-    border: `1px solid ${alpha("#2e7d32", 0.35)}`,
-    bgcolor: alpha("#2e7d32", 0.08),
+    ...baseChipSx,
+    border: `2px solid ${alpha("#2e7d32", 0.55)}`,
+    bgcolor: alpha("#2e7d32", 0.10),
     color: "#2e7d32",
+    "& svg": { color: "#2e7d32" },
+  } as const;
+
+  const chipDividerSx = {
+    width: "2px",
+    height: 44,
+    bgcolor: alpha(theme.currentPalette.text, 0.12),
+    borderRadius: 2,
+    mx: 2.5,
   } as const;
 
   return (
@@ -699,17 +734,17 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     >
       <IconButton
         onClick={handleClose}
-        sx={{ position: "absolute", top: -3, right: 8, zIndex: 20, mb: 2 }}
+        sx={{ position: "absolute", top: 2, right: 2, zIndex: 20, mb: 2 }}
       >
         <IoClose />
       </IconButton>
 
-      <DialogContent sx={{ p: 0, height: "100%" }}>
+      <DialogContent sx={{ pt: 1, height: "100%" }}>
         <Box
           sx={{
             height: "100%",
             display: "flex",
-            bgcolor: theme.currentPalette.background,
+            // bgcolor: theme.currentPalette.background,
           }}
         >
           {/* LEFT SIDEBAR STEPS */}
@@ -734,7 +769,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
               sx={{
                 width: "100%",
                 m: 0,
-                borderColor: alpha(theme.currentPalette.text, 0.12), // نفس لون اللي في الـ header right
+                borderColor: alpha(theme.currentPalette.text, 0.12),
               }}
             />
 
@@ -850,14 +885,29 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={chipSx}>#{loadIDInp?.trim() ? loadIDInp : "0"}</Box>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Box sx={chipSx}>
+                  <KeyRound />
+                  #{loadIDInp?.trim() ? loadIDInp : "0"}
+                </Box>
+
+                <Box sx={chipDividerSx} />
+
+                <Box sx={blueChipSx}>
+                  <ShieldUser />
                   {selectedDriverName
                     ? selectedDriverName
-                    : (driverId?.trim() ? "Driver selected" : "No Driver")}
+                    : driverId?.trim()
+                      ? "Driver selected"
+                      : "No Driver"}
                 </Box>
-                <Box sx={greenChipSx}>${price?.trim() ? price : "0"}</Box>
+
+                <Box sx={chipDividerSx} />
+
+                <Box sx={greenChipSx}>
+                  <DollarSign />
+                  {price?.trim() ? `$${Number(price).toLocaleString()}` : "$0"}
+                </Box>
               </Box>
             </Box>
 
@@ -1081,7 +1131,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   </Box>
                 )}
 
-                {/* ASSIGNMENT (ONLY IN ADD MODE) */}
+                {/* ASSIGNMENT  */}
                 {stepKey === "assignment" && !isEditMode && (
                   <AssignmentTab
                     isEditing={isEditing}
@@ -1158,7 +1208,13 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 )}
               </form>
             </Box>
-
+            <Divider
+              sx={{
+                width: "100%",
+                mb: 1.5,
+                borderColor: alpha(theme.currentPalette.text, 0.12),
+              }}
+            />
             {/* footer */}
             <Box
               sx={{
@@ -1182,7 +1238,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
 
               <Button
                 type={isLastStep ? "submit" : "button"}
-                form={isLastStep ? "load-form" : undefined} // ✅ يشتغل حتى لو الزرار خارج الفورم
+                form={isLastStep ? "load-form" : undefined}
                 onClick={isLastStep ? undefined : nextStep}
                 disabled={
                   isLastStep

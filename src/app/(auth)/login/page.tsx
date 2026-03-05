@@ -8,24 +8,16 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import {
-  IoMailOutline,
-  IoLockClosedOutline,
-  IoLogInOutline,
-  IoArrowBack,
-  IoCheckmarkCircle,
-} from "react-icons/io5";
+
 import {
   Alert,
   alpha,
   Box,
   Button,
   Checkbox,
-  Container,
   FormControlLabel,
   IconButton,
   InputAdornment,
-  Paper,
   TextField,
   Typography,
 } from "@mui/material";
@@ -37,7 +29,7 @@ import {
   useLogInMutation,
 } from "@/redux/slices/apiSlice";
 
-type ViewMode = "login" | "sent" | "verify" | "reset";
+type ViewMode = "login" | "verify" | "reset";
 
 const OTP_LEN = 6;
 const RESEND_SECONDS = 120;
@@ -69,6 +61,8 @@ const Login = () => {
 
   // ---------- RTK mutations ----------
   const [login, { isLoading: loginLoading }] = useLogInMutation();
+  const MSG_INVALID_CODE = "Invalid code. Please check your email and try again.";
+  const MSG_SESSION_EXPIRED = "Session expired. Please click 'Resend code' for new OTP.";
 
   const [sendResetCode, { isLoading: sendingCode }] =
     useSendResetCodeMutation();
@@ -127,6 +121,7 @@ const Login = () => {
   const openForgotPassword = async () => {
     setErr("");
     const em = email.trim();
+
     if (!em) {
       toast.error("Please enter your email first.");
       return;
@@ -135,11 +130,11 @@ const Login = () => {
     try {
       await sendResetCode({ email: em }).unwrap();
       toast.success("Verification code sent!");
-
-      setMode("sent");
+      setMode("verify");
       setOtp(Array(OTP_LEN).fill(""));
       setNewPassword("");
       setConfirmNewPassword("");
+      setTimeout(() => otpRefs.current?.[0]?.focus?.(), 50);
     } catch (e: any) {
       const msg = e?.data?.message || e?.message || "Failed to send reset code";
       setErr(msg);
@@ -147,11 +142,53 @@ const Login = () => {
     }
   };
 
-  const goToVerify = () => {
-    setMode("verify");
-    setOtp(Array(OTP_LEN).fill(""));
-    // focus first box
-    setTimeout(() => otpRefs.current?.[0]?.focus?.(), 50);
+  const ErrorBanner = ({ text }: { text: string }) => {
+    return (
+      <Box
+        sx={{
+          mt: 2,
+          px: 2,
+          py: 1.5,
+          borderRadius: 2,
+          border: "1px solid rgba(220, 38, 38, 0.35)",
+          bgcolor: "rgba(239, 68, 68, 0.08)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1,
+          textAlign: "center",
+        }}
+      >
+        {/* icon */}
+        <Box
+          sx={{
+            width: 22,
+            height: 22,
+            borderRadius: "50%",
+            border: "2px solid #B42318",
+            color: "#B42318",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+        >
+          ×
+        </Box>
+
+        <Typography
+          sx={{
+            fontSize: 13,
+            color: "rgb(185, 28, 28)",
+            lineHeight: 1.3,
+          }}
+        >
+          {text}
+        </Typography>
+      </Box>
+    );
   };
 
   const backToLogin = () => {
@@ -210,6 +247,9 @@ const Login = () => {
       await resendResetCode({ email: em }).unwrap();
       toast.success("Code resent!");
       setTimer(RESEND_SECONDS);
+      setErr("");
+      setOtp(Array(OTP_LEN).fill(""));
+      setTimeout(() => otpRefs.current?.[0]?.focus?.(), 50);
     } catch (e: any) {
       const msg = e?.data?.message || e?.message || "Failed to resend code";
       toast.error(msg);
@@ -218,9 +258,15 @@ const Login = () => {
 
   const handleVerify = async () => {
     setErr("");
+
     const code = otp.join("");
     if (code.length !== OTP_LEN) {
       toast.error("Please enter the 6-digit code.");
+      return;
+    }
+    if (timer <= 0) {
+      setErr(MSG_SESSION_EXPIRED);
+      toast.error(MSG_SESSION_EXPIRED);
       return;
     }
 
@@ -229,12 +275,25 @@ const Login = () => {
       toast.success("Code verified!");
       setMode("reset");
     } catch (e: any) {
-      const msg = e?.data?.message || e?.message || "Invalid code";
-      setErr(msg);
-      toast.error(msg);
+      const status = e?.status;
+      const backendMsg = e?.data?.message || e?.data?.error || e?.message || "";
+      if (status === 401) {
+        setErr(MSG_INVALID_CODE);
+        toast.error(MSG_INVALID_CODE);
+        return;
+      }
+      if (status === 410 || status === 408) {
+        setErr(MSG_SESSION_EXPIRED);
+        toast.error(MSG_SESSION_EXPIRED);
+        return;
+      }
+
+      // fallback
+      const fallback = backendMsg || MSG_INVALID_CODE;
+      setErr(fallback);
+      toast.error(fallback);
     }
   };
-
   const handleResetPassword = async () => {
     setErr("");
     const em = email.trim();
@@ -258,8 +317,6 @@ const Login = () => {
       }).unwrap();
 
       toast.success("Password changed successfully!");
-
-      // back to login
       setMode("login");
       setPassword("");
       setOtp(Array(OTP_LEN).fill(""));
@@ -314,25 +371,6 @@ const Login = () => {
     }
   };
 
-  const centerShellSx = {
-    minHeight: "100vh",
-    bgcolor: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    p: 2,
-  };
-
-  const smallCardSx = {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 3,
-    border: `1px solid ${alpha("#000", 0.08)}`,
-    // boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
-    overflow: "hidden",
-    bgcolor: "#fff",
-  };
-
   const otpBoxSx = {
     width: 44,
     height: 44,
@@ -348,23 +386,15 @@ const Login = () => {
       padding: 0,
     },
     "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: alpha(theme.currentPalette.primary, 0.35),
+      borderColor: err
+        ? "rgba(220, 38, 38, 0.55)"
+        : alpha(theme.currentPalette.primary, 0.35),
     },
     "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: theme.currentPalette.primary,
+      borderColor: err ? "rgb(220, 38, 38)" : theme.currentPalette.primary,
       borderWidth: 2,
     },
   };
-
-  const primaryBtnSx = {
-    mt: 2,
-    py: 1.4,
-    borderRadius: 2,
-    fontWeight: 800,
-    bgcolor: theme.currentPalette.primary,
-    "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.9) },
-  };
-
   const passwordFieldSx = {
     "& .MuiFormLabel-asterisk": { color: "red" },
     "& .MuiOutlinedInput-root": {
@@ -392,375 +422,522 @@ const Login = () => {
     },
   };
 
+  const pageSx = {
+    minHeight: "100vh",
+    bgcolor: "#fff",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    px: 2,
+    pt: 4,
+  };
+
+  const formWrapSx = {
+    width: "100%",
+    maxWidth: 440,
+    textAlign: "center",
+  };
+
+  const fieldSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      backgroundColor: "transparent",
+      "& fieldset": {
+        borderColor: "rgba(0,0,0,0.16)",
+      },
+      "&:hover fieldset": {
+        borderColor: "rgba(0,0,0,0.28)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: theme.currentPalette.primary,
+        borderWidth: 2,
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "rgba(0,0,0,0.55)",
+      fontWeight: 600,
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: theme.currentPalette.primary,
+    },
+    "& .MuiFormLabel-asterisk": { color: "red" }
+  };
+
+  const titleSx = {
+    fontWeight: 800,
+    color: theme.currentPalette.primary,
+    fontSize: 34,
+    lineHeight: 1.1,
+  };
+
+  const subTitleSx = {
+    mt: 1,
+    color: "rgba(0,0,0,0.55)",
+    fontSize: 13,
+  };
+
+
+  const btnSx = {
+    mt: 2,
+    py: 1.4,
+    borderRadius: 2,
+    fontWeight: 800,
+    bgcolor: theme.currentPalette.primary,
+    "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.9) },
+  };
   if (isBusy && mode === "login" && loginLoading) return <Loading />;
-  if (mode === "sent") {
-    return (
-      <Box sx={centerShellSx}>
-        <Toaster position="top-center" />
-        <Paper sx={smallCardSx}>
-          <Box sx={{ p: 3 }}>
-            <Button
-              onClick={backToLogin}
-              startIcon={<IoArrowBack />}
-              sx={{ textTransform: "none", mb: 2 }}
-            >
-              Back to Login
-            </Button>
 
-            <Box sx={{ textAlign: "center", mt: 2 }}>
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 1,
-                  color: theme.currentPalette.primary,
-                  fontWeight: 800,
-                }}
-              >
-                <IoCheckmarkCircle />
-                <Typography sx={{ fontWeight: 800 }}>
-                  Verification Code Sent!
-                </Typography>
-              </Box>
+  // if (mode === "sent") {
+  //   return (
+  //     <Box sx={pageSx}>
+  //       <Toaster position="top-center" />
+  //       <Paper sx={smallCardSx}>
+  //         <Box sx={{ p: 3 }}>
+  //           <Button
+  //             onClick={backToLogin}
+  //             startIcon={<IoArrowBack />}
+  //             sx={{ textTransform: "none", mb: 2 }}
+  //           >
+  //             Back to Login
+  //           </Button>
 
-              <Typography sx={{ mt: 1, color: alpha("#000", 0.6), fontSize: 13 }}>
-                A new 6-digit code has been sent to your email.
-                <br />
-                It may take a few moments to arrive.
-                <br />
-                Check your spam folder if you donot see it soon.
-              </Typography>
+  //           <Box sx={{ textAlign: "center", mt: 2 }}>
+  //             <Box
+  //               sx={{
+  //                 display: "inline-flex",
+  //                 alignItems: "center",
+  //                 gap: 1,
+  //                 color: theme.currentPalette.primary,
+  //                 fontWeight: 800,
+  //               }}
+  //             >
+  //               <IoCheckmarkCircle />
+  //               <Typography sx={{ fontWeight: 800 }}>
+  //                 Verification Code Sent!
+  //               </Typography>
+  //             </Box>
 
-              <Typography sx={{ mt: 2, color: alpha("#000", 0.55), fontSize: 12 }}>
-                This code expires in 10 minutes
-              </Typography>
+  //             <Typography sx={{ mt: 1, color: alpha("#000", 0.6), fontSize: 13 }}>
+  //               A new 6-digit code has been sent to your email.
+  //               <br />
+  //               It may take a few moments to arrive.
+  //               <br />
+  //               Check your spam folder if you donot see it soon.
+  //             </Typography>
 
-              <Button
-                variant="contained"
-                sx={{ ...primaryBtnSx, mt: 3, width: 280 }}
-                onClick={goToVerify}
-              >
-                Continue
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
+  //             <Typography sx={{ mt: 2, color: alpha("#000", 0.55), fontSize: 12 }}>
+  //               This code expires in 10 minutes
+  //             </Typography>
+
+  //             <Button
+  //               variant="contained"
+  //               sx={{ ...primaryBtnSx, mt: 3, width: 280 }}
+  //               onClick={goToVerify}
+  //             >
+  //               Continue
+  //             </Button>
+  //           </Box>
+  //         </Box>
+  //       </Paper>
+  //     </Box>
+  //   );
+  // }
+  const AuthPageWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        bgcolor: "#fff",
+        px: 2,
+        py: 3,
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {children}
       </Box>
-    );
-  }
+
+      {/* Footer */}
+      <Box sx={{ textAlign: "center", pb: 1 }}>
+        <Typography
+          sx={{
+            fontSize: 12,
+            color: theme.currentPalette.primary,
+          }}
+        >
+          © 2026 Styles Trucking. All rights reserved.
+        </Typography>
+      </Box>
+    </Box>
+  );
 
   if (mode === "verify") {
     return (
-      <Box sx={centerShellSx}>
+      <Box sx={pageSx}>
         <Toaster position="top-center" />
-        <Paper sx={smallCardSx}>
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <Typography sx={{ fontWeight: 800, color: theme.currentPalette.primary }}>
-              Verify your email
-            </Typography>
-            <Typography sx={{ mt: 0.5, fontSize: 12, color: alpha("#000", 0.55) }}>
-              We have sent a 6-digit code to your email.
-            </Typography>
 
-            {err && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {err}
-              </Alert>
-            )}
-
-            <Box
-              sx={{
-                mt: 3,
-                display: "flex",
-                justifyContent: "center",
-                gap: 1,
-              }}
-              onPaste={handleOtpPaste}
-            >
-              {Array.from({ length: OTP_LEN }).map((_, i) => (
-                <TextField
-                  key={i}
-                  value={otp[i]}
-                  onChange={(e) => handleOtpChange(i, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  inputRef={(el) => (otpRefs.current[i] = el)}
-                  sx={otpBoxSx}
-                  inputProps={{ maxLength: 1 }}
-                />
-              ))}
-            </Box>
-
-            <Box
-              sx={{
-                mt: 1.5,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                px: 2,
-              }}
-            >
-              <Typography sx={{ fontSize: 11, color: alpha("#000", 0.55) }}>
-                Didn&apos;t receive the code?
-              </Typography>
-
-              <Button
-                disabled={timer > 0 || resendingCode}
-                onClick={handleResend}
-                sx={{
-                  textTransform: "none",
-                  fontSize: 11,
-                  color: theme.currentPalette.primary,
-                }}
+        <Box sx={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
+          {/* Icon */}
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <Box sx={{ width: 80, height: 80 }}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 14 14"
+                style={{ width: "100%", height: "100%", display: "block" }}
               >
-                {timer > 0 ? `Resend code in ${mmss}` : "Resend code"}
-              </Button>
+                <g fill="none">
+                  <path
+                    fill="#205DAC"
+                    fillRule="evenodd"
+                    d="M4.411.52a40 40 0 0 1 5.053 0a2.4 2.4 0 0 1 2.244 2.269c.04.734.066 1.457.076 2.178L7.5 8.13a.985.985 0 0 1-1.145-.001l-4.263-3.17q.015-1.074.075-2.17A2.4 2.4 0 0 1 4.41.52Z"
+                    clipRule="evenodd"
+                  />
+                  <path
+                    fill="#A9C7EF"
+                    d="M.981 5.69L5.61 9.13c.771.574 1.86.575 2.633.005L12.9 5.697c.141.198.24.424.283.671c.138.798.203 1.622.203 2.762s-.065 1.964-.203 2.762c-.138.79-.845 1.371-1.692 1.462c-1.465.157-2.987.275-4.552.275s-3.087-.118-4.553-.275c-.846-.09-1.553-.672-1.691-1.462c-.14-.797-.204-1.622-.204-2.762s.064-1.964.203-2.762a1.6 1.6 0 0 1 .287-.677Z"
+                  />
+                  <path
+                    fill="#A9C7EF"
+                    fillRule="evenodd"
+                    d="M4.872 5.29c0-.345.28-.625.625-.625h2.88a.625.625 0 0 1 0 1.25h-2.88a.625.625 0 0 1-.625-.625m0-2.617c0-.345.28-.625.625-.625h2.88a.625.625 0 0 1 0 1.25h-2.88a.625.625 0 0 1-.625-.625"
+                    clipRule="evenodd"
+                  />
+                </g>
+              </svg>
             </Box>
+          </Box>
+
+          <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#0f172a" }}>
+            Verify your email
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+            We&apos;ve sent a 6-digit code to your email.
+          </Typography>
+
+          {err && <ErrorBanner text={err} />}
+
+          {/* OTP */}
+          <Box
+            sx={{
+              mt: 3,
+              display: "flex",
+              justifyContent: "center",
+              gap: 1,
+            }}
+            onPaste={handleOtpPaste}
+          >
+            {Array.from({ length: OTP_LEN }).map((_, i) => (
+              <TextField
+                key={i}
+                value={otp[i]}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                inputRef={(el) => (otpRefs.current[i] = el)}
+                sx={otpBoxSx}
+                inputProps={{ maxLength: 1 }}
+              />
+            ))}
+          </Box>
+
+          {/* Resend */}
+          <Box
+            sx={{
+              mt: 1.5,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              px: 1,
+            }}
+          >
+            <Typography sx={{ fontSize: 11, color: "rgba(0,0,0,0.55)" }}>
+              Didn&apos;t receive the code?
+            </Typography>
 
             <Button
-              variant="contained"
-              sx={{ ...primaryBtnSx, width: 320, mt: 2 }}
-              onClick={handleVerify}
-              disabled={verifyingCode}
+              disabled={timer > 0 || resendingCode}
+              onClick={handleResend}
+              sx={{
+                textTransform: "none",
+                fontSize: 11,
+                color: theme.currentPalette.primary,
+                fontWeight: 700,
+              }}
             >
-              {verifyingCode ? "Verifying..." : "VERIFY"}
-            </Button>
-
-            <Button
-              onClick={backToLogin}
-              sx={{ mt: 1.5, textTransform: "none", fontSize: 12 }}
-            >
-              Back to Login
+              {timer > 0 ? `Resend code in ${mmss}` : "Resend code"}
             </Button>
           </Box>
-        </Paper>
+
+          {/* Verify button with spinner */}
+          <Button
+            variant="contained"
+            sx={{ ...btnSx, width: "100%", mt: 2 }}
+            onClick={handleVerify}
+            disabled={verifyingCode}
+          >
+            {verifyingCode ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <span>Verifying</span>
+                <Box
+                  sx={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(255,255,255,0.45)",
+                    borderTopColor: "#fff",
+                    animation: "spin 0.8s linear infinite",
+                    "@keyframes spin": {
+                      from: { transform: "rotate(0deg)" },
+                      to: { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </Box>
+            ) : (
+              "VERIFY"
+            )}
+          </Button>
+
+          <Button
+            onClick={backToLogin}
+            sx={{ mt: 2, textTransform: "none", fontSize: 12, color: theme.currentPalette.primary }}
+          >
+            Back to Login
+          </Button>
+        </Box>
       </Box>
     );
   }
 
   if (mode === "reset") {
     return (
-      <Box sx={centerShellSx}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "#fff",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          px: 2,
+          pt: 4,
+        }}
+      >
         <Toaster position="top-center" />
-        <Paper sx={smallCardSx}>
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <Typography sx={{ fontWeight: 900, fontSize: 22, color: "#0f172a" }}>
-              Create Your New Password
-            </Typography>
-            <Typography sx={{ mt: 0.5, fontSize: 12, color: alpha("#000", 0.55) }}>
-              Enter a strong password to secure your account
-            </Typography>
 
-            {err && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {err}
-              </Alert>
-            )}
-
-            <Box sx={{ mt: 3, display: "grid", gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Password"
-                placeholder="Enter your password"
-                required
-                type={showNewPass ? "text" : "password"}
-                InputLabelProps={{ shrink: true }}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                sx={passwordFieldSx}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowNewPass((p) => !p)} size="small">
-                        {showNewPass ? <FaEyeSlash /> : <FaEye />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                fullWidth
-                label="Confirm Password"
-                required
-                placeholder="Enter your password"
-                type={showConfirmPass ? "text" : "password"}
-                value={confirmNewPassword}
-                InputLabelProps={{ shrink: true }}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                sx={passwordFieldSx}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowConfirmPass((p) => !p)} size="small">
-                        {showConfirmPass ? <FaEyeSlash /> : <FaEye />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <Button
-                variant="contained"
-                sx={{ ...primaryBtnSx, width: "100%" }}
-                onClick={handleResetPassword}
-                disabled={resettingPassword}
+        <Box sx={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
+          {/* icon */}
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+            <Box sx={{ width: 60, height: 60, bgcolor: theme.currentPalette.primary, borderRadius: 2 }}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="100"
+                height="100"
+                preserveAspectRatio="xMidYMid meet"
+                style={{ width: "100%", height: "100%", display: "block" }}
+                aria-hidden="true"
+                focusable="false"
               >
-                {resettingPassword ? "Changing..." : "Change Password"}
-              </Button>
-
-              <Button onClick={backToLogin} sx={{ textTransform: "none" }}>
-                Back to Login
-              </Button>
+                <g fill="none">
+                  <path
+                    fill={theme.currentPalette.primary}
+                    d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12"
+                    opacity="0.5"
+                  />
+                  <path
+                    fill="#D4E3F7"
+                    fillRule="evenodd"
+                    d="M18 9.776a3.784 3.784 0 0 1-3.792 3.776c-.382 0-1.252-.088-1.675-.439l-.529.527c-.311.31-.227.401-.089.551c.058.063.125.136.177.24c0 0 .441.614 0 1.229c-.264.351-1.005.843-1.851 0l-.177.175s.53.615.088 1.23c-.264.351-.97.702-1.587.088l-.617.614c-.423.422-.94.176-1.146 0l-.53-.527c-.493-.491-.205-1.024 0-1.229l4.586-4.566s-.441-.703-.441-1.669A3.784 3.784 0 0 1 14.208 6A3.784 3.784 0 0 1 18 9.776m-3.792 1.317c.73 0 1.323-.59 1.323-1.317a1.32 1.32 0 0 0-1.323-1.317c-.73 0-1.322.59-1.322 1.317a1.32 1.32 0 0 0 1.322 1.317"
+                    clipRule="evenodd"
+                  />
+                </g>
+              </svg>
             </Box>
           </Box>
-        </Paper>
+
+          <Typography sx={{ fontWeight: 500, fontSize: 24, color: "#0f172a", mt: 0 }}>
+            Set new password
+          </Typography>
+
+          <Typography sx={{ mt: 0.5, fontSize: 14, color: "rgba(0,0,0,0.55)" }}>
+            Enter a strong password to secure your account
+          </Typography>
+
+          {err && (
+            <Alert severity="error" sx={{ mt: 2, textAlign: "left" }}>
+              {err}
+            </Alert>
+          )}
+
+          {/* Fields */}
+          <Box sx={{ mt: 2, display: "grid", gap: 2, textAlign: "left" }}>
+            <TextField
+              fullWidth
+              label="Password"
+              placeholder="Enter your password"
+              required
+              type={showNewPass ? "text" : "password"}
+              InputLabelProps={{ shrink: true }}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              sx={passwordFieldSx}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowNewPass((p) => !p)} size="small">
+                      {showNewPass ? <FaEyeSlash /> : <FaEye />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Confirm Password"
+              required
+              placeholder="Enter your password"
+              type={showConfirmPass ? "text" : "password"}
+              value={confirmNewPassword}
+              InputLabelProps={{ shrink: true }}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              sx={passwordFieldSx}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirmPass((p) => !p)} size="small">
+                      {showConfirmPass ? <FaEyeSlash /> : <FaEye />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          {/* Buttons (stacked) */}
+          <Box sx={{ mt: 2.5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.25 }}>
+            <Button
+              variant="contained"
+              onClick={handleResetPassword}
+              disabled={resettingPassword}
+
+              sx={{
+                width: "100%",
+                maxWidth: 420,
+                py: 1.4,
+                borderRadius: 2,
+                bgcolor: theme.currentPalette.primary,
+                "&:hover": { bgcolor: alpha(theme.currentPalette.primary, 0.9) },
+              }}
+            >
+              {resettingPassword ? "Changing..." : "CHANGE PASSWORD"}
+            </Button>
+
+            <Button
+              onClick={backToLogin}
+              sx={{
+                textTransform: "none",
+                fontSize: 12,
+                color: theme.currentPalette.primary,
+                p: 0,
+                mt: 1,
+                minWidth: "auto",
+              }}
+            >
+              Back to Login
+            </Button>
+          </Box>
+        </Box>
       </Box>
     );
   }
 
-  // =========================
-  // LOGIN SCREEN (your original design + remember me + forgot password)
-  // =========================
   if (isBusy && (sendingCode || resendingCode || verifyingCode || resettingPassword)) {
     return <Loading />;
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        background: `linear-gradient(135deg, ${alpha(
-          theme.currentPalette.background,
-          0.8
-        )} 0%, ${alpha(theme.currentPalette.background, 0.9)} 100%)`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: 2,
-      }}
-    >
-      <Toaster position="top-center" />
-      <Container maxWidth="md" sx={{ width: "100%" }}>
-        <Paper
-          elevation={8}
+    <>
+
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
+      >
+        <Toaster position="top-center" />
+
+        {/* ✅ Content */}
+        <Box
           sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-            backgroundColor: "background.paper",
+            flex: 1,
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
+            alignItems: "center",
+            justifyContent: "center",
+            px: 2,
           }}
         >
-          {/* Left Side - Login Form */}
-          <Box sx={{ flex: 1, p: { xs: 3, md: 4 } }}>
-            <Box sx={{ textAlign: { xs: "center", md: "left" }, mb: 4 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: { xs: "center", md: "flex-start" },
-                  gap: 2,
-                  mb: 2,
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: "primary.main",
-                    borderRadius: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <svg
-                    style={{ width: 24, height: 24, color: "white" }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </Box>
-                <Typography variant="h4" fontWeight="bold" color="text.primary">
-                  Styles Dispatch
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Professional Load Management System
-              </Typography>
-            </Box>
+          <Box sx={formWrapSx}>
+            <Typography sx={titleSx}>Styles Trucking</Typography>
+            <Typography sx={subTitleSx}>Professional Load Management System</Typography>
 
-            <form onSubmit={handleSubmit}>
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color="text.primary" gutterBottom>
-                  Welcome Back
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Sign in to your account
-                </Typography>
-              </Box>
-
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4, textAlign: "left" }}>
               {err && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
                   {err}
                 </Alert>
               )}
 
-              <Box sx={{ mb: 1 }}>
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="Enter your email"
-                  sx={{ mb: 2 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoMailOutline style={{ color: theme.currentPalette.text }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
 
-                <TextField
-                  fullWidth
-                  label="Password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IoLockClosedOutline style={{ color: theme.currentPalette.text }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword((prev) => !prev)}
-                          edge="end"
-                          sx={{ color: "grey.400", "&:hover": { color: "grey.600" } }}
-                        >
-                          {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="e.g. test@gmail.com"
+                InputLabelProps={{ shrink: true }}
+                sx={fieldSx}
+              />
 
-              {/* Remember me + Forgot */}
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Enter your password"
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...fieldSx, mt: 2 }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword((p) => !p)}
+                        edge="end"
+                        sx={{ color: "rgba(0,0,0,0.45)" }}
+                      >
+                        {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              {/* Remember + Forgot */}
               <Box
                 sx={{
                   mt: 1,
@@ -778,6 +955,7 @@ const Login = () => {
                         setRememberMe(checked);
                         if (!checked) clearRememberEmail();
                       }}
+                      size="small"
                     />
                   }
                   label={<Typography sx={{ fontSize: 13 }}>Remember me</Typography>}
@@ -790,106 +968,30 @@ const Login = () => {
                     fontSize: 13,
                     color: theme.currentPalette.primary,
                     fontWeight: 600,
+                    p: 0,
+                    minWidth: "auto",
                   }}
                 >
                   Forgot password?
                 </Button>
               </Box>
 
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={loginLoading}
-                startIcon={<IoLogInOutline />}
-                sx={{
-                  mt: 2,
-                  py: 1.5,
-                  borderRadius: 2,
-                  fontSize: "1rem",
-                  fontWeight: 700,
-                  "&:focus": {
-                    outline: "none",
-                    boxShadow: `0 0 0 2px ${alpha(theme.currentPalette.primary, 0.5)}`,
-                  },
-                }}
-              >
-                {loginLoading ? "Signing In..." : "Sign In"}
+              <Button type="submit" fullWidth variant="contained" disabled={loginLoading} sx={btnSx}>
+                {loginLoading ? "Signing In..." : "SIGN IN"}
               </Button>
-
-              <Box sx={{ textAlign: "center", mt: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Secure login for authorized personnel only
-                </Typography>
-              </Box>
-            </form>
-          </Box>
-
-          {/* Right Side - Info Panel */}
-          <Box
-            sx={{
-              flex: 1,
-              background: `linear-gradient(135deg, ${theme.currentPalette.primary} 0%, ${theme.currentPalette.primary} 100%)`,
-              p: { xs: 3, md: 4 },
-              color: "white",
-              position: "relative",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            <Box sx={{ position: "relative", zIndex: 10 }}>
-              <Typography variant="h4" fontWeight="bold" gutterBottom>
-                Efficient Dispatch Management
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ color: "primary.100", mb: 3, lineHeight: 1.6 }}
-              >
-                Streamline your logistics operations with our professional dispatch services platform. Manage loads, track shipments, and optimize your workflow.
-              </Typography>
-
-              {["Real-time load tracking", "Driver performance analytics", "Automated reporting"].map(
-                (feature, i) => (
-                  <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        backgroundColor: alpha("#fff", 0.2),
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        my: 0.5,
-                      }}
-                    >
-                      <svg
-                        style={{ width: 16, height: 16, color: "white" }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: "primary.50" }}>
-                      {feature}
-                    </Typography>
-                  </Box>
-                )
-              )}
             </Box>
           </Box>
-        </Paper>
-      </Container>
-    </Box>
+        </Box>
+
+        {/* ✅ Footer */}
+        <Box sx={{ textAlign: "center", pb: 2 }}>
+          <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
+            © 2026 Styles Trucking. All rights reserved.
+          </Typography>
+        </Box>
+      </Box>
+
+    </>
   );
 };
 
