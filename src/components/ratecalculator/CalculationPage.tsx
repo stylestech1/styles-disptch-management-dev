@@ -169,13 +169,27 @@ const useRateCalculation = (
   const [calc, setCalc] = useState<number | "">("");
 
   useEffect(() => {
-    if (dhoToOriginDistance !== null)
+    if (dhoToOriginDistance !== null) {
       setDh(Number(dhoToOriginDistance.toFixed(1)));
+    } else {
+      setDh("");
+    }
   }, [dhoToOriginDistance]);
 
   useEffect(() => {
-    if (totalDistance !== null) setLoadMiles(Number(totalDistance.toFixed(1)));
-  }, [totalDistance]);
+    if (totalDistance === null) {
+      setLoadMiles("");
+      return;
+    }
+    if (dhoToOriginDistance === null) {
+      setLoadMiles(Number(totalDistance.toFixed(1)));
+      return;
+    }
+
+    const load = totalDistance - dhoToOriginDistance;
+
+    setLoadMiles(Number(Math.max(0, load).toFixed(1)));
+  }, [totalDistance, dhoToOriginDistance]);
 
   useEffect(() => {
     const dhNum = Number(dh);
@@ -184,9 +198,10 @@ const useRateCalculation = (
 
     if (dh === "" || loadMiles === "" || rate === "") return;
     if (isNaN(dhNum) || isNaN(loadMilesNum) || isNaN(rateNum)) return;
-    if (loadMilesNum + dhNum === 0) return;
+    const denom = loadMilesNum + dhNum;
+    if (denom === 0) return;
 
-    const result = rateNum / (loadMilesNum + dhNum);
+    const result = rateNum / denom;
     setCalc(Number(result.toFixed(3)));
   }, [dh, loadMiles, rate]);
 
@@ -446,6 +461,7 @@ const CalculationPage = () => {
         `• Load Miles: ${loadMiles}`,
         `• Rate ($): $${rate}`,
         `• Price Per Mile: $${calc}`,
+        `• Total Route: $${totalDistance}`,
         ``,
         `Calculation: $${rate} / (${loadMiles} + ${dh}) = $${calc} per mile`,
         ``,
@@ -798,7 +814,7 @@ const CalculationPage = () => {
                       >
                         <Typography variant="body2">
                           Calculation: ${rate} / ({loadMiles} + {dh} miles) ={" "}
-                          <strong>${calc} per mile</strong>
+                          <strong>${Number(calc).toFixed(2)} per mile</strong>
                         </Typography>
                       </Alert>
                     </Fade>

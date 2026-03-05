@@ -50,14 +50,14 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   const borderBlue = alpha(theme.currentPalette.primary, 0.1);
   const headerBlue = theme.currentPalette.primary;
 
-  const isFilled = (v: any) => Boolean(v); 
+  const isFilled = (v: any) => Boolean(v);
 
   const requiredMap: Record<FieldKey, boolean> = {
-    pickupAt: true,            
-    arrivalAtShipper: false,   
+    pickupAt: true,
+    arrivalAtShipper: false,
     leftShipper: false,
     arrivalAtReceiver: false,
-    completedAt: true,           
+    completedAt: true,
     leftReceiver: false,
   };
 
@@ -149,12 +149,12 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         subtitle: open.delivery ? "Click to collapse" : "Click to expand",
         icon: LandPlot,
 
-        leftKey: "completedAt" as const, 
+        leftKey: "completedAt" as const,
         leftLabel: "Delivery",
         leftValue: completedAt,
         onLeftChange: onCompletedAtChange,
 
-        rightKey: "leftReceiver" as const, 
+        rightKey: "leftReceiver" as const,
         rightLabel: "Left Receiver",
         rightValue: leftReceiver,
         onRightChange: onLeftReceiverChange,
