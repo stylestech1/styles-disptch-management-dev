@@ -52,7 +52,27 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [err, setErr] = useState("");
+  type FieldErrors = Partial<{
+    email: string;
+    password: string;
+    otp: string;
+    newPassword: string;
+    confirmNewPassword: string;
+    form: string; // general (optional)
+  }>;
+
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const clearErrors = () => setErrors({});
+
+  const setFieldError = (key: keyof FieldErrors, msg: string) =>
+    setErrors((p) => ({ ...p, [key]: msg }));
+
+  const clearFieldError = (key: keyof FieldErrors) =>
+    setErrors((p) => {
+      const next = { ...p };
+      delete next[key];
+      return next;
+    });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -97,7 +117,6 @@ const Login = () => {
     localStorage.removeItem("remember_email");
   };
 
-  // ---------- resend timer ----------
   useEffect(() => {
     if (mode !== "verify") return;
     setTimer(RESEND_SECONDS);
@@ -119,17 +138,16 @@ const Login = () => {
   }, [timer]);
 
   const openForgotPassword = async () => {
-    setErr("");
+    clearErrors();
     const em = email.trim();
 
     if (!em) {
-      toast.error("Please enter your email first.");
+      setFieldError("email", "Please enter your email first.");
       return;
     }
 
     try {
       await sendResetCode({ email: em }).unwrap();
-      // toast.success("Verification code sent!");
       setMode("verify");
       setOtp(Array(OTP_LEN).fill(""));
       setNewPassword("");
@@ -137,62 +155,13 @@ const Login = () => {
       setTimeout(() => otpRefs.current?.[0]?.focus?.(), 50);
     } catch (e: any) {
       const msg = e?.data?.message || e?.message || "Failed to send reset code";
-      setErr(msg);
-      toast.error(msg);
+      setFieldError("email", msg);
     }
-  };
-
-  const ErrorBanner = ({ text }: { text: string }) => {
-    return (
-      <Box
-        sx={{
-          mt: 2,
-          px: 2,
-          py: 1.5,
-          borderRadius: 2,
-          border: "1px solid rgba(220, 38, 38, 0.35)",
-          bgcolor: "rgba(239, 68, 68, 0.08)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-          textAlign: "center",
-        }}
-      >
-        <Box
-          sx={{
-            width: 22,
-            height: 22,
-            borderRadius: "50%",
-            border: "2px solid #B42318",
-            color: "#B42318",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 14,
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-        >
-          ×
-        </Box>
-
-        <Typography
-          sx={{
-            fontSize: 13,
-            color: "rgb(185, 28, 28)",
-            lineHeight: 1.3,
-          }}
-        >
-          {text}
-        </Typography>
-      </Box>
-    );
   };
 
   const backToLogin = () => {
     setMode("login");
-    setErr("");
+    clearErrors();
     setOtp(Array(OTP_LEN).fill(""));
     setNewPassword("");
     setConfirmNewPassword("");
@@ -247,85 +216,75 @@ const Login = () => {
       await resendResetCode({ email: em }).unwrap();
       // toast.success("Code resent!");
       setTimer(RESEND_SECONDS);
-      setErr("");
+      clearErrors();
       setOtp(Array(OTP_LEN).fill(""));
       setTimeout(() => otpRefs.current?.[0]?.focus?.(), 50);
     } catch (e: any) {
       const msg = e?.data?.message || e?.message || "Failed to resend code";
-      toast.error(msg);
+      // toast.error(msg);
     }
   };
 
   const handleVerify = async () => {
-    setErr("");
+    clearErrors();
 
     const code = otp.join("");
     if (code.length !== OTP_LEN) {
-      toast.error("Please enter the 6-digit code.");
+      setFieldError("otp", "Please enter the 6-digit code.");
       return;
     }
+
     if (timer <= 0) {
-      setErr(MSG_SESSION_EXPIRED);
-      toast.error(MSG_SESSION_EXPIRED);
+      setFieldError("otp", MSG_SESSION_EXPIRED);
       return;
     }
 
     try {
       await verifyResetCode({ resetCode: code }).unwrap();
-      // toast.success("Code verified!");
       setMode("reset");
     } catch (e: any) {
       const status = e?.status;
       const backendMsg = e?.data?.message || e?.data?.error || e?.message || "";
+
       if (status === 401) {
-        setErr(MSG_INVALID_CODE);
-        toast.error(MSG_INVALID_CODE);
+        setFieldError("otp", MSG_INVALID_CODE);
         return;
       }
       if (status === 410 || status === 408) {
-        setErr(MSG_SESSION_EXPIRED);
-        toast.error(MSG_SESSION_EXPIRED);
+        setFieldError("otp", MSG_SESSION_EXPIRED);
         return;
       }
 
-      const fallback = backendMsg || MSG_INVALID_CODE;
-      setErr(fallback);
-      toast.error(fallback);
+      setFieldError("otp", backendMsg || MSG_INVALID_CODE);
     }
   };
 
   const handleResetPassword = async () => {
-    setErr("");
+    clearErrors();
+
     const em = email.trim();
     if (!em) return;
 
-    if (!newPassword || !confirmNewPassword) {
-      toast.error("Please fill password fields.");
-      return;
-    }
+    if (!newPassword) setFieldError("newPassword", "Password is required.");
+    if (!confirmNewPassword) setFieldError("confirmNewPassword", "Confirm password is required.");
+    if (!newPassword || !confirmNewPassword) return;
 
     if (newPassword !== confirmNewPassword) {
-      toast.error("Passwords do not match.");
+      setFieldError("confirmNewPassword", "Passwords doesn't match.");
       return;
     }
 
     try {
-      await resetPassword({
-        email: em,
-        newPassword,
-        confirmNewPassword,
-      }).unwrap();
+      await resetPassword({ email: em, newPassword, confirmNewPassword }).unwrap();
 
-      // ✅ 4th step: success screen
       setMode("success");
       setPassword("");
       setOtp(Array(OTP_LEN).fill(""));
       setNewPassword("");
       setConfirmNewPassword("");
     } catch (e: any) {
-      const msg = e?.data?.message || e?.message || "Failed to reset password";
-      setErr(msg);
-      toast.error(msg);
+      const msg = "Failed to reset password";
+      setFieldError("form", msg);
     }
   };
 
@@ -333,63 +292,46 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr("");
+    clearErrors();
+
+    const em = email.trim();
+
+    if (!em) {
+      setFieldError("email", "Email is required.");
+    }
+    if (!password) {
+      setFieldError("password", "Password is required.");
+    }
+    if (!em || !password) return;
 
     try {
       const res = await fetch(`${apiURL}/api/v1/auth/logIn`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
+        body: JSON.stringify({ email: em, password }),
       });
 
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result?.message || "Email or Password is invalid");
+        const msg = result?.message || "Email or Password is invalid";
+        setFieldError("password", msg);
+        return;
       }
 
-      dispatch(
-        loginSuccess({
-          user: result.data,
-          token: result.token,
-        })
-      );
+      dispatch(loginSuccess({ user: result.data, token: result.token }));
 
       if (result.data.role === "admin") router.push("/admin/loads");
       else if (result.data.role === "super-admin") router.push("/superAdmin/companies");
       else router.push("/dispatchers/loads");
     } catch (error: any) {
-      const msg = error?.message || "Email or Password is invalid";
-      setErr(msg);
-      toast.error(msg);
+      const msg = error?.message || "Something went wrong";
+      setFieldError("form", msg);
     }
   };
-
-  const otpBoxSx = {
-    width: 44,
-    height: 44,
-    "& .MuiOutlinedInput-root": {
-      height: 44,
-      borderRadius: 1.5,
-      backgroundColor: "#fff",
-    },
-    "& input": {
-      textAlign: "center" as const,
-      fontSize: 18,
-      fontWeight: 700,
-      padding: 0,
-    },
-    "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: err ? "rgba(220, 38, 38, 0.55)" : alpha(theme.currentPalette.primary, 0.35),
-    },
-    "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: err ? "rgb(220, 38, 38)" : theme.currentPalette.primary,
-      borderWidth: 2,
-    },
-  };
+  const OTP_SIZE = 54;         
+  const OTP_GAP = 12;
+  const OTP_ROW_W = OTP_SIZE * OTP_LEN + OTP_GAP * (OTP_LEN - 1);
 
   const passwordFieldSx = {
     "& .MuiFormLabel-asterisk": { color: "red" },
@@ -487,11 +429,10 @@ const Login = () => {
   if (mode === "success") {
     return (
       <Box sx={pageSx}>
-        <Toaster position="top-center" />
+        {/* <Toaster position="top-center" /> */}
 
         <Box sx={{ width: "100%", maxWidth: 520, textAlign: "center" }}>
           <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
-            {/* same size behavior as your other icons */}
             <Box sx={{ width: 80, height: 80 }}>
               <SuccessCheckSvg />
             </Box>
@@ -527,25 +468,105 @@ const Login = () => {
           </Button>
 
           {/* <Box sx={{ mt: 8, textAlign: "center" }}>
-            <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
-              © 2026 Styles Trucking. All rights reserved.
-            </Typography>
-          </Box> */}
+              <Typography sx={{ fontSize: 12, color: theme.currentPalette.primary }}>
+                © 2026 Styles Trucking. All rights reserved.
+              </Typography>
+            </Box> */}
         </Box>
       </Box>
     );
   }
 
   if (mode === "verify") {
+    const OTP_SIZE = 54; 
+    const OTP_GAP = 12;
+    const OTP_ROW_W = OTP_SIZE * OTP_LEN + OTP_GAP * (OTP_LEN - 1);
+
+    const otpBoxSx = (hasOtpError: boolean) => ({
+      width: OTP_SIZE,
+      height: OTP_SIZE,
+
+      "& .MuiOutlinedInput-root": {
+        height: OTP_SIZE,
+        borderRadius: 2,
+        backgroundColor: "#fff",
+      },
+
+      "& input": {
+        textAlign: "center" as const,
+        fontSize: 26,
+        fontWeight: 900,
+        padding: 0,
+      },
+
+      "& .MuiOutlinedInput-notchedOutline": {
+        borderColor: hasOtpError ? "rgba(220, 38, 38, 0.55)" : "rgba(0,0,0,0.20)",
+      },
+
+      "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+        borderColor: hasOtpError ? "rgba(220, 38, 38, 0.75)" : "rgba(0,0,0,0.28)",
+      },
+
+      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderColor: hasOtpError ? "rgb(220, 38, 38)" : theme.currentPalette.primary,
+        borderWidth: 2,
+      },
+    });
+
+    const ErrorBanner = ({ text }: { text: string }) => {
+      return (
+        <Box
+          sx={{
+            mt: 2,
+            width: OTP_ROW_W,
+            mx: "auto",
+            px: 2,
+            py: 1.5,
+            borderRadius: 2,
+            border: "1px solid rgba(220, 38, 38, 0.35)",
+            bgcolor: "rgba(239, 68, 68, 0.08)",
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+            textAlign: "left",
+          }}
+        >
+          <Box
+            sx={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              border: "2px solid #B42318",
+              color: "#B42318",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </Box>
+
+          <Typography sx={{ fontSize: 13, color: "rgb(185, 28, 28)", lineHeight: 1.3 }}>
+            {text}
+          </Typography>
+        </Box>
+      );
+    };
+
     return (
       <Box sx={pageSx}>
-        <Toaster position="top-center" />
-
-        <Box sx={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
+        <Box sx={{ width: "100%", maxWidth: 389, textAlign: "center" }}>
           {/* Icon */}
           <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
             <Box sx={{ width: 80, height: 80 }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" style={{ width: "100%", height: "100%", display: "block" }}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 14 14"
+                style={{ width: "100%", height: "100%", display: "block" }}
+              >
                 <g fill="none">
                   <path
                     fill="#205DAC"
@@ -568,45 +589,83 @@ const Login = () => {
             </Box>
           </Box>
 
-          <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#0f172a" }}>Verify your email</Typography>
-          <Typography sx={{ mt: 0.5, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
-            We&apos;ve sent a 6-digit code to your email.
+          <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#0f172a" }}>
+            Verify your email
           </Typography>
 
-          {err && <ErrorBanner text={err} />}
-
-          {/* OTP */}
-          <Box
-            sx={{ mt: 3, display: "flex", justifyContent: "center", gap: 1 }}
-            onPaste={handleOtpPaste}
-          >
-            {Array.from({ length: OTP_LEN }).map((_, i) => (
-              <TextField
-                key={i}
-                value={otp[i]}
-                onChange={(e) => handleOtpChange(i, e.target.value)}
-                onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                inputRef={(el) => (otpRefs.current[i] = el)}
-                sx={otpBoxSx}
-                inputProps={{ maxLength: 1 }}
-              />
-            ))}
-          </Box>
-
-          {/* Resend */}
-          <Box sx={{ mt: 1.5, display: "flex", justifyContent: "space-between", alignItems: "center", px: 1 }}>
-            <Typography sx={{ fontSize: 11, color: "rgba(0,0,0,0.55)" }}>Didn&apos;t receive the code?</Typography>
-
-            <Button
-              disabled={timer > 0 || resendingCode}
-              onClick={handleResend}
-              sx={{ textTransform: "none", fontSize: 11, color: theme.currentPalette.primary, fontWeight: 700 }}
+          <Box sx={{ width: OTP_ROW_W, mx: "auto" }}>
+            <Typography
+              sx={{
+                mt: 0.5,
+                fontSize: 12,
+                color: "rgba(0,0,0,0.55)",
+                textAlign: "center",
+              }}
             >
-              {timer > 0 ? `Resend code in ${mmss}` : "Resend code"}
-            </Button>
+              We&apos;ve sent a 6-digit code to your email.
+            </Typography>
+
+            {errors.otp && <ErrorBanner text={errors.otp} />}
+
+            {/* OTP */}
+            <Box
+              sx={{
+                mt: 2.5,
+                display: "flex",
+                justifyContent: "center",
+                gap: `${OTP_GAP}px`,
+              }}
+              onPaste={handleOtpPaste}
+            >
+              {Array.from({ length: OTP_LEN }).map((_, i) => (
+                <TextField
+                  key={i}
+                  value={otp[i]}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  inputRef={(el) => (otpRefs.current[i] = el)}
+                  sx={otpBoxSx(!!errors.otp)}
+                  inputProps={{ maxLength: 1, inputMode: "numeric" }}
+                />
+              ))}
+            </Box>
+
+            {/* Resend */}
+            <Box
+              sx={{
+                mt: 1.5,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography sx={{ fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+                Didn&apos;t receive the code?
+              </Typography>
+
+              <Button
+                disabled={timer > 0 || resendingCode}
+                onClick={handleResend}
+                sx={{
+                  textTransform: "none",
+                  fontSize: 12,
+                  color: timer > 0 ? "rgba(0,0,0,0.45)" : theme.currentPalette.primary,
+                  fontWeight: 700,
+                  p: 0,
+                  minWidth: "auto",
+                }}
+              >
+                {timer > 0 ? `Resend code in ${mmss}` : "Resend code"}
+              </Button>
+            </Box>
           </Box>
 
-          <Button variant="contained" sx={{ ...btnSx, width: "100%", mt: 2 }} onClick={handleVerify} disabled={verifyingCode}>
+          <Button
+            variant="contained"
+            sx={{ ...btnSx, width: "100%", mt: 2 }}
+            onClick={handleVerify}
+            disabled={verifyingCode}
+          >
             {verifyingCode ? (
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <span>Verifying</span>
@@ -618,7 +677,10 @@ const Login = () => {
                     border: "2px solid rgba(255,255,255,0.45)",
                     borderTopColor: "#fff",
                     animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": { from: { transform: "rotate(0deg)" }, to: { transform: "rotate(360deg)" } },
+                    "@keyframes spin": {
+                      from: { transform: "rotate(0deg)" },
+                      to: { transform: "rotate(360deg)" },
+                    },
                   }}
                 />
               </Box>
@@ -627,7 +689,15 @@ const Login = () => {
             )}
           </Button>
 
-          <Button onClick={backToLogin} sx={{ mt: 2, textTransform: "none", fontSize: 12, color: theme.currentPalette.primary }}>
+          <Button
+            onClick={backToLogin}
+            sx={{
+              mt: 2,
+              textTransform: "none",
+              fontSize: 12,
+              color: theme.currentPalette.primary,
+            }}
+          >
             Back to Login
           </Button>
         </Box>
@@ -676,10 +746,9 @@ const Login = () => {
           <Typography sx={{ mt: 0.5, fontSize: 14, color: "rgba(0,0,0,0.55)" }}>
             Enter a strong password to secure your account
           </Typography>
-
-          {err && (
-            <Alert severity="error" sx={{ mt: 2, textAlign: "left" }}>
-              {err}
+          {errors.form && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {errors.form}
             </Alert>
           )}
 
@@ -687,13 +756,18 @@ const Login = () => {
             <TextField
               fullWidth
               label="Password"
-              placeholder="Enter your password"
               required
               type={showNewPass ? "text" : "password"}
-              InputLabelProps={{ shrink: true }}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (errors.newPassword) clearFieldError("newPassword");
+                if (errors.confirmNewPassword) clearFieldError("confirmNewPassword");
+              }}
+              error={!!errors.newPassword}
+              helperText={errors.newPassword}
               sx={passwordFieldSx}
+              InputLabelProps={{ shrink: true }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -709,12 +783,16 @@ const Login = () => {
               fullWidth
               label="Confirm Password"
               required
-              placeholder="Enter your password"
               type={showConfirmPass ? "text" : "password"}
               value={confirmNewPassword}
-              InputLabelProps={{ shrink: true }}
-              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmNewPassword(e.target.value);
+                if (errors.confirmNewPassword) clearFieldError("confirmNewPassword");
+              }}
+              error={!!errors.confirmNewPassword}
+              helperText={errors.confirmNewPassword}
               sx={passwordFieldSx}
+              InputLabelProps={{ shrink: true }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -789,9 +867,9 @@ const Login = () => {
           <Typography sx={subTitleSx}>Professional Load Management System</Typography>
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4, textAlign: "left" }}>
-            {err && (
+            {errors.form && (
               <Alert severity="error" sx={{ mb: 2 }}>
-                {err}
+                {errors.form}
               </Alert>
             )}
 
@@ -800,11 +878,17 @@ const Login = () => {
               label="Email Address"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) clearFieldError("email");
+                if (errors.form) clearFieldError("form");
+              }}
               required
               placeholder="e.g. test@gmail.com"
               InputLabelProps={{ shrink: true }}
               sx={fieldSx}
+              error={!!errors.email}
+              helperText={errors.email}
             />
 
             <TextField
@@ -812,11 +896,17 @@ const Login = () => {
               label="Password"
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) clearFieldError("password");
+                if (errors.form) clearFieldError("form");
+              }}
               required
               placeholder="Enter your password"
               InputLabelProps={{ shrink: true }}
               sx={{ ...fieldSx, mt: 2 }}
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
