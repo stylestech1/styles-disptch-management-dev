@@ -887,18 +887,43 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 alignItems: "center",
                 justifyContent: "space-between",
                 borderBottom: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+                gap: 2,
+                overflowX: { xs: "auto", md: "visible" },
+                overflowY: "hidden",
+                WebkitOverflowScrolling: "touch",
+                "&::-webkit-scrollbar": {
+                  height: 6,
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  backgroundColor: alpha(theme.currentPalette.text, 0.18),
+                  borderRadius: 999,
+                },
               }}
             >
-              <Box>
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  minWidth: "fit-content",
+                }}
+              >
                 <Typography sx={{ fontWeight: 900, fontSize: 20 }}>{stepTitle}</Typography>
                 <Typography sx={{ fontSize: 12, color: alpha(theme.currentPalette.text, 0.55) }}>
                   Step {activeStep + 1} of {steps.length}
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.2,
+                  flexShrink: 0,
+                  minWidth: "max-content",
+                  pr: { xs: 1, md: 0 },
+                }}
+              >
                 <Box sx={chipSx}>
-                  <KeyRound size={20} />{" "}
+                  <KeyRound size={20} />
                   {loadIDInp?.trim() ? loadIDInp : "0"}
                 </Box>
 
@@ -919,6 +944,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   <DollarSign size={20} />
                   {price?.trim() ? `$${Number(price).toLocaleString()}` : "$0"}
                 </Box>
+
                 <IconButton
                   onClick={handleClose}
                   sx={{
@@ -926,7 +952,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                     width: 40,
                     height: 40,
                     borderRadius: 2,
-                    // border: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+                    flexShrink: 0,
                   }}
                 >
                   <IoClose />

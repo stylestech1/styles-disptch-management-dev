@@ -2,13 +2,24 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import dayjs, { Dayjs } from "dayjs";
 import { RootState, useAppSelector } from "@/redux/store";
 import { LoadDetailsTabProps } from "@/types/globalTypes";
-import { alpha, Box, Collapse, Divider, IconButton, Stack, Typography } from "@mui/material";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import {
+  alpha,
+  Box,
+  Collapse,
+  Divider,
+  IconButton,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { ChevronDown, LandPlot, MapPin, Navigation } from "lucide-react";
+
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DesktopDateTimePicker } from "@mui/x-date-pickers/DesktopDateTimePicker";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 type SectionKey = "pickup" | "transit" | "delivery";
 
@@ -19,6 +30,142 @@ type FieldKey =
   | "arrivalAtReceiver"
   | "completedAt"
   | "leftReceiver";
+
+type CardProps = {
+  sectionKey: SectionKey;
+  title: string;
+  subtitle: string;
+  Icon: any;
+  expanded: boolean;
+  borderBlue: string;
+  headerBlue: string;
+  dividerColor: string;
+  onToggle: (key: SectionKey) => void;
+  children: React.ReactNode;
+};
+
+const SectionCard = ({
+  sectionKey,
+  title,
+  subtitle,
+  Icon,
+  expanded,
+  borderBlue,
+  headerBlue,
+  dividerColor,
+  onToggle,
+  children,
+}: CardProps) => {
+  return (
+    <Box
+      sx={{
+        borderRadius: 2.5,
+        border: `2px solid ${borderBlue}`,
+        bgcolor: "#fff",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        onClick={() => onToggle(sectionKey)}
+        sx={{
+          px: 2,
+          py: 1.75,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              display: "grid",
+              placeItems: "center",
+              bgcolor: borderBlue,
+            }}
+          >
+            <Icon size={18} color={headerBlue} />
+          </Box>
+
+          <Box>
+            <Typography
+              sx={{
+                fontWeight: 800,
+                color: headerBlue,
+                fontSize: 16,
+                lineHeight: 1.1,
+              }}
+            >
+              {title}
+            </Typography>
+
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: alpha(headerBlue, 0.9),
+                mt: 0.25,
+              }}
+            >
+              {subtitle}
+            </Typography>
+          </Box>
+        </Box>
+
+        <IconButton
+          size="small"
+          sx={{
+            color: headerBlue,
+            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "0.2s",
+          }}
+        >
+          <ChevronDown size={18} />
+        </IconButton>
+      </Box>
+
+      <Divider sx={{ borderColor: dividerColor }} />
+
+      <Collapse in={expanded} timeout={180} unmountOnExit>
+        <Box sx={{ p: 2 }}>{children}</Box>
+      </Collapse>
+    </Box>
+  );
+};
+
+const FieldLabel = ({
+  text,
+  required,
+  textColor,
+}: {
+  text: string;
+  required?: boolean;
+  textColor: string;
+}) => (
+  <Typography
+    sx={{
+      fontSize: 12,
+      fontWeight: 700,
+      mb: 0.75,
+      color: textColor,
+      display: "flex",
+      alignItems: "center",
+      gap: 0.5,
+    }}
+  >
+    {text}
+    {required ? (
+      <Box
+        component="span"
+        sx={{ color: "#d32f2f", fontWeight: 900, lineHeight: 1 }}
+      >
+        *
+      </Box>
+    ) : null}
+  </Typography>
+);
 
 const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   pickupAt,
@@ -49,6 +196,8 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
 
   const borderBlue = alpha(theme.currentPalette.primary, 0.1);
   const headerBlue = theme.currentPalette.primary;
+  const dividerColor = alpha(theme.currentPalette.primary, 0.18);
+  const labelColor = alpha(theme.currentPalette.text, 0.8);
 
   const isFilled = (v: any) => Boolean(v);
 
@@ -79,6 +228,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         delivery: p.delivery,
       }));
     }
+
     if (transitDone) {
       setOpen((p) => ({
         pickup: p.pickup,
@@ -89,10 +239,11 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   }, [pickupAt, arrivalAtShipper, leftShipper, arrivalAtReceiver]);
 
   const pickerSx = {
+    width: "100%",
     "& .MuiInputBase-root": {
       borderRadius: 2,
       bgcolor: "#fff",
-      height: 44,
+      minHeight: 44,
       fontSize: 13,
     },
     "& .MuiOutlinedInput-notchedOutline": {
@@ -107,7 +258,65 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
     "& .MuiInputAdornment-root svg": {
       color: alpha(theme.currentPalette.text, 0.55),
     },
+    "& .MuiFormHelperText-root": {
+      marginLeft: 0,
+      marginRight: 0,
+      marginTop: "6px",
+      fontSize: 12,
+    },
   } as const;
+
+  const toDayjsValue = (value: any): Dayjs | null => {
+    if (!value) return null;
+    if (dayjs.isDayjs(value)) return value;
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed : null;
+  };
+
+  const renderPicker = ({
+    // label,
+    fieldKey,
+    value,
+    onChange,
+    error,
+  }: {
+    // label: string;
+    fieldKey: FieldKey;
+    value: any;
+    onChange?: (value: any) => void;
+    error: boolean;
+  }) => (
+    <DateTimePicker
+      // label={label}
+      value={toDayjsValue(value)}
+
+      onChange={(newValue) => {
+        setTouched((prev) => ({ ...prev, [fieldKey]: true }));
+        onChange?.(newValue);
+      }}
+      closeOnSelect={false}
+      // disabled={!isEditing}
+      ampm
+      timeSteps={{ hours: 1, minutes: 5 }}
+      sx={pickerSx}
+      slotProps={{
+        actionBar: {
+          actions: ["cancel", "accept"],
+        },
+        tabs: {
+          hidden: true,
+        },
+        textField: {
+          fullWidth: true,
+          error,
+          // helperText: error ? `${label} is required` : " ",
+          onBlur: () => {
+            setTouched((prev) => ({ ...prev, [fieldKey]: true }));
+          },
+        },
+      }}
+    />
+  );
 
   const sections = useMemo(
     () => [
@@ -179,127 +388,23 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
     ]
   );
 
-  const Card = ({
-    sectionKey,
-    title,
-    subtitle,
-    Icon,
-    children,
-  }: {
-    sectionKey: SectionKey;
-    title: string;
-    subtitle: string;
-    Icon: any;
-    children: React.ReactNode;
-  }) => {
-    const expanded = open[sectionKey];
-
-    return (
-      <Box
-        sx={{
-          borderRadius: 2.5,
-          border: `2px solid ${borderBlue}`,
-          bgcolor: "#fff",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <Box
-          onClick={() => toggle(sectionKey)}
-          sx={{
-            px: 2,
-            py: 1.75,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            cursor: "pointer",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                display: "grid",
-                placeItems: "center",
-                bgcolor: borderBlue,
-              }}
-            >
-              <Icon size={18} color={headerBlue} />
-            </Box>
-
-            <Box>
-              <Typography
-                sx={{
-                  fontWeight: 800,
-                  color: headerBlue,
-                  fontSize: 16,
-                  lineHeight: 1.1,
-                }}
-              >
-                {title}
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontSize: 12,
-                  color: alpha(headerBlue, 0.9),
-                  mt: 0.25,
-                }}
-              >
-                {subtitle}
-              </Typography>
-            </Box>
-          </Box>
-
-          <IconButton
-            size="small"
-            sx={{
-              color: headerBlue,
-              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "0.2s",
-            }}
-          >
-            <ChevronDown size={18} />
-          </IconButton>
-        </Box>
-
-        <Divider sx={{ borderColor: alpha(theme.currentPalette.primary, 0.18) }} />
-
-        {/* Body */}
-        <Collapse in={expanded} timeout={180} unmountOnExit>
-          <Box sx={{ p: 2 }}>{children}</Box>
-        </Collapse>
-      </Box>
-    );
-  };
-
-  const Label = ({ text, required }: { text: string; required?: boolean }) => (
-    <Typography
-      sx={{
-        fontSize: 12,
-        fontWeight: 700,
-        mb: 0.75,
-        color: alpha(theme.currentPalette.text, 0.8),
-        display: "flex",
-        alignItems: "center",
-        gap: 0.5,
-      }}
-    >
-      {text}
-      {required ? (
-        <Box component="span" sx={{ color: "#d32f2f", fontWeight: 900, lineHeight: 1 }}>
-          *
-        </Box>
-      ) : null}
-    </Typography>
-  );
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", mb: 2 }}>
-        <Typography sx={{ fontWeight: 900, fontSize: 18, color: alpha(theme.currentPalette.text, 0.9) }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          mb: 2,
+        }}
+      >
+        <Typography
+          sx={{
+            fontWeight: 900,
+            fontSize: 18,
+            color: alpha(theme.currentPalette.text, 0.9),
+          }}
+        >
           Timeline & Milestones
         </Typography>
 
@@ -318,61 +423,50 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
             const rightError = getError(s.rightKey, s.rightValue);
 
             return (
-              <Card key={s.key} sectionKey={s.key} title={s.title} subtitle={s.subtitle} Icon={s.icon}>
+              <SectionCard
+                key={s.key}
+                sectionKey={s.key}
+                title={s.title}
+                subtitle={s.subtitle}
+                Icon={s.icon}
+                expanded={open[s.key]}
+                borderBlue={borderBlue}
+                headerBlue={headerBlue}
+                dividerColor={dividerColor}
+                onToggle={toggle}
+              >
                 <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                   <Box sx={{ flex: 1 }}>
-                    <Label text={s.leftLabel} required={leftRequired} />
-                    <DateTimePicker
-                      value={s.leftValue}
-                      onChange={(val) => {
-                        setTouched((p) => ({ ...p, [s.leftKey]: true }));
-                        s.onLeftChange(val);
-                      }}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          required: leftRequired,
-                          error: leftError,
-                          helperText: leftError ? "This field is required" : " ",
-                          onBlur: () => setTouched((p) => ({ ...p, [s.leftKey]: true })),
-                          sx: pickerSx,
-                        },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
-                          },
-                        },
-                      }}
+                    <FieldLabel
+                      text={s.leftLabel}
+                      required={leftRequired}
+                      textColor={labelColor}
                     />
+                    {renderPicker({
+                      // label: s.leftLabel,
+                      fieldKey: s.leftKey,
+                      value: s.leftValue,
+                      onChange: s.onLeftChange,
+                      error: leftError,
+                    })}
                   </Box>
 
                   <Box sx={{ flex: 1 }}>
-                    <Label text={s.rightLabel} required={rightRequired} />
-                    <DateTimePicker
-                      value={s.rightValue}
-                      onChange={(val) => {
-                        setTouched((p) => ({ ...p, [s.rightKey]: true }));
-                        s.onRightChange(val);
-                      }}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          required: rightRequired,
-                          error: rightError,
-                          helperText: rightError ? "This field is required" : " ",
-                          onBlur: () => setTouched((p) => ({ ...p, [s.rightKey]: true })),
-                          sx: pickerSx,
-                        },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": { bgcolor: "#fff", borderRadius: 2 },
-                          },
-                        },
-                      }}
+                    <FieldLabel
+                      text={s.rightLabel}
+                      required={rightRequired}
+                      textColor={labelColor}
                     />
+                    {renderPicker({
+                      // label: s.rightLabel,
+                      fieldKey: s.rightKey,
+                      value: s.rightValue,
+                      onChange: s.onRightChange,
+                      error: rightError,
+                    })}
                   </Box>
                 </Stack>
-              </Card>
+              </SectionCard>
             );
           })}
         </Stack>

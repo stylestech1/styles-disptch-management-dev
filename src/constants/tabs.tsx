@@ -11,6 +11,7 @@ import {
   Truck,
   Users,
   UserStar,
+  Wrench,
 } from "lucide-react";
 import HandymanIcon from "@mui/icons-material/Handyman";
 
@@ -53,18 +54,18 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
     },
     {
       label: "Maintenance",
-      icon: <HandymanIcon />,
+      icon: <Wrench />,
       children: [
         {
           label: "Truck Maintenance",
           subtitle: "Monitor and manage maintenance schedules across your entire fleet",
-          icon: <HandymanIcon />,
+          // icon: <HandymanIcon />,
           path: "trucksmaintenance",
         },
         {
           label: "Maintenance Centers",
           subtitle: "Manage and monitor maintenance facilities across the United States",
-          icon: <Building2 />,
+          // icon: <Building2 />,
           path: "centermaintenance",
         },
       ],
