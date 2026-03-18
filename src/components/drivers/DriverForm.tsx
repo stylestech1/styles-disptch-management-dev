@@ -445,13 +445,14 @@ export const DriverForm = ({
                     control={control}
                     rules={{
                       required: "Price per mile is required",
-                      min: {
-                        value: 0,
-                        message: "Price cannot be negative",
-                      },
-                      max: {
-                        value: 1000,
-                        message: "Price seems too high",
+                      validate: {
+                        validFormat: (value) =>
+                          /^\d+(\.\d{1,2})?$/.test(value) ||
+                          "Only up to 2 decimal places allowed",
+                        minValue: (value) =>
+                          parseFloat(value) >= 0 || "Price cannot be negative",
+                        maxValue: (value) =>
+                          parseFloat(value) <= 1000 || "Price seems too high",
                       },
                     }}
                     render={({ field }) => (
@@ -459,12 +460,14 @@ export const DriverForm = ({
                         {...field}
                         fullWidth
                         label="Price Per Mile *"
-                        type="number"
+                        type="text"
                         placeholder="0.75"
                         error={!!errors.pricePerMile}
                         helperText={errors.pricePerMile?.message as string}
                         size="medium"
-                        inputProps={{ min: 0, step: 0.1 }}
+                        inputProps={{
+                          inputMode: "decimal",
+                        }}
                         slotProps={{
                           input: {
                             startAdornment: (
@@ -474,12 +477,13 @@ export const DriverForm = ({
                             ),
                           },
                         }}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "pricePerMile",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+
+                          if (/^\d*\.?\d{0,2}$/.test(value)) {
+                            handleFieldChange("pricePerMile", value);
+                          }
+                        }}
                       />
                     )}
                   />
@@ -563,8 +567,8 @@ export const DriverForm = ({
                 ? "Saving..."
                 : "Creating..."
               : editMode
-              ? "Save Changes"
-              : "Create Driver"}
+                ? "Save Changes"
+                : "Create Driver"}
           </Button>
         </form>
       </Box>
