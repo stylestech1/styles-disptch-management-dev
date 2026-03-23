@@ -511,8 +511,9 @@ const TrucksPage: React.FC = () => {
         </td>
 
         <td className="p-4 text-center">{t.fuelPerMile ?? "N/A"}</td>
-        <td className="p-4 text-center">{t.totalMileage ?? "N/A"}</td>
-
+        <td className="p-4 text-center">
+          {t.totalMileage != null ? Math.trunc(Number(t.totalMileage)) : "N/A"}
+        </td>
         <td className="p-4 text-center">
           <StatusChip status={t.status as any} />
         </td>
@@ -673,8 +674,8 @@ const TrucksPage: React.FC = () => {
               <IconButton
                 onClick={openSettings}
                 sx={{
-                  width: CONTROL_H,         
-                  height: CONTROL_H,       
+                  width: CONTROL_H,
+                  height: CONTROL_H,
                   borderRadius: 2,
                   bgcolor: "#fff",
                   border: `1px solid ${alpha(theme.currentPalette.primary, 0.25)}`,
