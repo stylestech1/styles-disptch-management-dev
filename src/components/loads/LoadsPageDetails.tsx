@@ -452,7 +452,9 @@ const LoadsPageDetails = () => {
         </td>
         {/* distance */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }} >
-          {loadItem.distanceMiles ? `${loadItem.distanceMiles} mi` : "-"}
+          {loadItem.distanceMiles != null
+            ? `${Math.trunc(Number(loadItem.distanceMiles))} miles`
+            : "-"}
         </td>
         {/* price per mile  */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }}>

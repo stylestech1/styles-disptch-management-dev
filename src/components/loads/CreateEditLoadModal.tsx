@@ -451,7 +451,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         setDhoToOriginDistance(result.distance);
         setAverageTime(result.duration);
       } catch (e) {
-        console.error("Error calculating DHO to Origin distance:", e);
+        // console.error("Error calculating DHO to Origin distance:", e);
         setDhoToOriginDistance(null);
         setAverageTime(null);
       }
@@ -1002,15 +1002,18 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                             Total distance:
                           </Typography>
                           <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
-                            {allDistance ? `${allDistance} miles` : "Not calculated yet"}
+                            {allDistance
+                              ? `${Math.trunc(Number(allDistance))} miles`
+                              : "Not calculated yet"}
                           </Typography>
 
                           <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
                             DHO to Origin:
                           </Typography>
                           <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
+
                             {dho && origin && dhoToOriginDistance
-                              ? `${dhoToOriginDistance.toFixed(2)} miles`
+                              ? `${Math.trunc(Number(dhoToOriginDistance))} miles`
                               : "Not calculated yet"}
                           </Typography>
 
@@ -1113,8 +1116,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                               fullWidth
                               placeholder="Auto Calculated Distance"
                               value={
-                                dhoToOriginDistance
-                                  ? `${dhoToOriginDistance.toFixed(2)} miles`
+                                dhoToOriginDistance != null
+                                  ? `${Math.trunc(dhoToOriginDistance)} miles`
                                   : ""
                               }
                               inputProps={{ readOnly: true }}

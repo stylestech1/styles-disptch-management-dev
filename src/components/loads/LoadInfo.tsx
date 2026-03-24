@@ -451,11 +451,22 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                   <Divider
                     sx={{ borderColor: alpha(theme.currentPalette.text, 0.2) }}
                   />
-                  <InfoItem
+                  {/* <InfoItem
                     icon={<AttachMoney fontSize="small" />}
                     primary="Price Details"
                     secondary={`${load.distanceMiles
                       } miles • $${load.pricePerMile.toFixed(2)}/mile`}
+                  /> */}
+                  <InfoItem
+                    icon={<AttachMoney fontSize="small" />}
+                    primary="Price Details"
+                    secondary={`${load.distanceMiles != null
+                        ? Math.trunc(Number(load.distanceMiles))
+                        : "-"
+                      } miles • ${load.pricePerMile != null
+                        ? `$${Number(load.pricePerMile).toFixed(2)}`
+                        : "-"
+                      }/mile`}
                   />
                 </List>
               </InfoCard>
