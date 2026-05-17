@@ -108,8 +108,9 @@ const DriversPage = () => {
   } = useGetDriversWithPaginationQuery(
     { page, limit: 10 },
     {
-      refetchOnFocus: false,
-      refetchOnReconnect: false,
+      skip: togglePage !== "drivers",
+      refetchOnFocus: togglePage === "drivers",
+      refetchOnReconnect: togglePage === "drivers",
       refetchOnMountOrArgChange: true,
     },
   );
@@ -121,8 +122,9 @@ const DriversPage = () => {
       page,
       limit: 10,
     },
-    { skip: !isFiltered || !fromDate || !toDate, refetchOnFocus: false },
+    { skip: togglePage !== "drivers" || !isFiltered || !fromDate || !toDate, refetchOnFocus: false },
   );
+
   const { data: timeOffsFilteredData } = useGetFilterTimeOffsQuery(
     {
       from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
@@ -130,7 +132,10 @@ const DriversPage = () => {
       page,
       limit: 10,
     },
-    { skip: !isFiltered || !fromDate || !toDate, refetchOnFocus: false },
+    {
+      skip: togglePage !== "timeoff" || !isFiltered || !fromDate || !toDate,
+      refetchOnFocus: false,
+    },
   );
 
   useEffect(() => {
@@ -161,9 +166,10 @@ const DriversPage = () => {
   } = useGetAllTimeOffsQuery(
     { page, limit: 10 },
     {
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-      refetchOnMountOrArgChange: 5,
+      skip: togglePage !== "timeoff",
+      refetchOnFocus: togglePage === "timeoff",
+      refetchOnReconnect: togglePage === "timeoff",
+      refetchOnMountOrArgChange: true,
     },
   );
 
@@ -193,11 +199,14 @@ const DriversPage = () => {
     onReset: () => {
       setPage(1);
 
+      resetSearchQuery();
+      resetTimeOffSearch();
+
       if (togglePage === "drivers") {
-        resetSearchQuery();
         refetchDrivers();
-      } else if (togglePage === "timeoff") {
-        resetTimeOffSearch();
+      }
+
+      if (togglePage === "timeoff") {
         refetchTimeOffs();
       }
     },
@@ -324,10 +333,10 @@ const DriversPage = () => {
       const stats = isFiltered ? filteredData?.stats : driversData?.stats;
       return stats
         ? {
-          total: stats.total || 0,
-          available: stats.available || 0,
-          busy: stats.busy || 0,
-          inactive: stats.inactive || 0,
+          total: stats?.total || 0,
+          available: stats?.available || 0,
+          busy: stats?.busy || 0,
+          inactive: stats?.inactive || 0,
         }
         : { total: 0, available: 0, busy: 0, inactive: 0 };
     } else {
@@ -335,10 +344,10 @@ const DriversPage = () => {
         ? timeOffsFilteredData?.stats
         : timeOffsData?.stats || {};
       return {
-        total: stats.total || 0,
-        approved: stats.approved || 0,
-        pending: stats.pending || 0,
-        rejected: stats.rejected || 0,
+        total: stats?.total || 0,
+        approved: stats?.approved || 0,
+        pending: stats?.pending || 0,
+        rejected: stats?.rejected || 0,
       };
     }
   }, [
@@ -362,7 +371,10 @@ const DriversPage = () => {
     if (newValue !== null) {
       setTogglePage(newValue);
       setPage(1);
-      searchHook.handleSearchReset();
+
+      // reset search cache only, do not refetch drivers
+      resetSearchQuery();
+      resetTimeOffSearch();
     }
   };
 
