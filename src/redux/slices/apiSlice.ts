@@ -5,6 +5,7 @@ import {
   PaginationResult,
   TCustomer,
   TDriver,
+  tDriverHiring,
   TLoadSummary,
   TTrucksSummaryResponse,
   TTruckSummaryResponse,
@@ -268,6 +269,95 @@ export const apiSlice = api.injectEndpoints({
       invalidatesTags: ["companies"],
     }),
 
+    // ! ========== Driver Applicants ==========
+    getDriverApplicants: builder.query<
+      {
+        data: tDriverHiring[];
+        totalDrivers?: number;
+        paginationResult?: PaginationResult;
+        stats?: any;
+      },
+      { page?: number; limit?: number }
+    >({
+      query: ({ page, limit }) => {
+        const params: string[] = [];
+
+        if (page) params.push(`page=${page}`);
+        if (limit) params.push(`limit=${limit}`);
+
+        const queryString = params.length ? `?${params.join("&")}` : "";
+
+        return `/api/v1/driver-applicants${queryString}`;
+      },
+      providesTags: ["Hiring Drivers"],
+    }),
+    getDriverApplicantsWithFilter: builder.query<
+      {
+        data: tDriverHiring[];
+        paginationResult?: PaginationResult;
+        stats?: any;
+      },
+      {
+        from?: string;
+        to?: string;
+        page?: number;
+        limit?: number;
+      }
+    >({
+      query: ({ from, to, page, limit }) => {
+        const params: string[] = [];
+
+        if (from) params.push(`from=${from}`);
+        if (to) params.push(`to=${to}`);
+        if (page) params.push(`page=${page}`);
+        if (limit) params.push(`limit=${limit}`);
+
+        const queryString = params.length ? `?${params.join("&")}` : "";
+
+        return `/api/v1/driver-applicants/filter${queryString}`;
+      },
+
+      providesTags: ["Hiring Drivers"],
+    }),
+    getDriverApplicantById: builder.query<
+      {
+        data: tDriverHiring;
+      },
+      string
+    >({
+      query: (id) => `/api/v1/driver-applicants/${id}`,
+      providesTags: (_result, _error, id) => [
+        { type: "Hiring Drivers", id },
+      ],
+    }),
+    createDriverApplicant: builder.mutation<any, Partial<tDriverHiring>>({
+      query: (body) => ({
+        url: `/api/v1/driver-applicants`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Hiring Drivers"],
+    }),
+
+    updateDriverApplicant: builder.mutation<
+      any,
+      { id: string; body: Partial<tDriverHiring> | FormData }
+    >({
+      query: ({ id, body }) => ({
+        url: `/api/v1/driver-applicants/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Hiring Drivers"],
+    }),
+
+    deleteDriverApplicant: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `/api/v1/driver-applicants/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Hiring Drivers"],
+    }),
     // ! ========== Loads Using Id ==========
     getLoadById: builder.query({
       query: (loadId) => `/api/v1/loads?loadId=${loadId}`,
@@ -1101,5 +1191,12 @@ export const {
   useResendResetCodeMutation,
   useVerifyResetCodeMutation,
   useResetPasswordMutation,
-
+  // driver applicants
+  useGetDriverApplicantsQuery,
+  useCreateDriverApplicantMutation,
+  useUpdateDriverApplicantMutation,
+  useDeleteDriverApplicantMutation,
+  useGetDriverApplicantsWithFilterQuery,
+  useLazyGetDriverApplicantByIdQuery,
+  useGetDriverApplicantByIdQuery,
 } = apiSlice;

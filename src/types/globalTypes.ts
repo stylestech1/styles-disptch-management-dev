@@ -28,7 +28,7 @@ export type RawGetSettingsResponse = {
   data: SettingsItem[];
 };
 
- export type SettingsDto = { id: string; repairPerMile: number; insurancePerMile: number } | null;
+export type SettingsDto = { id: string; repairPerMile: number; insurancePerMile: number } | null;
 
 export type TUser = {
   id: string;
@@ -183,6 +183,22 @@ export type TDriver = {
   updatedBy?: string;
   user: TUser | string;
   toggle: boolean
+  documents?: AttachmentItem[];
+};
+export type tDriverHiring = {
+  _id: string;
+  name: string;
+  phone: string;
+  state: string;
+  experienceYears: number;
+  readyDate: string;
+  driverId?: number;
+  notes: string;
+  violations: string;
+  status: string;
+  createdBy: string;
+  updatedBy?: string;
+  hireDate?: string;
   documents?: AttachmentItem[];
 };
 export type TTruck = {

@@ -17,6 +17,7 @@ export const api = createApi({
     "Loads",
     "Trucks",
     "Drivers",
+    "Hiring Drivers",
     "Comments",
     "Dispatchers",
     "Users",

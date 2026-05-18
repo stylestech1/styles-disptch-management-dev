@@ -3,7 +3,6 @@ import { TUserRole } from "@/types/globalTypes";
 import {
   Boxes,
   Building,
-  Building2,
   ChartNoAxesCombined,
   CircleDivide,
   Handshake,
@@ -12,8 +11,8 @@ import {
   Users,
   UserStar,
   Wrench,
+  UserPlus
 } from "lucide-react";
-import HandymanIcon from "@mui/icons-material/Handyman";
 
 type TabItem = {
   label: string;
@@ -74,6 +73,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       label: "Drivers",
       subtitle: "Manage your driver team members and their access",
       icon: <ShieldUser />,
+    },
+    {
+      label: "Hiring Drivers",
+      subtitle: "Review, approve, and manage driver recruitment requests",
+      icon: <UserPlus />,
     },
     {
       label: "Users",
