@@ -521,7 +521,7 @@ const HiringDrivers = () => {
                                 />
                             </MenuItem>
 
-                            <MenuItem
+                            {/* <MenuItem
                                 onClick={() => {
                                     handleDelete(driver._id);
                                     setAnchorEl(null);
@@ -540,7 +540,8 @@ const HiringDrivers = () => {
                                         },
                                     }}
                                 />
-                            </MenuItem>
+                            </MenuItem> */}
+                            
                         </Menu>
                     </td>
                 </TableRow>
@@ -919,7 +920,7 @@ const HiringDrivers = () => {
                 isLoading={isCreating || isUpdating}
             />
 
-            {deleteToast.open && (
+            {/* {deleteToast.open && (
                 <Box
                     sx={{
                         position: "fixed",
@@ -932,9 +933,9 @@ const HiringDrivers = () => {
                         zIndex: 1299,
                     }}
                 />
-            )}
+            )} */}
 
-            <Dialog
+            {/* <Dialog
                 open={deleteToast.open}
                 onClose={cancelDelete}
                 PaperProps={{
@@ -1012,7 +1013,8 @@ const HiringDrivers = () => {
                         </Button>
                     </Box>
                 </Box>
-            </Dialog>
+            </Dialog> */
+            }
         </Box>
     );
 };
