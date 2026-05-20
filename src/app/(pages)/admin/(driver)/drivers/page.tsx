@@ -31,6 +31,7 @@ import {
   Select,
   Switch,
   Tooltip,
+  TextField,
 } from "@mui/material";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import Pagination from "@/components/ui/Pagination";
@@ -230,56 +231,55 @@ const DriversPage = () => {
   const [deleteDriver] = useDeleteDriverMutation();
   const [updateTimeOffs] = useUpdateTimeOffStatusMutation();
   const [originalData, setOriginalData] = useState<Partial<TDriver>>({});
-
+  const [searchTerm, setSearchTerm] = useState("");
   // 🔹 Dynamic Data toggle
   const currentData = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
     if (togglePage === "drivers") {
-      if (isFiltered && filteredData?.data) {
-        return filteredData.data;
-      }
+      const data =
+        isFiltered && filteredData?.data
+          ? filteredData.data
+          : driversData?.data || [];
 
-      if (searchHook.isSearching && driverByIdData?.data) {
-        return Array.isArray(driverByIdData.data)
-          ? driverByIdData.data.flat()
-          : driverByIdData.data;
-      }
+      if (!keyword) return data;
 
-      return driversData?.data || [];
+      return data.filter((driver: TDriver) =>
+        Object.values(driver).some((value) =>
+          String(value || "").toLowerCase().includes(keyword)
+        )
+      );
     }
 
     if (togglePage === "timeoff") {
-      let data;
+      let data =
+        isFiltered && timeOffsFilteredData?.data
+          ? timeOffsFilteredData.data
+          : timeOffsData?.data || [];
 
-      if (isFiltered && timeOffsFilteredData?.data) {
-        data = timeOffsFilteredData.data;
-      } else if (searchHook.isSearching && timeOffSearchData?.data) {
-        data = Array.isArray(timeOffSearchData.data)
-          ? timeOffSearchData.data
-          : [timeOffSearchData.data];
-      } else {
-        data = timeOffsData?.data || [];
-      }
-
-      // Apply status filter
       if (timeOffFilter !== "all") {
         data = data.filter((item: TTimeOffs) => item.status === timeOffFilter);
       }
 
-      return data;
+      if (!keyword) return data;
+
+      return data.filter((item: TTimeOffs) =>
+        Object.values(item).some((value) =>
+          String(value || "").toLowerCase().includes(keyword)
+        )
+      );
     }
 
     return [];
   }, [
     togglePage,
     isFiltered,
-    searchHook.isSearching,
     filteredData,
     timeOffsFilteredData,
-    driverByIdData,
     driversData,
-    timeOffSearchData,
     timeOffsData,
     timeOffFilter,
+    searchTerm,
   ]);
 
   // 🔹 Dynamic Pagination
@@ -1266,7 +1266,7 @@ const DriversPage = () => {
           }}
         >
           {/* Search */}
-          <SearchInput
+          {/* <SearchInput
             searchHook={searchHook}
             placeholder={
               togglePage === "drivers"
@@ -1278,6 +1278,31 @@ const DriversPage = () => {
               width: { xs: "100%", md: 300, lg: 350 },
             }}
             inputSx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                backgroundColor: theme.currentPalette.background,
+                py: 0.5,
+                "&:hover": {
+                  borderColor: theme.currentPalette.primary,
+                },
+              },
+            }}
+          /> */}
+
+          <TextField
+            size="small"
+            value={searchTerm}
+            placeholder={
+              togglePage === "drivers"
+                ? "Search by driver Id ..."
+                : "Search by timeoff Id..."
+            }
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
+            sx={{
+              width: { xs: "100%", md: 300, lg: 350 },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,

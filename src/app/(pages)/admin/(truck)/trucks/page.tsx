@@ -334,20 +334,44 @@ const TrucksPage: React.FC = () => {
   const [createTruck, { isLoading: isCreating }] = useCreateTruckMutation();
   const [updateTruck, { isLoading: isUpdating }] = useUpdateTruckMutation();
   const [deleteTruck] = useDeleteTruckMutation();
+  const [keyword, setKeyword] = useState("");
 
   const truck = useMemo(() => {
-    if (isSearching && truckByIdData?.data) {
-      return Array.isArray(truckByIdData.data) ? truckByIdData.data : [truckByIdData.data];
-    }
     if (isFiltered && filteredData?.data) return filteredData.data;
     return trucksData?.data || [];
-  }, [isSearching, isFiltered, truckByIdData, filteredData, trucksData]);
+  }, [isFiltered, filteredData, trucksData]);
 
   const tableData = useMemo(() => {
-    if (statusFilter === "all") return truck;
-    const wanted = statusFilter.toLowerCase();
-    return (truck || []).filter((t: any) => String(t?.status || "").toLowerCase() === wanted);
-  }, [truck, statusFilter]);
+    const searchValue = keyword.trim().toLowerCase();
+
+    let data = truck || [];
+
+    if (statusFilter !== "all") {
+      data = data.filter(
+        (t: any) => String(t?.status || "").toLowerCase() === statusFilter
+      );
+    }
+
+    if (searchValue) {
+      data = data.filter((t: any) =>
+        Object.values(t).some((value) => {
+          if (typeof value === "object" && value !== null) {
+            return Object.values(value).some((nestedValue) =>
+              String(nestedValue || "")
+                .toLowerCase()
+                .includes(searchValue)
+            );
+          }
+
+          return String(value || "")
+            .toLowerCase()
+            .includes(searchValue);
+        })
+      );
+    }
+
+    return data;
+  }, [truck, statusFilter, keyword]);
 
   const pagination = isFiltered
     ? filteredData?.paginationResult || null
@@ -627,7 +651,7 @@ const TrucksPage: React.FC = () => {
             width: { xs: "100%", md: "auto" },
           }}
         >
-          <SearchInput
+          {/* <SearchInput
             searchHook={searchHook}
             placeholder="Search trucks by ID.."
             showClearButton
@@ -645,8 +669,30 @@ const TrucksPage: React.FC = () => {
                 alignItems: "center",
               },
             }}
+          /> */}
+          <TextField
+            size="small"
+            value={keyword}
+            placeholder="Search trucks by ID.."
+            onChange={(e) => {
+              setKeyword(e.target.value);
+              setPage(1);
+            }}
+            sx={{
+              width: { xs: "100%", sm: 260, md: 260, lg: 320 },
+              "& .MuiOutlinedInput-root": {
+                ...controlSx,
+                px: 0.5,
+              },
+              "& .MuiOutlinedInput-input": {
+                paddingTop: 0,
+                paddingBottom: 0,
+                height: CONTROL_H,
+                display: "flex",
+                alignItems: "center",
+              },
+            }}
           />
-
           <FormControl size="small" sx={{ minWidth: 110, width: { xs: "100%", sm: "auto" } }}>
             <Select
               value={statusFilter}

@@ -29,11 +29,13 @@ import {
     Button,
     Chip,
     Dialog,
+    FormControl,
     IconButton,
     ListItemIcon,
     ListItemText,
     Menu,
     MenuItem,
+    Select,
     SxProps,
     TableRow,
     TextField,
@@ -79,7 +81,7 @@ type DriverHiringFormData = {
     experienceYears: string;
     readyDate: string;
 };
-
+type TStatusFilter = "all" | "accepted" | "rejected";
 const HiringDrivers = () => {
     const router = useRouter();
     const user = useAppSelector((state) => state.auth.user);
@@ -100,7 +102,7 @@ const HiringDrivers = () => {
     });
 
     const [selectedDriver, setSelectedDriver] = useState<tDriverHiring | null>(null);
-
+    const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
     const [driverToDelete, setDriverToDelete] = useState<{
         _id: string;
         name?: string;
@@ -130,21 +132,26 @@ const HiringDrivers = () => {
     const [deleteDriverApplicant] = useDeleteDriverApplicantMutation();
 
     const currentData = useMemo(() => {
-        const data = driversData?.data || [];
+        let data = driversData?.data || [];
+
+        if (statusFilter !== "all") {
+            data = data.filter(
+                (driver) => driver.status?.toLowerCase() === statusFilter
+            );
+        }
 
         if (!searchTerm.trim()) return data;
 
         const value = searchTerm.toLowerCase();
 
-        return data.filter((driver) => {
-            return (
-                String(driver.driverId || "").toLowerCase().includes(value) ||
-                String(driver.name || "").toLowerCase().includes(value) ||
-                String(driver.phone || "").toLowerCase().includes(value)
-            );
-        });
-    }, [driversData?.data, searchTerm]);
-
+        return data.filter((driver) =>
+            Object.values(driver).some((item) =>
+                String(item || "")
+                    .toLowerCase()
+                    .includes(value)
+            )
+        );
+    }, [driversData?.data, searchTerm, statusFilter]);
     const statsData = useMemo(() => {
         const stats = driversData?.stats;
 
@@ -832,7 +839,29 @@ const HiringDrivers = () => {
                         },
                     }}
                 />
-
+                <FormControl
+                    size="small"
+                    sx={{ minWidth: 130, width: { xs: "100%", sm: "auto" } }}
+                >
+                    <Select
+                        value={statusFilter}
+                        onChange={(e) => {
+                            setStatusFilter(e.target.value as TStatusFilter);
+                            setPage(1);
+                        }}
+                        sx={{
+                            height: 40,
+                            borderRadius: 2,
+                            backgroundColor: "#fff",
+                            color: theme.currentPalette.primary,
+                        }}
+                        displayEmpty
+                    >
+                        <MenuItem value="all">All</MenuItem>
+                        <MenuItem value="accepted">Accepted</MenuItem>
+                        <MenuItem value="rejected">Rejected</MenuItem>
+                    </Select>
+                </FormControl>
                 {/* Button */}
                 <Button
                     onClick={handleOpenCreate}

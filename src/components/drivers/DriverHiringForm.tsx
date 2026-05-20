@@ -52,6 +52,7 @@ export const DriverHirringForm = ({
             minHeight: 52,
             borderRadius: 2,
             backgroundColor: "#fff",
+            
         },
         "& .MuiInputLabel-root": {
             color: "#666",
@@ -299,7 +300,7 @@ export const DriverHirringForm = ({
                                 error={!!fieldState.error}
                                 helperText={fieldState.error?.message}
                                 InputLabelProps={{ shrink: true }}
-                                sx={fieldSx}
+                                sx={{ ...fieldSx }}
                             >
                                 <MenuItem value="pending">Pending</MenuItem>
                                 <MenuItem value="accepted">Accepted</MenuItem>
@@ -307,59 +308,61 @@ export const DriverHirringForm = ({
                             </TextField>
                         )}
                     />
-
-                    {/* Violations */}
-                    <Controller
-                        name="violations"
-                        control={control}
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                fullWidth
-                                label="Violations"
-                                placeholder="Enter violations"
-                                multiline
-                                rows={3}
-                                InputLabelProps={{ shrink: true }}
-                                sx={{
-                                    ...fieldSx,
-                                    "& .MuiOutlinedInput-root": {
-                                        minHeight: 110,
-                                        borderRadius: "6px",
-                                        alignItems: "flex-start",
-                                        backgroundColor: "#fff",
-                                    },
-                                }}
-                            />
-                        )}
-                    />
-
-                    {/* Notes */}
-                    <Controller
-                        name="notes"
-                        control={control}
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                fullWidth
-                                label="Notes"
-                                placeholder="Enter notes"
-                                multiline
-                                rows={3}
-                                InputLabelProps={{ shrink: true }}
-                                sx={{
-                                    ...fieldSx,
-                                    "& .MuiOutlinedInput-root": {
-                                        minHeight: 110,
-                                        borderRadius: "6px",
-                                        alignItems: "flex-start",
-                                        backgroundColor: "#fff",
-                                    },
-                                }}
-                            />
-                        )}
-                    />
                 </Box>
+                {/* Violations */}
+                <Controller
+                    name="violations"
+                    control={control}
+                    render={({ field }) => (
+                        <TextField
+                            {...field}
+                            fullWidth
+                            label="Violations"
+                            placeholder="Enter violations"
+                            multiline
+                            rows={3}
+                            InputLabelProps={{ shrink: true }}
+                            sx={{
+                                ...fieldSx,
+                                mt: 2,
+                                "& .MuiOutlinedInput-root": {
+                                    minHeight: 110,
+                                    borderRadius: "6px",
+                                    alignItems: "flex-start",
+                                    backgroundColor: "#fff",
+                                    mb: 2,
+                                },
+                            }}
+                        />
+                    )}
+                />
+
+                {/* Notes */}
+                <Controller
+                    name="notes"
+                    control={control}
+                    render={({ field }) => (
+                        <TextField
+                            {...field}
+                            fullWidth
+                            label="Notes"
+                            placeholder="Enter notes"
+                            multiline
+                            rows={3}
+                            InputLabelProps={{ shrink: true }}
+                            sx={{
+                                ...fieldSx,
+                                "& .MuiOutlinedInput-root": {
+                                    minHeight: 110,
+                                    borderRadius: "6px",
+                                    alignItems: "flex-start",
+                                    backgroundColor: "#fff",
+                                    mb: 2,
+                                },
+                            }}
+                        />
+                    )}
+                />
                 {/* attachments */}
                 <Box
                     sx={{

@@ -53,6 +53,7 @@ import {
   SelectChangeEvent,
   SxProps,
   TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -312,18 +313,44 @@ const LoadsPageDetails = () => {
   useEffect(() => {
     if (isFiltered && fromDate && toDate) setPage(1);
   }, [isFiltered, fromDate, toDate]);
-
+  const [keyword, setKeyword] = useState("");
   // Base data (search/date-filter/default)
   const baseLoads = useMemo<TLoads[]>(() => {
-    if (isSearching && Array.isArray(loadByIdData?.data)) return loadByIdData.data.flat();
     if (isFiltered && filteredData?.data) return filteredData.data;
     return loadsData?.data || [];
-  }, [isSearching, isFiltered, loadByIdData, filteredData, loadsData]);
+  }, [isFiltered, filteredData, loadsData]);
 
   const load = useMemo(() => {
-    if (statusFilter === "all") return baseLoads;
-    return baseLoads.filter((l) => (l.status || "").toLowerCase() === statusFilter);
-  }, [baseLoads, statusFilter]);
+    const searchValue = keyword.trim().toLowerCase();
+
+    let data = baseLoads;
+
+    if (statusFilter !== "all") {
+      data = data.filter(
+        (item) => (item.status || "").toLowerCase() === statusFilter
+      );
+    }
+
+    if (searchValue) {
+      data = data.filter((item: any) =>
+        Object.values(item).some((value) => {
+          if (typeof value === "object" && value !== null) {
+            return Object.values(value).some((nestedValue) =>
+              String(nestedValue || "")
+                .toLowerCase()
+                .includes(searchValue)
+            );
+          }
+
+          return String(value || "")
+            .toLowerCase()
+            .includes(searchValue);
+        })
+      );
+    }
+
+    return data;
+  }, [baseLoads, statusFilter, keyword]);
 
   const pagination = isFiltered ? filteredData?.paginationResult || null : loadsData?.paginationResult || null;
 
@@ -626,7 +653,7 @@ const LoadsPageDetails = () => {
         >
 
           <Box sx={{ flex: "1 1 220px", minWidth: 260, maxWidth: 340 }}>
-            <SearchInput
+            {/* <SearchInput
               searchHook={searchHook}
               placeholder="Search Loads by ID, Driver"
               showClearButton
@@ -639,6 +666,33 @@ const LoadsPageDetails = () => {
                   "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.28) },
                   "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.55) },
                   "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+                },
+              }}
+            /> */}
+
+            <TextField
+              size="small"
+              value={keyword}
+              placeholder="Search Loads by ID, Driver"
+              onChange={(e) => {
+                setKeyword(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                width: "100%",
+                "& .MuiOutlinedInput-root": {
+                  height: CONTROL_H,
+                  borderRadius: 2,
+                  backgroundColor: "#fff",
+                  "& fieldset": {
+                    borderColor: alpha(theme.currentPalette.primary, 0.28),
+                  },
+                  "&:hover fieldset": {
+                    borderColor: alpha(theme.currentPalette.primary, 0.55),
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: theme.currentPalette.primary,
+                  },
                 },
               }}
             />
