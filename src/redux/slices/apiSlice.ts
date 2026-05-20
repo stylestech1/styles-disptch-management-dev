@@ -357,7 +357,7 @@ export const apiSlice = api.injectEndpoints({
     }),
     // ! ========== Loads Using Id ==========
     getLoadById: builder.query({
-      query: (loadId) => `/api/v1/loads?loadId=${loadId}`,
+      query: (loadId) => `/api/v1/loads?keyword=${loadId}`,
       providesTags: (result, error, loadId) => [{ type: "Loads", id: loadId }],
     }),
 
@@ -688,10 +688,10 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     getTruckByTruckId: builder.query({
-      query: (truckId) => `/api/v1/trucks?truckId=${truckId}`,
-      providesTags: (result, error, truckId) => [{ type: "Trucks", truckId }],
+      query: (keyword) =>
+        `/api/v1/trucks?keyword=${encodeURIComponent(keyword)}`,
+      providesTags: ["Trucks"],
     }),
-
     getTruckById: builder.query({
       query: (id) => `/api/v1/trucks/${id}`,
       providesTags: ["Trucks"],

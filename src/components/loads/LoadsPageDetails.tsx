@@ -255,13 +255,14 @@ const LoadsPageDetails = () => {
   // Loading & Error states
   const { setLoading } = useLoading();
   const { error, setError } = useError();
-
+  const [keyword, setKeyword] = useState("");
+  const [activeKeyword, setActiveKeyword] = useState("");
   const [
     triggerSearchQuery,
     {
-      data: loadByIdData,
-      isLoading: loadByIdLoading,
-      error: loadByIdError,
+      data: searchData,
+      isLoading: searchLoading,
+      error: searchError,
       reset: resetSearchQuery,
     },
   ] = useLazyGetLoadByIdQuery();
@@ -313,16 +314,23 @@ const LoadsPageDetails = () => {
   useEffect(() => {
     if (isFiltered && fromDate && toDate) setPage(1);
   }, [isFiltered, fromDate, toDate]);
-  const [keyword, setKeyword] = useState("");
   // Base data (search/date-filter/default)
+
   const baseLoads = useMemo<TLoads[]>(() => {
-    if (isFiltered && filteredData?.data) return filteredData.data;
+    if (activeKeyword && searchData?.data) {
+      return Array.isArray(searchData.data)
+        ? searchData.data.flat()
+        : [searchData.data];
+    }
+
+    if (!activeKeyword && isFiltered && filteredData?.data) {
+      return filteredData.data;
+    }
+
     return loadsData?.data || [];
-  }, [isFiltered, filteredData, loadsData]);
+  }, [activeKeyword, searchData, isFiltered, filteredData, loadsData]);
 
   const load = useMemo(() => {
-    const searchValue = keyword.trim().toLowerCase();
-
     let data = baseLoads;
 
     if (statusFilter !== "all") {
@@ -331,35 +339,21 @@ const LoadsPageDetails = () => {
       );
     }
 
-    if (searchValue) {
-      data = data.filter((item: any) =>
-        Object.values(item).some((value) => {
-          if (typeof value === "object" && value !== null) {
-            return Object.values(value).some((nestedValue) =>
-              String(nestedValue || "")
-                .toLowerCase()
-                .includes(searchValue)
-            );
-          }
-
-          return String(value || "")
-            .toLowerCase()
-            .includes(searchValue);
-        })
-      );
-    }
-
     return data;
-  }, [baseLoads, statusFilter, keyword]);
+  }, [baseLoads, statusFilter]);
 
-  const pagination = isFiltered ? filteredData?.paginationResult || null : loadsData?.paginationResult || null;
+  const pagination = activeKeyword
+    ? searchData?.paginationResult || null
+    : isFiltered
+      ? filteredData?.paginationResult || null
+      : loadsData?.paginationResult || null;
 
   useEffect(() => {
     setLoading(loadsLoading && !loadsData);
   }, [loadsLoading, loadsData, setLoading]);
 
   useEffect(() => {
-    const currentError = loadsError || loadByIdError;
+    const currentError = loadsError;
     if (currentError) {
       const errorMessage = getErrorMessage(currentError);
       setError(errorMessage);
@@ -373,20 +367,25 @@ const LoadsPageDetails = () => {
         duration: 4000,
       });
     }
-  }, [loadsError, loadByIdError, setError]);
+  }, [loadsError, setError]);
 
   // Stats cards
   const statsData = useMemo(() => {
-    const statLoadData: any = loadsData?.stats || [];
-    if (!statLoadData || statLoadData.length === 0)
+    const statLoadData: any =
+      activeKeyword ? searchData?.stats : loadsData?.stats;
+
+    if (!statLoadData) {
       return { totalLoads: 0, pending: 0, inTransit: 0, delivered: 0 };
+    }
+
     return {
-      totalLoads: statLoadData.total,
-      pending: statLoadData.pending,
-      inTransit: statLoadData.inTransit,
-      delivered: statLoadData.delivered,
+      totalLoads: statLoadData.total || 0,
+      pending: statLoadData.pending || 0,
+      inTransit: statLoadData.inTransit || 0,
+      delivered: statLoadData.delivered || 0,
     };
-  }, [loadsData?.stats]);
+  }, [activeKeyword, searchData?.stats, loadsData?.stats]);
+  
 
   if (loadsLoading && !loadsData) return <Loading />;
 
@@ -678,6 +677,19 @@ const LoadsPageDetails = () => {
                 setKeyword(e.target.value);
                 setPage(1);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const value = keyword.trim();
+
+                  if (value) {
+                    setPage(1);
+                    triggerSearchQuery(encodeURIComponent(value));
+                  } else {
+                    resetSearchQuery();
+                    refetchLoads();
+                  }
+                }
+              }}
               sx={{
                 width: "100%",
                 "& .MuiOutlinedInput-root": {
@@ -782,7 +794,7 @@ const LoadsPageDetails = () => {
         data={load}
         renderRow={renderLoadRow}
         loading={
-          (isSearching && loadByIdLoading) ||
+          (isSearching && loadsLoading) ||
           (isFiltered && filterLoading) ||
           (loadsLoading && !loadsData)
         }

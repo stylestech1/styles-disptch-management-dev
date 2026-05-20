@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -335,15 +336,23 @@ const TrucksPage: React.FC = () => {
   const [updateTruck, { isLoading: isUpdating }] = useUpdateTruckMutation();
   const [deleteTruck] = useDeleteTruckMutation();
   const [keyword, setKeyword] = useState("");
+  const [activeKeyword, setActiveKeyword] = useState("");
 
   const truck = useMemo(() => {
-    if (isFiltered && filteredData?.data) return filteredData.data;
+    if (activeKeyword && truckByIdData?.data) {
+      return Array.isArray(truckByIdData.data)
+        ? truckByIdData.data
+        : [truckByIdData.data];
+    }
+
+    if (!activeKeyword && isFiltered && filteredData?.data) {
+      return filteredData.data;
+    }
+
     return trucksData?.data || [];
-  }, [isFiltered, filteredData, trucksData]);
+  }, [activeKeyword, truckByIdData, isFiltered, filteredData, trucksData]);
 
   const tableData = useMemo(() => {
-    const searchValue = keyword.trim().toLowerCase();
-
     let data = truck || [];
 
     if (statusFilter !== "all") {
@@ -352,31 +361,22 @@ const TrucksPage: React.FC = () => {
       );
     }
 
-    if (searchValue) {
-      data = data.filter((t: any) =>
-        Object.values(t).some((value) => {
-          if (typeof value === "object" && value !== null) {
-            return Object.values(value).some((nestedValue) =>
-              String(nestedValue || "")
-                .toLowerCase()
-                .includes(searchValue)
-            );
-          }
-
-          return String(value || "")
-            .toLowerCase()
-            .includes(searchValue);
-        })
-      );
-    }
-
     return data;
-  }, [truck, statusFilter, keyword]);
+  }, [truck, statusFilter]);
 
-  const pagination = isFiltered
-    ? filteredData?.paginationResult || null
-    : trucksData?.paginationResult || null;
+  const pagination = activeKeyword
+    ? truckByIdData?.paginationResult || null
+    : isFiltered
+      ? filteredData?.paginationResult || null
+      : trucksData?.paginationResult || null;
 
+
+  useEffect(() => {
+    if (activeKeyword) {
+      triggerSearchQuery(activeKeyword);
+    }
+  }, [activeKeyword, page]);
+  
   useEffect(() => {
     setLoading(trucksLoading && !trucksData);
   }, [trucksLoading, trucksData]);
@@ -674,6 +674,22 @@ const TrucksPage: React.FC = () => {
             size="small"
             value={keyword}
             placeholder="Search trucks by ID.."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const value = keyword.trim();
+
+                setPage(1);
+
+                if (value) {
+                  setActiveKeyword(value);
+                  triggerSearchQuery(value);
+                } else {
+                  setActiveKeyword("");
+                  resetSearchQuery();
+                  refetchTrucks();
+                }
+              }
+            }}
             onChange={(e) => {
               setKeyword(e.target.value);
               setPage(1);
@@ -693,6 +709,7 @@ const TrucksPage: React.FC = () => {
               },
             }}
           />
+
           <FormControl size="small" sx={{ minWidth: 110, width: { xs: "100%", sm: "auto" } }}>
             <Select
               value={statusFilter}
