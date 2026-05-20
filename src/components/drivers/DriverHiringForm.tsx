@@ -28,6 +28,7 @@ type DriverHiringFormData = {
     notes: string;
     violations: string;
     status: string;
+    documents?: FileList | File[] | null;
 };
 
 export const DriverHirringForm = ({
@@ -74,6 +75,8 @@ export const DriverHirringForm = ({
         control,
         handleSubmit,
         reset,
+        setValue,
+        watch,
     } = useForm<DriverHiringFormData>({
         defaultValues: {
             name: "",
@@ -113,23 +116,36 @@ export const DriverHirringForm = ({
 
     const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
+
         const pdfFiles = files.filter(
             (file) =>
                 file.type === "application/pdf" ||
-                file.name.toLowerCase().endsWith(".pdf"),
+                file.name.toLowerCase().endsWith(".pdf")
         );
 
         if (pdfFiles.length !== files.length) {
             toast.error("Only PDF files are allowed");
         }
 
-        setDocuments((prev) => [...prev, ...pdfFiles]);
-    };
+        const newDocuments = [...documents, ...pdfFiles];
 
+        setDocuments(newDocuments);
+        setValue("documents", newDocuments, {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+
+        e.target.value = "";
+    };
     const removeDocument = (index: number) => {
-        setDocuments((prev) => prev.filter((_, i) => i !== index));
-    };
+        const newDocuments = documents.filter((_, i) => i !== index);
 
+        setDocuments(newDocuments);
+        setValue("documents", newDocuments, {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+    };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

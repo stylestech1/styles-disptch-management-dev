@@ -70,13 +70,14 @@ import { DriverHirringForm } from "@/components/drivers/DriverHiringForm";
 
 type DriverHiringFormData = {
     name: string;
-    state: string;
     phone: string;
-    experienceYears: string;
-    readyDate: string;
+    state: string;
+    status: string;
     notes: string;
     violations: string;
-    status: string;
+    documents?: FileList | File[] | null;
+    experienceYears: string;
+    readyDate: string;
 };
 
 const HiringDrivers = () => {
@@ -187,7 +188,7 @@ const HiringDrivers = () => {
             experienceYears: driver.experienceYears,
             notes: driver.notes,
             violations: driver.violations,
-            documents: driver.documents,
+            document: driver.document,
         });
 
         setEditMode(true);
@@ -201,6 +202,7 @@ const HiringDrivers = () => {
     });
 
     const selectedDriverDetails = driverDetailsResponse?.data;
+    const document = selectedDriverDetails?.document || selectedDriver?.document;
 
     const getChangedFields = (
         original: Partial<tDriverHiring>,
@@ -276,93 +278,48 @@ const HiringDrivers = () => {
             </Typography>
         </Box>
     );
-    // const handleCreate = async (data: DriverHiringFormData) => {
-    //     if (!user?.id) {
-    //         toast.error("User not found!");
-    //         return;
-    //     }
+    const buildDriverFormData = (data: DriverHiringFormData) => {
+        const formDataBody = new FormData();
 
-    //     try {
-    //         const body: tDriverHiring = {
-    //             ...data,
-    //             experienceYears: Number(data.experienceYears),
-    //             createdBy: user.id,
-    //         };
+        formDataBody.append("name", data.name || "");
+        formDataBody.append("phone", data.phone || "");
+        formDataBody.append("state", data.state || "");
+        formDataBody.append("status", data.status || "");
+        formDataBody.append("notes", data.notes || "");
+        formDataBody.append("violations", data.violations || "");
+        formDataBody.append("experienceYears", String(Number(data.experienceYears || 0)));
+        formDataBody.append("readyDate", data.readyDate || "");
 
-    //         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    //         await createDriverApplicant(body as any).unwrap();
+        if (data.documents?.length) {
+            Array.from(data.documents).forEach((file) => {
+                formDataBody.append("documents", file);
+            });
+        }
 
-    //         toast.success("Hiring driver created successfully!");
-    //         setOpen(false);
-    //         refetchDrivers();
-    //     } catch (err) {
-    //         toast.error(getErrorMessage(err) || "Creating hiring driver failed");
-    //     }
-    // };
-
-    const handleCreate = async (data: DriverHiringFormData) => {
-        await createDriverApplicant({
-            ...data,
-            experienceYears: Number(data.experienceYears),
-        }).unwrap();
-
-        setOpen(false);
+        return formDataBody;
     };
+    const handleCreate = async (data: DriverHiringFormData) => {
+        const formDataBody = buildDriverFormData(data);
 
-    // const handleUpdate = async (data: tDriverHiring) => {
-    //     if (!formData?._id) {
-    //         toast.error("Missing driver applicant ID");
-    //         return;
-    //     }
+        await createDriverApplicant(formDataBody as any).unwrap();
 
-    //     const updateData: Partial<tDriverHiring> = {
-    //         ...data,
-    //         experienceYears: Number(data.experienceYears),
-    //     };
-
-    //     const changedFields = getChangedFields(originalData, updateData);
-
-    //     if (Object.keys(changedFields).length === 0) {
-    //         toast("No changes detected.");
-    //         return;
-    //     }
-
-    //     try {
-    //         const formDataBody = new FormData();
-
-    //         Object.entries(changedFields).forEach(([key, value]) => {
-    //             if (value !== undefined && value !== null) {
-    //                 formDataBody.append(key, String(value));
-    //             }
-    //         });
-
-    //         await updateDriverApplicant({
-    //             id: formData._id,
-    //             body: formDataBody,
-    //         }).unwrap();
-
-    //         toast.success("Driver applicant updated successfully!");
-    //         setOpen(false);
-    //         refetchDrivers();
-    //     } catch (err: unknown) {
-    //         const errorMessage = getErrorMessage(err);
-    //         toast.error(errorMessage || "Updating driver applicant failed");
-    //     }
-    // };
-
-
+        toast.success("Driver applicant created successfully!");
+        setOpen(false);
+        refetchDrivers();
+    };
     const handleUpdate = async (data: DriverHiringFormData) => {
         if (!formData._id) return;
 
+        const formDataBody = buildDriverFormData(data);
+
         await updateDriverApplicant({
             id: formData._id,
-            body: {
-                ...data,
-                experienceYears: Number(data.experienceYears),
-            },
+            body: formDataBody,
         }).unwrap();
-
+        console.log("documents:", data.documents);
+        toast.success("Driver applicant updated successfully!");
         setOpen(false);
+        refetchDrivers();
     };
 
     const handleDelete = (_id: string, name?: string) => {
@@ -721,32 +678,47 @@ const HiringDrivers = () => {
                                 </Box>
 
                                 <Box sx={{ mt: 1.5 }}>
-                                    <DetailCard
-                                        icon={<Paperclip size={17} />}
-                                        label="Attachments"
-                                        value={
-                                            selectedDriver.documents?.length ? (
-                                                selectedDriver.documents.map((file: any, index: number) => (
-                                                    <Box key={index}>
-                                                        <a
-                                                            href={file.url || file}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            style={{
-                                                                color: theme.currentPalette.primary,
-                                                                fontWeight: 600,
-                                                                fontSize: "14px",
-                                                            }}
-                                                        >
-                                                            {file.name || `Attachment ${index + 1}`}
-                                                        </a>
-                                                    </Box>
-                                                ))
-                                            ) : (
-                                                "No attachments"
-                                            )
-                                        }
-                                    />
+                                    {document?.viewLink ? (
+                                        <Box
+                                            component="a"
+                                            href={document.viewLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1.5,
+                                                border: "1px solid #BFD3F0",
+                                                borderRadius: "10px",
+                                                p: 2,
+                                                textDecoration: "none",
+                                                color: theme.currentPalette.primary,
+                                                fontWeight: 700,
+                                                bgcolor: "#fff",
+                                                cursor: "pointer",
+                                                "&:hover": {
+                                                    bgcolor: "#F3F7FF",
+                                                },
+                                            }}
+                                        >
+                                            <FileText size={20} />
+                                            <Typography sx={{ fontWeight: 700 }}>
+                                                Document
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                border: "1px solid #E5EAF3",
+                                                borderRadius: "10px",
+                                                p: 2,
+                                                color: "#6B7280",
+                                                bgcolor: "#fff",
+                                            }}
+                                        >
+                                            No documents uploaded
+                                        </Box>
+                                    )}
                                 </Box>
                             </Box>
                         </Box>

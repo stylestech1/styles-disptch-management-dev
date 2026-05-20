@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useMemo } from "react";
-import { useGetDriversQuery, useGetTrucksQuery } from "@/redux/slices/apiSlice";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useGetTrucksQuery } from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
 import {
   AssignmentTabProps,
@@ -23,6 +24,7 @@ import {
   SelectChangeEvent,
   TextField,
   Typography,
+  CircularProgress,
 } from "@mui/material";
 import { IoCheckmark } from "react-icons/io5";
 import { User, Truck as TruckIcon, Snowflake, Thermometer } from "lucide-react";
@@ -81,8 +83,12 @@ type LabeledSelectProps = {
   placeholder: string;
   startIcon: React.ReactNode;
   children: React.ReactNode;
-
+  onMenuScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   mb?: number;
+  isLoading?: boolean;
+  hasMore?: boolean;
+  loadingText?: string;
+  noMoreText?: string;
 };
 
 const LabeledSelect = ({
@@ -96,8 +102,14 @@ const LabeledSelect = ({
   placeholder,
   startIcon,
   children,
+  onMenuScroll,
   mb = 0,
+  isLoading = false,
+  hasMore = true,
+  loadingText = "Loading...",
+  noMoreText = "No more items",
 }: LabeledSelectProps) => {
+
   const id = `${label.replace(/\s+/g, "-").toLowerCase()}-select`;
 
   return (
@@ -123,6 +135,21 @@ const LabeledSelect = ({
         onOpen={onOpen}
         onChange={(e: SelectChangeEvent) => onChange(String(e.target.value))}
         displayEmpty
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              maxHeight: 300,
+              overflowY: "auto",
+            },
+          },
+          MenuListProps: {
+            onScroll: onMenuScroll as any,
+            sx: {
+              maxHeight: 300,
+              overflowY: "auto",
+            },
+          },
+        }}
         sx={{
           "&.MuiOutlinedInput-root": outlinedSx(theme),
           "& .MuiSelect-select": {
@@ -152,10 +179,37 @@ const LabeledSelect = ({
           {placeholder}
         </MenuItem>
         {children}
+        {isLoading && (
+          <MenuItem disabled sx={{ justifyContent: "center", display: "flex", gap: 1 }}>
+            <CircularProgress size={20} />
+            <span>{loadingText}</span>
+          </MenuItem>
+        )}
+        {!hasMore && !isLoading && (
+          <MenuItem disabled sx={{ justifyContent: "center", opacity: 0.7 }}>
+            {noMoreText}
+          </MenuItem>
+        )}
       </Select>
     </FormControl>
   );
 };
+
+// Interface for pagination response
+interface PaginationResult {
+  currentPage: number;
+  limit: number;
+  totalDocs: number;
+  totalPages: number;
+  next: number | null;
+  prev: number | null;
+}
+
+interface DriversResponse {
+  data: TDriver[];
+  results: number;
+  paginationResult: PaginationResult;
+}
 
 const AssignmentTab: React.FC<AssignmentTabProps> = ({
   isEditing,
@@ -171,16 +225,157 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
 }) => {
   const token = useAppSelector((state: RootState) => state.auth.token);
   const theme = useAppSelector((state: RootState) => state.palette);
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-  const { data: driversData, refetch: driverRefetch } = useGetDriversQuery(
-    { skip: !token } as any
-  );
   const { data: trucksData, refetch: truckRefetch } = useGetTrucksQuery(
     { skip: !token } as any
   );
 
-  const drivers: TDriver[] = driversData?.data || [];
   const trucks: TTruck[] = trucksData?.data || [];
+
+  // State for drivers with pagination
+  const [driversState, setDriversState] = useState<{ driverList: TDriver[] }>({
+    driverList: [],
+  });
+
+  const [paginationInfo, setPaginationInfo] = useState<PaginationResult>({
+    currentPage: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 0,
+    next: null,
+    prev: null,
+  });
+
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+
+  const isFetchingRef = useRef(false);
+
+  // Function to fetch drivers with pagination using native fetch
+  const fetchDriversPage = useCallback(async (pageNumber: number, isInitial = false) => {
+    if (!token) return;
+    if (isFetchingRef.current) return;
+
+    // Check if we already have all pages
+    if (!isInitial && paginationInfo.currentPage >= paginationInfo.totalPages && paginationInfo.totalPages > 0) {
+      console.log("No more pages available");
+      return;
+    }
+
+    isFetchingRef.current = true;
+    if (isInitial) {
+      setIsInitialLoading(true);
+    } else {
+      setIsLoadingDrivers(true);
+    }
+
+    try {
+      // Build URL with query parameters
+      const url = new URL(`${baseUrl}/api/v1/drivers`);
+      url.searchParams.append('status', 'available');
+      url.searchParams.append('page', pageNumber.toString());
+      url.searchParams.append('limit', '10');
+
+      console.log("Fetching drivers from:", url.toString());
+
+      // Make API request using native fetch
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const newDrivers: TDriver[] = result?.data || [];
+      const pagination = result?.paginationResult;
+
+      console.log("Fetched drivers:", {
+        page: pageNumber,
+        driversCount: newDrivers.length,
+        pagination: pagination
+      });
+
+      // Update pagination info
+      if (pagination) {
+        setPaginationInfo(pagination);
+      }
+
+      // Merge new drivers with existing ones, avoiding duplicates
+      setDriversState((prev) => {
+        if (isInitial) {
+          // For initial load, replace the list
+          return { driverList: newDrivers };
+        }
+
+        // For subsequent loads, append and remove duplicates
+        const existingIds = new Set(prev.driverList.map(d => d.id));
+        const uniqueNewDrivers = newDrivers.filter(d => !existingIds.has(d.id));
+
+        console.log(`Adding ${uniqueNewDrivers.length} new drivers to existing ${prev.driverList.length}`);
+
+        return {
+          driverList: [...prev.driverList, ...uniqueNewDrivers]
+        };
+      });
+
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+    } finally {
+      isFetchingRef.current = false;
+      if (isInitial) {
+        setIsInitialLoading(false);
+      } else {
+        setIsLoadingDrivers(false);
+      }
+    }
+  }, [token, baseUrl, paginationInfo.currentPage, paginationInfo.totalPages]);
+
+  // Initial fetch when token is available or when dropdown opens
+  const loadInitialDrivers = useCallback(() => {
+    if (token && driversState.driverList.length === 0 && !isFetchingRef.current) {
+      fetchDriversPage(1, true);
+    }
+  }, [token, fetchDriversPage, driversState.driverList.length]);
+
+  // Handle scroll in dropdown menu - load next page
+  const handleMenuScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 50;
+
+    // Check if we should load more
+    const hasMorePages = paginationInfo.next !== null &&
+      paginationInfo.currentPage < paginationInfo.totalPages;
+
+    console.log("Scroll check:", {
+      isBottom,
+      hasMorePages,
+      currentPage: paginationInfo.currentPage,
+      totalPages: paginationInfo.totalPages,
+      next: paginationInfo.next,
+      isFetching: isFetchingRef.current,
+      isLoading: isLoadingDrivers
+    });
+
+    if (isBottom && hasMorePages && !isFetchingRef.current && !isLoadingDrivers) {
+      const nextPage = paginationInfo.next || paginationInfo.currentPage + 1;
+      console.log(`Loading page ${nextPage}`);
+      fetchDriversPage(nextPage, false);
+    }
+  }, [paginationInfo, isLoadingDrivers, fetchDriversPage]);
+
+  // Auto-load initial drivers when component mounts or token changes
+  useEffect(() => {
+    if (token) {
+      loadInitialDrivers();
+    }
+  }, [token, loadInitialDrivers]);
 
   const selectedTruck = useMemo(
     () => trucks.find((t) => String(t.id) === String(truckId)),
@@ -190,6 +385,10 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
   const isReefer = (selectedTruck?.type || truckType || "")
     .toLowerCase()
     .includes("reefer");
+
+  // Check if there are more pages to load
+  const hasMoreDrivers = paginationInfo.next !== null &&
+    paginationInfo.currentPage < paginationInfo.totalPages;
 
   if (isEditing) {
     const readonlyFieldSx = {
@@ -339,14 +538,23 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
         value={driverId}
         mb={2}
         onOpen={() => {
-          driverRefetch();
+          // Load drivers when dropdown opens if empty
+          if (driversState.driverList.length === 0) {
+            loadInitialDrivers();
+          }
+          // Optional: refresh trucks when opening driver select
           truckRefetch();
         }}
         onChange={onDriverIdChange}
         placeholder="Select Driver"
         startIcon={<User size={16} />}
+        onMenuScroll={handleMenuScroll}
+        isLoading={isLoadingDrivers}
+        hasMore={hasMoreDrivers}
+        loadingText="Loading more drivers..."
+        noMoreText="No more drivers available"
       >
-        {drivers.map((d) => (
+        {driversState.driverList.map((d) => (
           <MenuItem key={d.id} value={String(d.id)}>
             {d.name} ({d.driverId})
           </MenuItem>
@@ -366,6 +574,7 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
         <MenuItem value="reefer">Reefer</MenuItem>
         <MenuItem value="van">Van</MenuItem>
       </LabeledSelect>
+
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
         <LabeledSelect
           theme={theme}
@@ -428,7 +637,7 @@ const AssignmentTab: React.FC<AssignmentTabProps> = ({
           </Typography>
         )}
       </Box>
-    </Box>
+    </Box >
   );
 };
 

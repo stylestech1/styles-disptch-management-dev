@@ -78,6 +78,7 @@ import {
 } from "lucide-react";
 import { TTimeOffs, TTimeOffStatus } from "@/types/driverType";
 import { useFilter } from "@/providers/FilterProvider";
+type TStatusFilter = "all" | "available" | "busy" | "inactive";
 
 const DriversPage = () => {
   const router = useRouter();
@@ -92,12 +93,19 @@ const DriversPage = () => {
   const [togglePage, setTogglePage] = useState<"drivers" | "timeoff">(
     "drivers",
   );
+  const controlSx: SxProps = {
+    py: 0.5,
+    width: 150,
+    borderRadius: 2,
+    color: theme.currentPalette.primary,
+  };
   const [timeOffFilter, setTimeOffFilter] = useState<TTimeOffStatus>("all");
   const [openTimeOffDialog, setOpenTimeOffDialog] = useState(false);
   const [selectedTimeOff, setSelectedTimeOff] = useState<TTimeOffs | null>(
     null,
   );
   const { fromDate, toDate, isFiltered } = useFilter();
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
 
   // 🔹 API Driver Management Queries
   const {
@@ -106,7 +114,11 @@ const DriversPage = () => {
     error: driverError,
     refetch: refetchDrivers,
   } = useGetDriversWithPaginationQuery(
-    { page, limit: 10 },
+    {
+      page,
+      limit: 10,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+    },
     {
       skip: togglePage !== "drivers",
       refetchOnFocus: togglePage === "drivers",
@@ -1243,6 +1255,7 @@ const DriversPage = () => {
           </Typography>
         </Box>
 
+
         <Box
           sx={{
             display: "flex",
@@ -1275,6 +1288,23 @@ const DriversPage = () => {
               },
             }}
           />
+
+          <FormControl size="small" sx={{ minWidth: 110, width: { xs: "100%", sm: "auto" } }}>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as TStatusFilter);
+                setPage(1);
+              }}
+              sx={controlSx}
+              displayEmpty
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="available">Available</MenuItem>
+              <MenuItem value="busy">Busy</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </Select>
+          </FormControl>
           {/* Add Button */}
           {togglePage === "drivers" ? (
             <Box>

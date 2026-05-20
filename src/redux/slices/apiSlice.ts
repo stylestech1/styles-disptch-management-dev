@@ -330,19 +330,16 @@ export const apiSlice = api.injectEndpoints({
         { type: "Hiring Drivers", id },
       ],
     }),
-    createDriverApplicant: builder.mutation<any, Partial<tDriverHiring>>({
+    createDriverApplicant: builder.mutation<any, FormData>({
       query: (body) => ({
-        url: `/api/v1/driver-applicants`,
+        url: "/api/v1/driver-applicants",
         method: "POST",
         body,
       }),
       invalidatesTags: ["Hiring Drivers"],
     }),
 
-    updateDriverApplicant: builder.mutation<
-      any,
-      { id: string; body: Partial<tDriverHiring> | FormData }
-    >({
+    updateDriverApplicant: builder.mutation<any, { id: string; body: FormData }>({
       query: ({ id, body }) => ({
         url: `/api/v1/driver-applicants/${id}`,
         method: "PATCH",
@@ -418,9 +415,36 @@ export const apiSlice = api.injectEndpoints({
 
     // ! ========== Drivers ==========
     getDrivers: builder.query({
-      query: () => `/api/v1/drivers?status=available`,
+      query: (params?: { page?: number; limit?: number }) => {
+        let url = `/api/v1/drivers?status=available`;
+
+        if (params?.page) {
+          url += `&page=${params.page}`;
+        }
+        if (params?.limit) {
+          url += `&limit=${params.limit}`;
+        }
+
+        return url;
+      },
       providesTags: ["Drivers"],
       keepUnusedDataFor: 60 * 60 * 24,
+    }),
+
+    getDriversLazy: builder.mutation({
+      query: (params?: { page?: number; limit?: number }) => {
+        let url = `/api/v1/drivers?status=available`;
+
+        if (params?.page) {
+          url += `&page=${params.page}`;
+        }
+        if (params?.limit) {
+          url += `&limit=${params.limit}`;
+        }
+
+        return url;
+      },
+      invalidatesTags: ["Drivers"],
     }),
 
     getUserDriverRole: builder.query({
@@ -433,11 +457,19 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["Drivers"],
     }),
 
-    getDriversWithPagination: builder.query({
-      query: ({ page = 1, limit = 10 }) =>
-        `/api/v1/drivers?page=${page}&limit=${limit}`,
+    getDriversWithPagination: builder.query<
+      any,
+      { page: number; limit: number; status?: string }
+    >({
+      query: ({ page, limit, status }) => ({
+        url: "/api/v1/drivers",
+        params: {
+          page,
+          limit,
+          ...(status ? { status } : {}),
+        },
+      }),
       providesTags: ["Drivers"],
-      keepUnusedDataFor: 60 * 60 * 24,
     }),
 
     getAllDrivers: builder.query<{ data: TDriver[] }, void>({
