@@ -486,7 +486,7 @@ const LoadsPageDetails = () => {
         </td>
         {/* price per mile  */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }}>
-          {loadItem.pricePerMile ? `$${loadItem.pricePerMile?.toFixed(0)}` : "-"}
+          {loadItem.pricePerMile ? `$${loadItem.pricePerMile?.toFixed(2)}` : "-"}
         </td>
         {/* total price  */}
         <td className="p-4 text-center font-bold text-[14px]">
