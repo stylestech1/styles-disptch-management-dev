@@ -376,7 +376,7 @@ const TrucksPage: React.FC = () => {
       triggerSearchQuery(activeKeyword);
     }
   }, [activeKeyword, page]);
-  
+
   useEffect(() => {
     setLoading(trucksLoading && !trucksData);
   }, [trucksLoading, trucksData]);
@@ -674,6 +674,10 @@ const TrucksPage: React.FC = () => {
             size="small"
             value={keyword}
             placeholder="Search trucks by ID.."
+            onChange={(e) => {
+              setKeyword(e.target.value);
+              setPage(1);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 const value = keyword.trim();
@@ -690,22 +694,40 @@ const TrucksPage: React.FC = () => {
                 }
               }
             }}
-            onChange={(e) => {
-              setKeyword(e.target.value);
-              setPage(1);
+
+            InputProps={{
+              endAdornment: keyword ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setKeyword("");
+                      setActiveKeyword("");
+                      setPage(1);
+                      resetSearchQuery();
+                      refetchTrucks();
+                    }}
+                  >
+                    <X size={16} color="red" />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
             }}
             sx={{
               width: { xs: "100%", sm: 260, md: 260, lg: 320 },
               "& .MuiOutlinedInput-root": {
-                ...controlSx,
-                px: 0.5,
-              },
-              "& .MuiOutlinedInput-input": {
-                paddingTop: 0,
-                paddingBottom: 0,
                 height: CONTROL_H,
-                display: "flex",
-                alignItems: "center",
+                borderRadius: 2,
+                backgroundColor: "#fff",
+                "& fieldset": {
+                  borderColor: alpha(theme.currentPalette.primary, 0.28),
+                },
+                "&:hover fieldset": {
+                  borderColor: alpha(theme.currentPalette.primary, 0.55),
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: theme.currentPalette.primary,
+                },
               },
             }}
           />

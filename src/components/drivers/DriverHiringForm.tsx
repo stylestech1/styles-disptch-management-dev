@@ -1,4 +1,5 @@
-// DriverHirringForm.tsx
+
+"use client";
 
 import { tDriverHiring } from "@/types/globalTypes";
 import { RootState, useAppSelector } from "@/redux/store";
@@ -43,7 +44,7 @@ export const DriverHirringForm = ({
     onClose: () => void;
     formData: Partial<tDriverHiring>;
     onSubmit: (data: DriverHiringFormData) => void | Promise<void>;
-    editMode: boolean;
+    editMode: boolean;  
     isLoading: boolean;
 }) => {
     const theme = useAppSelector((state: RootState) => state.palette);

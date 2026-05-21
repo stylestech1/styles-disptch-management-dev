@@ -464,7 +464,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                         ? Math.trunc(Number(load.distanceMiles))
                         : "-"
                       } miles • ${load.pricePerMile != null
-                        ? `$${Number(load.pricePerMile).toFixed(2)}`
+                        ? `$${Number(load.pricePerMile)}`
                         : "-"
                       }/mile`}
                   />

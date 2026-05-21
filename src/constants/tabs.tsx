@@ -160,4 +160,39 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <Building />
     }
   ],
+  manager: [
+    {
+      label: "Hiring Drivers",
+      subtitle: "Review, approve, and manage driver recruitment requests",
+      icon: <UserPlus />,
+    },
+    {
+      label: "Maintenance",
+      icon: <Wrench />,
+      children: [
+        {
+          label: "Truck Maintenance",
+          subtitle: "Monitor and manage maintenance schedules across your entire fleet",
+          // icon: <HandymanIcon />,
+          path: "trucksmaintenance",
+        },
+        {
+          label: "Maintenance Centers",
+          subtitle: "Manage and monitor maintenance facilities across the United States",
+          // icon: <Building2 />,
+          path: "centermaintenance",
+        },
+      ],
+    },
+    {
+      label: "Users",
+      subtitle: "Manage your dispatch team members and their access",
+      icon: <Users />,
+    },
+    {
+      label: "Customers",
+      subtitle: "Handle your customers with love",
+      icon: <UserStar />,
+    },
+  ]
 };

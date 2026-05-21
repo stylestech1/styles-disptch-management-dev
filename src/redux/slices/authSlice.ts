@@ -23,11 +23,18 @@ const authSlice = createSlice({
         sameSite: "lax",
         secure: true,
       });
+      Cookies.set("userRole", user.role, {
+        expires: 7,
+        path: "/",
+        sameSite: "lax",
+        secure: true,
+      });
       state.user = user;
       state.token = token;
     },
     logout: (state) => {
       Cookies.remove("token");
+      Cookies.remove("userRole");
       state.user = null;
       state.token = null;
     },

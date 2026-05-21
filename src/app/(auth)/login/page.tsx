@@ -321,9 +321,23 @@ const Login = () => {
 
       dispatch(loginSuccess({ user: result.data, token: result.token }));
 
-      if (result.data.role === "admin") router.push("/admin/loads");
-      else if (result.data.role === "super-admin") router.push("/superAdmin/companies");
-      else router.push("/dispatchers/loads");
+      // Small delay to ensure cookies are set before redirecting
+      setTimeout(() => {
+        const role = result.data.role?.toLowerCase();
+        if (role === "admin") {
+          router.replace("/admin/loads");
+        } else if (role === "superadmin" || role === "super-admin" || role === "super_admin") {
+          router.replace("/superAdmin/companies");
+        } else if (role === "manager") {
+          router.replace("/manager/hiringdrivers");
+        } else if (role === "employee") {
+          router.replace("/dispatchers/loads");
+        } else if (role === "driver") {
+          router.replace("/dispatchers/loads");
+        } else {
+          router.replace("/dispatchers/loads");
+        }
+      }, 100);
     } catch (error: any) {
       const msg = error?.message || "Something went wrong";
       setFieldError("form", msg);

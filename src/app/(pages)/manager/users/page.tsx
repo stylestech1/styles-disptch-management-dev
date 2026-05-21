@@ -499,7 +499,6 @@ const Users = () => {
                   <MenuItem value="driver">Driver</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="manager">Manager</MenuItem>
-
                 </Select>
               </FormControl>
             </Box>

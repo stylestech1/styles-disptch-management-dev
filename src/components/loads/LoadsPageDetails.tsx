@@ -48,6 +48,8 @@ import {
   Button,
   Chip,
   FormControl,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -61,7 +63,7 @@ import {
 // Styles
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
-import { Boxes, Clock, Goal, LandPlot, MapPin, NotepadText } from "lucide-react";
+import { Boxes, Clock, Goal, LandPlot, MapPin, NotepadText, X } from "lucide-react";
 
 type LoadStatusFilter = "all" | "pending" | "in_transit" | "delivered";
 const CONTROL_H = 42;
@@ -385,7 +387,7 @@ const LoadsPageDetails = () => {
       delivered: statLoadData.delivered || 0,
     };
   }, [activeKeyword, searchData?.stats, loadsData?.stats]);
-  
+
 
   if (loadsLoading && !loadsData) return <Loading />;
 
@@ -484,7 +486,7 @@ const LoadsPageDetails = () => {
         </td>
         {/* price per mile  */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }}>
-          {loadItem.pricePerMile ? `$${loadItem.pricePerMile.toFixed(2)}` : "-"}
+          {loadItem.pricePerMile ? `$${loadItem.pricePerMile?.toFixed(0)}` : "-"}
         </td>
         {/* total price  */}
         <td className="p-4 text-center font-bold text-[14px]">
@@ -675,20 +677,40 @@ const LoadsPageDetails = () => {
               placeholder="Search Loads by ID, Driver"
               onChange={(e) => {
                 setKeyword(e.target.value);
-                setPage(1);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const value = keyword.trim();
 
+                  setPage(1);
+
                   if (value) {
-                    setPage(1);
-                    triggerSearchQuery(encodeURIComponent(value));
+                    setActiveKeyword(value);
+                    triggerSearchQuery(value);
                   } else {
+                    setActiveKeyword("");
                     resetSearchQuery();
                     refetchLoads();
                   }
                 }
+              }}
+              InputProps={{
+                endAdornment: keyword ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setKeyword("");
+                        setActiveKeyword("");
+                        setPage(1);
+                        resetSearchQuery();
+                        refetchLoads();
+                      }}
+                    >
+                      <X size={16} color="red" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
               }}
               sx={{
                 width: "100%",
@@ -794,8 +816,8 @@ const LoadsPageDetails = () => {
         data={load}
         renderRow={renderLoadRow}
         loading={
-          (isSearching && loadsLoading) ||
-          (isFiltered && filterLoading) ||
+          searchLoading ||
+          (isFiltered && !activeKeyword && filterLoading) ||
           (loadsLoading && !loadsData)
         }
       />

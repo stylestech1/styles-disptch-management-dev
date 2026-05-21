@@ -345,6 +345,7 @@ export default function CreateUserModal({
                 >
                   <MenuItem value="driver">Driver</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="manager">Manager</MenuItem>
                   <MenuItem value="employee">Employee</MenuItem>
                 </TextField>
               )}

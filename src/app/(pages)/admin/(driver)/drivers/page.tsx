@@ -32,6 +32,7 @@ import {
   Switch,
   Tooltip,
   TextField,
+  InputAdornment,
 } from "@mui/material";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import Pagination from "@/components/ui/Pagination";
@@ -94,6 +95,8 @@ const DriversPage = () => {
   const [togglePage, setTogglePage] = useState<"drivers" | "timeoff">(
     "drivers",
   );
+  const [keyword, setKeyword] = useState("");
+  const [activeKeyword, setActiveKeyword] = useState("");
   const controlSx: SxProps = {
     py: 0.5,
     width: 150,
@@ -231,76 +234,77 @@ const DriversPage = () => {
   const [deleteDriver] = useDeleteDriverMutation();
   const [updateTimeOffs] = useUpdateTimeOffStatusMutation();
   const [originalData, setOriginalData] = useState<Partial<TDriver>>({});
-  const [searchTerm, setSearchTerm] = useState("");
+
   // 🔹 Dynamic Data toggle
   const currentData = useMemo(() => {
-    const keyword = searchTerm.trim().toLowerCase();
-
     if (togglePage === "drivers") {
-      const data =
-        isFiltered && filteredData?.data
-          ? filteredData.data
-          : driversData?.data || [];
+      if (activeKeyword && driverByIdData?.data) {
+        return Array.isArray(driverByIdData.data)
+          ? driverByIdData.data.flat()
+          : [driverByIdData.data];
+      }
 
-      if (!keyword) return data;
+      if (!activeKeyword && isFiltered && filteredData?.data) {
+        return filteredData.data;
+      }
 
-      return data.filter((driver: TDriver) =>
-        Object.values(driver).some((value) =>
-          String(value || "").toLowerCase().includes(keyword)
-        )
-      );
+      return driversData?.data || [];
     }
 
     if (togglePage === "timeoff") {
-      let data =
-        isFiltered && timeOffsFilteredData?.data
-          ? timeOffsFilteredData.data
-          : timeOffsData?.data || [];
+      let data: TTimeOffs[] = [];
 
-      if (timeOffFilter !== "all") {
-        data = data.filter((item: TTimeOffs) => item.status === timeOffFilter);
+      if (activeKeyword && timeOffSearchData?.data) {
+        data = Array.isArray(timeOffSearchData.data)
+          ? timeOffSearchData.data.flat()
+          : [timeOffSearchData.data];
+      } else if (!activeKeyword && isFiltered && timeOffsFilteredData?.data) {
+        data = timeOffsFilteredData.data;
+      } else {
+        data = timeOffsData?.data || [];
       }
 
-      if (!keyword) return data;
+      if (timeOffFilter !== "all") {
+        data = data.filter((item) => item.status === timeOffFilter);
+      }
 
-      return data.filter((item: TTimeOffs) =>
-        Object.values(item).some((value) =>
-          String(value || "").toLowerCase().includes(keyword)
-        )
-      );
+      return data;
     }
 
     return [];
   }, [
     togglePage,
+    activeKeyword,
+    driverByIdData,
+    timeOffSearchData,
     isFiltered,
     filteredData,
     timeOffsFilteredData,
     driversData,
     timeOffsData,
     timeOffFilter,
-    searchTerm,
   ]);
 
   // 🔹 Dynamic Pagination
   const currentPagination = useMemo(() => {
     if (togglePage === "drivers") {
-      if (isFiltered && filteredData?.paginationResult) {
-        return filteredData.paginationResult;
-      }
-      return driversData?.paginationResult;
+      if (activeKeyword) return (driverByIdData as any)?.paginationResult || null;
+      if (isFiltered) return filteredData?.paginationResult || null;
+      return driversData?.paginationResult || null;
     }
 
     if (togglePage === "timeoff") {
-      if (isFiltered && timeOffsFilteredData?.paginationResult) {
-        return timeOffsFilteredData.paginationResult;
-      }
-      return timeOffsData?.paginationResult;
+      if (activeKeyword) return (timeOffSearchData as any)?.paginationResult || null;
+      if (isFiltered) return timeOffsFilteredData?.paginationResult || null;
+      return timeOffsData?.paginationResult || null;
     }
 
     return null;
   }, [
     togglePage,
+    activeKeyword,
+    driverByIdData,
+    timeOffSearchData,
     isFiltered,
     filteredData,
     timeOffsFilteredData,
@@ -1291,15 +1295,57 @@ const DriversPage = () => {
 
           <TextField
             size="small"
-            value={searchTerm}
+            value={keyword}
             placeholder={
               togglePage === "drivers"
-                ? "Search by driver Id ..."
+                ? "Search by driver Id..."
                 : "Search by timeoff Id..."
             }
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
+              setKeyword(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const value = keyword.trim();
+
+                setPage(1);
+
+                if (value) {
+                  setActiveKeyword(value);
+
+                  if (togglePage === "drivers") {
+                    triggerSearchQuery(value);
+                  } else {
+                    triggerTimeOffSearch(value);
+                  }
+                } else {
+                  setActiveKeyword("");
+                  resetSearchQuery();
+                  resetTimeOffSearch();
+
+                  if (togglePage === "drivers") refetchDrivers();
+                  if (togglePage === "timeoff") refetchTimeOffs();
+                }
+              }
+            }}
+            InputProps={{
+              endAdornment: keyword ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setKeyword("");
+                      setActiveKeyword("");
+                      setPage(1);
+                      resetSearchQuery();
+                      if (togglePage === "drivers") refetchDrivers();
+                      if (togglePage === "timeoff") refetchTimeOffs();
+                    }}
+                  >
+                    <X size={16} color="red" />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
             }}
             sx={{
               width: { xs: "100%", md: 300, lg: 350 },
@@ -1307,13 +1353,9 @@ const DriversPage = () => {
                 borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,
                 py: 0.5,
-                "&:hover": {
-                  borderColor: theme.currentPalette.primary,
-                },
               },
             }}
           />
-
           <FormControl size="small" sx={{ minWidth: 110, width: { xs: "100%", sm: "auto" } }}>
             <Select
               value={statusFilter}

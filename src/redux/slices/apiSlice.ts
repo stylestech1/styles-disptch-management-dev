@@ -477,12 +477,21 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["Drivers"],
     }),
 
-    getDriverByDriverId: builder.query<{ data: TDriver }, string>({
-      query: (driverId) => `/api/v1/drivers?driverId=${driverId}`,
+    getDriverByDriverId: builder.query<
+      {
+        data: TDriver[] | TDriver;
+        paginationResult?: any;
+        stats?: any;
+      },
+      string
+    >({
+      query: (driverId) =>
+        `/api/v1/drivers?keyword=${encodeURIComponent(driverId)}`,
       providesTags: (result, error, driverId) => [
         { type: "Drivers", id: driverId },
       ],
     }),
+    
 
     getDriverById: builder.query<{ data: TDriver }, string>({
       query: (id) => `/api/v1/drivers/${id}`,
