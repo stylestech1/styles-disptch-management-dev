@@ -109,7 +109,7 @@ const DriversPage = () => {
     null,
   );
   const { fromDate, toDate, isFiltered } = useFilter();
-  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("available");
 
   // 🔹 API Driver Management Queries
   const {

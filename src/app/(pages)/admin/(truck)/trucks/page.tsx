@@ -87,7 +87,7 @@ const TrucksPage: React.FC = () => {
   const { error } = useError();
   const theme = useAppSelector((state: RootState) => state.palette);
 
-  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("available");
 
   const [actionsAnchorEl, setActionsAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTruck, setSelectedTruck] = useState<TTruck | null>(null);
