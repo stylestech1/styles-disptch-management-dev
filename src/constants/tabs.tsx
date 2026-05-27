@@ -13,6 +13,7 @@ import {
   Wrench,
   UserPlus
 } from "lucide-react";
+import { MdOutlineHandyman } from "react-icons/md";
 
 type TabItem = {
   label: string;
@@ -68,6 +69,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
           path: "centermaintenance",
         },
       ],
+    },
+    {
+      label: "Repaires",
+      subtitle: "Manage and track all your truck repairs in one place.",
+      icon: <MdOutlineHandyman size={20} />,
     },
     {
       label: "Drivers",
@@ -130,6 +136,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       subtitle:
         "Calculate rates and plan your routes with real-time distance measurements",
       icon: <CircleDivide />,
+    },
+    {
+      label: "Repaires",
+      subtitle: "Manage and track all your truck repairs in one place.",
+      icon: <MdOutlineHandyman />,
     },
     {
       label: "Customers",

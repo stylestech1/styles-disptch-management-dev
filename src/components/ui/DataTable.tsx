@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { ReactNode } from "react";
 import {
@@ -22,7 +23,7 @@ export interface Column {
   key: string;
   header: string;
   align?: AlignType;
-  width?: string;
+  width?: string | number;
   sortable?: boolean;
 }
 
@@ -137,7 +138,7 @@ const DataTable = <T,>({
       sx={{
         borderRadius: 2,
         border: "1px solid",
-        borderColor:  alpha(theme.currentPalette.primary, 0.3),
+        borderColor: alpha(theme.currentPalette.primary, 0.3),
         overflowX: "auto",
         boxShadow: 'none'
       }}

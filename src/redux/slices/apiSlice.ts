@@ -355,6 +355,41 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["Hiring Drivers"],
     }),
+
+    // ! ========== Repairs ==========
+    getRepairs: builder.query<any, { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}) =>
+        `/api/v1/repairs?page=${page}&limit=${limit}`,
+      providesTags: ["Repairs"],
+      keepUnusedDataFor: 60 * 60,
+    }),
+
+    getSingleRepair: builder.query({
+      query: (id: string) => `/api/v1/repairs/${id}`,
+      providesTags: (result, error, id) => [{ type: "Repairs", id }],
+    }),
+
+    createRepair: builder.mutation({
+      query: (body: FormData) => ({
+        url: `/api/v1/repairs`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Repairs"],
+    }),
+
+    updateRepair: builder.mutation({
+      query: ({ id, body }: { id: string; body: FormData }) => ({
+        url: `/api/v1/repairs/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Repairs", id },
+        "Repairs",
+      ],
+    }),
+
     // ! ========== Loads Using Id ==========
     getLoadById: builder.query({
       query: (loadId) => `/api/v1/loads?keyword=${loadId}`,
@@ -491,7 +526,7 @@ export const apiSlice = api.injectEndpoints({
         { type: "Drivers", id: driverId },
       ],
     }),
-    
+
 
     getDriverById: builder.query<{ data: TDriver }, string>({
       query: (id) => `/api/v1/drivers/${id}`,
@@ -619,7 +654,10 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["Trucks"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
-
+    getRepairById: builder.query<{ data: any }, string>({
+      query: (id) => `/api/v1/repairs/${id}`,
+      providesTags: ["Repairs"],
+    }),
     getTrucksWithPagination: builder.query({
       query: ({ page = 1, limit = 10 }) =>
         `/api/v1/trucks?page=${page}&limit=${limit}`,
@@ -1240,4 +1278,9 @@ export const {
   useGetDriverApplicantsWithFilterQuery,
   useLazyGetDriverApplicantByIdQuery,
   useGetDriverApplicantByIdQuery,
+  // repairs
+  useGetRepairsQuery,
+  useCreateRepairMutation,
+  useUpdateRepairMutation,
+  useGetRepairByIdQuery,
 } = apiSlice;

@@ -16,6 +16,7 @@ export const api = createApi({
   tagTypes: [
     "Loads",
     "Trucks",
+    "Repairs",
     "Drivers",
     "Hiring Drivers",
     "Comments",
