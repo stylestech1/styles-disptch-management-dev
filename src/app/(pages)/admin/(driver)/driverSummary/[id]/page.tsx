@@ -391,7 +391,11 @@ const DriverSummary = () => {
             {Array.isArray(l.destination) ? l.destination.join(", ") : l.destination}
           </div>
         </td>
-        <td className="p-4 text-center">{l.distanceMiles?.toFixed(0) || "-"}</td>
+        <td className="p-4 text-center">
+          {l.distanceMiles != null
+            ? Math.trunc(Number(l.distanceMiles))
+            : "-"}
+        </td>
         {/* <td className="p-4 text-center">$ {l.pricePerMile?.toFixed(2)}</td> */}
         <td className="p-4 text-center">${l.totalPrice?.toLocaleString()}</td>
       </TableRow>

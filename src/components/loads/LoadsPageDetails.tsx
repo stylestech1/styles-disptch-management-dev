@@ -479,11 +479,15 @@ const LoadsPageDetails = () => {
           </div>
         </td>
         {/* distance */}
+        {/* <td className="p-4 text-center">
+          {loadItem.distanceMiles != null ? Math.floor(loadItem.distanceMiles) + " miles" : "-"}
+        </td> */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }} >
           {loadItem.distanceMiles != null
             ? `${Math.trunc(Number(loadItem.distanceMiles))} miles`
             : "-"}
         </td>
+        
         {/* price per mile  */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }}>
           {loadItem.pricePerMile ? `$${loadItem.pricePerMile?.toFixed(2)}` : "-"}
