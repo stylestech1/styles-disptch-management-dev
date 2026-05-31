@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -1347,28 +1348,28 @@ const DriversPage = () => {
               },
             }}
           />
-
-          <FormControl size="small" sx={{ width: { xs: "100%", sm: 170 } }}>
-            <Select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value as TStatusFilter);
-                setPage(1);
-              }}
-              sx={{
-                ...controlSx,
-                minHeight: { xs: 46, md: 56 },
-              }}
-              displayEmpty
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="available&busy">Available & busy</MenuItem>
-              <MenuItem value="available">Available</MenuItem>
-              <MenuItem value="busy">Busy</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-
+          {togglePage === "drivers" && (
+            <FormControl size="small" sx={{ width: { xs: "100%", sm: 170 } }}>
+              <Select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as TStatusFilter);
+                  setPage(1);
+                }}
+                sx={{
+                  ...controlSx,
+                  minHeight: { xs: 46, md: 56 },
+                }}
+                displayEmpty
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="available&busy">Available & busy</MenuItem>
+                <MenuItem value="available">Available</MenuItem>
+                <MenuItem value="busy">Busy</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          )}
           {togglePage === "drivers" && (
             <Button
               onClick={() => setOpenStepper(true)}
