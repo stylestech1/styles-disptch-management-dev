@@ -99,7 +99,6 @@ const DriversPage = () => {
   const [activeKeyword, setActiveKeyword] = useState("");
   const controlSx: SxProps = {
     py: 0.5,
-    width: 180,
     borderRadius: 2,
     color: theme.currentPalette.primary,
   };
@@ -1123,16 +1122,17 @@ const DriversPage = () => {
     p: 3,
   };
   const searchFilterContainerSx = {
-    p: { xs: 2, md: 3 },
-    mb: 3,
-    border: `1px solid ${alpha(theme.currentPalette.primary, 0.35)}`,
-    borderRadius: 2,
-    bgcolor: theme.currentPalette.background,
     display: "flex",
-    alignItems: { xs: "stretch", xl: "center" },
+    flexDirection: { xs: "column", md: "row" },
+    alignItems: { xs: "flex-start", md: "center" },
     justifyContent: "space-between",
-    gap: { xs: 2, md: 2.5 },
-    flexDirection: { xs: "column", xl: "row" },
+    gap: { xs: 2, md: 3 },
+    p: 2,
+    my: 2,
+    border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
+    borderRadius: 2,
+    backgroundColor: theme.currentPalette.background,
+    width: "100%",
   } as const;
 
   const newLoadButtonSx: SxProps = {
@@ -1250,19 +1250,10 @@ const DriversPage = () => {
       {/* Search & Filter */}
       <Box sx={searchFilterContainerSx}>
         {/* Left title */}
-        <Box
-          sx={{
-            width: { xs: "100%", xl: "auto" },
-            minWidth: { xl: 120 },
-          }}
-        >
+        <Box>
           <Typography
             variant="h6"
-            sx={{
-              color: theme.currentPalette.primary,
-              fontWeight: 600,
-              fontSize: { xs: 18, md: 22 },
-            }}
+            sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
           >
             {togglePage === "drivers" ? "Driver Details" : "Time off requests"}
           </Typography>
@@ -1272,7 +1263,7 @@ const DriversPage = () => {
             sx={{
               color: theme.currentPalette.primary,
               fontWeight: 400,
-              fontSize: { xs: 13, md: 14 },
+              fontSize: { xs: 13 },
             }}
           >
             {togglePage === "drivers"
@@ -1284,27 +1275,12 @@ const DriversPage = () => {
         {/* Right controls */}
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md:
-                togglePage === "drivers"
-                  ? "1fr 170px"
-                  : "minmax(300px, 520px)",
-              xl:
-                togglePage === "drivers"
-                  ? "minmax(360px, 1fr) 180px 200px"
-                  : "minmax(360px, 600px)",
-            },
-            gap: { xs: 1.5, md: 2 },
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: { xs: "flex-start", md: "flex-end" },
             alignItems: "center",
-            width: {
-              xs: "100%",
-              xl: togglePage === "drivers" ? "75%" : "auto",
-            },
-            maxWidth: {
-              xl: togglePage === "drivers" ? 980 : 600,
-            },
+            gap: 2,
+            width: { xs: "100%", md: "auto" },
           }}
         >
           <TextField
@@ -1315,10 +1291,13 @@ const DriversPage = () => {
                 ? "Search by driver Id..."
                 : "Search by timeoff Id..."
             }
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={(e) => {
+              setKeyword(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 const value = keyword.trim();
+
                 setPage(1);
 
                 if (value) {
@@ -1360,12 +1339,7 @@ const DriversPage = () => {
               ) : null,
             }}
             sx={{
-              width: "100%",
-              gridColumn: {
-                xs: "1 / -1",
-                md: togglePage === "drivers" ? "1 / -1" : "auto",
-                xl: "auto",
-              },
+              width: { xs: "100%", sm: 320 },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
                 backgroundColor: theme.currentPalette.background,
@@ -1374,62 +1348,43 @@ const DriversPage = () => {
             }}
           />
 
-          {togglePage === "drivers" && (
-            <Box
+          <FormControl size="small" sx={{ width: { xs: "100%", sm: 170 } }}>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as TStatusFilter);
+                setPage(1);
+              }}
               sx={{
-                display: "flex",
-                gap: 2,
-                width: "100%",
-                gridColumn: {
-                  xs: "1 / -1",
-                  md: "1 / -1",
-                  xl: "auto",
-                },
-                flexDirection: { xs: "row", md: "row" },
+                ...controlSx,
+                minHeight: { xs: 46, md: 56 },
+              }}
+              displayEmpty
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="available&busy">Available & busy</MenuItem>
+              <MenuItem value="available">Available</MenuItem>
+              <MenuItem value="busy">Busy</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+
+          {togglePage === "drivers" && (
+            <Button
+              onClick={() => setOpenStepper(true)}
+              variant="contained"
+              startIcon={<Link size={18} />}
+              sx={{
+                ...newLoadButtonSx,
+                width: { xs: "100%", sm: 220 },
+                minHeight: { xs: 46, md: 56 },
+                whiteSpace: "nowrap",
               }}
             >
-              <FormControl size="small" sx={{ flex: 1 }}>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value as TStatusFilter);
-                    setPage(1);
-                  }}
-                  sx={{
-                    ...controlSx,
-                    width: "100%",
-                    minHeight: { xs: 46, md: 56 },
-                  }}
-                  displayEmpty
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="available&busy">Available & busy</MenuItem>
-                  <MenuItem value="available">Available</MenuItem>
-                  <MenuItem value="busy">Busy</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-
-              <Button
-                onClick={() => setOpenStepper(true)}
-                variant="contained"
-                startIcon={<Link size={18} />}
-                sx={{
-                  ...newLoadButtonSx,
-                  flex: 1,
-                  width: "100%",
-                  minHeight: { xs: 46, md: 56, xl: 64 },
-                  fontSize: { xs: 13, md: 15, xl: 18 },
-                  borderRadius: 2,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Link Driver
-              </Button>
-            </Box>
+              Link Driver
+            </Button>
           )}
         </Box>
-
       </Box>
 
       {error && (
