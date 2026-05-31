@@ -2,7 +2,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, lazy, Suspense } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  lazy,
+  Suspense,
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -18,8 +25,11 @@ import {
   Typography,
 } from "@mui/material";
 import { IoAdd, IoClose } from "react-icons/io5";
+import { DollarSign, KeyRound, ShieldUser } from "lucide-react";
 
-import LocationAutocomplete, { TPlace } from "@/components/sections/LocationAutocomplete";
+import LocationAutocomplete, {
+  TPlace,
+} from "@/components/sections/LocationAutocomplete";
 import {
   calculateDhoToOriginDistance,
   calculateFullRouteDistance,
@@ -51,27 +61,38 @@ import {
   resetForm,
 } from "@/redux/slices/loadsFormSlice";
 
-import { useCreateLoadsMutation, useGetDriversQuery, useUpdateLoadsMutation } from "@/redux/slices/apiSlice";
+import {
+  useCreateLoadsMutation,
+  useGetDriversQuery,
+  useUpdateLoadsMutation,
+} from "@/redux/slices/apiSlice";
+
 import { RootState, useAppSelector } from "@/redux/store";
-import { CreateEditLoadModalProps, TLoads, TTruckType, Adjustment } from "@/types/globalTypes";
+import {
+  Adjustment,
+  CreateEditLoadModalProps,
+  TLoads,
+  TTruckType,
+} from "@/types/globalTypes";
 
 import LoadDetailsTab from "./tabsModal/LoadDetailsTab";
 import AssignmentTab from "./tabsModal/AssignmentTab";
 import FinancialTab from "./tabsModal/FinancialTab";
-import { DollarSign, KeyRound, ShieldUser } from "lucide-react";
 
-// Lazy load the map components
-const LazyGoogleMapsLoader = lazy(() => import("@/components/ui/GoogleMapsLoader"));
+const LazyGoogleMapsLoader = lazy(
+  () => import("@/components/ui/GoogleMapsLoader"),
+);
 const LazyMapWithRoute = lazy(() => import("@/components/ui/MapWithRoute"));
 
 type StepKey = "locations" | "assignment" | "timeline" | "financials";
+
 type StepItem = {
   key: StepKey;
   title: string;
   desc: string;
   canGo: () => boolean;
 };
-// name driver to be two words 
+
 const twoWords = (value?: string | null) => {
   const s = String(value ?? "").trim();
   if (!s) return "";
@@ -84,6 +105,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   editingLoad = null,
 }) => {
   const dispatch = useDispatch();
+  const theme = useAppSelector((state: RootState) => state.palette);
 
   const {
     dho,
@@ -105,71 +127,63 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     isEditing,
   } = useSelector((state: RootState) => state.loadsForm);
 
-  const theme = useAppSelector((state: RootState) => state.palette);
   const { data: driversData } = useGetDriversQuery(undefined as any, {
     skip: !isOpen,
   });
+
   const [createLoad, { isLoading: creatingLoad }] = useCreateLoadsMutation();
   const [updateLoad, { isLoading: updatingLoad }] = useUpdateLoadsMutation();
 
-  // Documents
   const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
-  const [uploadError, setUploadError] = useState<string>("");
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
 
-  // Maps / distance
-  const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(null);
+  const [dhoToOriginDistance, setDhoToOriginDistance] = useState<number | null>(
+    null,
+  );
   const [averageTime, setAverageTime] = useState<number | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
-  const [allDistance, setAllDistance] = useState<string>("");
+  const [allDistance, setAllDistance] = useState("");
   const [pricePerMile, setPricePerMile] = useState<number | null>(null);
   const [showMaps, setShowMaps] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
 
-  // Dayjs
+  const submitIntentRef = React.useRef(false);
+
   const pickupAtDayjs = pickupAt ? dayjs(pickupAt) : null;
   const completedAtDayjs = completedAt ? dayjs(completedAt) : null;
-  const arrivalAtShipperDayjs = arrivalAtShipper ? dayjs(arrivalAtShipper) : null;
-  const arrivalAtReceiverDayjs = arrivalAtReceiver ? dayjs(arrivalAtReceiver) : null;
+  const arrivalAtShipperDayjs = arrivalAtShipper
+    ? dayjs(arrivalAtShipper)
+    : null;
+  const arrivalAtReceiverDayjs = arrivalAtReceiver
+    ? dayjs(arrivalAtReceiver)
+    : null;
   const leftShipperDayjs = leftShipper ? dayjs(leftShipper) : null;
   const leftReceiverDayjs = leftReceiver ? dayjs(leftReceiver) : null;
 
   const isEditMode = Boolean(isEditing && editingLoad);
 
-
-  const isLocationsValid = (): boolean => {
-    const hasValidOrigin = !!origin;
-    const hasAtLeastOneDestination = destinations.filter(Boolean).length > 0;
-    return hasValidOrigin && hasAtLeastOneDestination;
-  };
-  const headerDriverName = useMemo(() => {
-    // edit mode: جيبي الاسم من editingLoad.driverId.name
-    if (isEditMode && (editingLoad as any)?.driverId?.name) {
-      return twoWords((editingLoad as any).driverId.name);
-    }
-
-    // add mode: لو عندك name مخزن في state ممكن ترجعيه هنا (اختياري)
-    return "";
-  }, [isEditMode, editingLoad]);
-
-  const isTimelineValid = (): boolean => {
-    const hasValidPickupAt = pickupAt !== null;
-    const hasValidCompletedAt = completedAt !== null;
-    return hasValidPickupAt && hasValidCompletedAt;
+  const isLocationsValid = () => {
+    return !!origin && destinations.filter(Boolean).length > 0;
   };
 
-  const isFinancialValid = (): boolean => {
-    const hasValidPrice = price.trim() !== "";
-    const hasValidLoadID = loadIDInp.trim() !== "";
-    return hasValidPrice && hasValidLoadID;
+  const isTimelineValid = () => {
+    return pickupAt !== null && completedAt !== null;
   };
-  const submitIntentRef = React.useRef(false);
-  const isAssignmentValid = (): boolean => {
+
+  const isFinancialValid = () => {
+    return price.trim() !== "" && loadIDInp.trim() !== "";
+  };
+
+  const isAssignmentValid = () => {
     if (isEditMode) return true;
-    const hasValidDriverId = driverId.trim() !== "";
-    const hasValidTruckType = truckType?.trim?.() ? truckType.trim() !== "" : true;
-    const hasValidTruckId = truckId.trim() !== "";
-    return hasValidDriverId && hasValidTruckType && hasValidTruckId;
+
+    return (
+      driverId.trim() !== "" &&
+      truckId.trim() !== "" &&
+      (truckType?.trim?.() ? truckType.trim() !== "" : true)
+    );
   };
 
   const steps: StepItem[] = useMemo(() => {
@@ -195,6 +209,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         },
       ];
     }
+
     return [
       {
         key: "locations",
@@ -218,7 +233,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         key: "financials",
         title: "Financials",
         desc: "Configure pricing & documents",
-        canGo: () => isLocationsValid() && isAssignmentValid() && isTimelineValid(),
+        canGo: () =>
+          isLocationsValid() && isAssignmentValid() && isTimelineValid(),
       },
     ];
   }, [
@@ -234,15 +250,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     truckType,
   ]);
 
-  const [activeStep, setActiveStep] = useState(0);
   const isLastStep = activeStep === steps.length - 1;
-
-  useEffect(() => {
-    if (!isOpen) return;
-    // reset to first step on open
-    setActiveStep(0);
-  }, [isOpen, isEditMode]);
-
   const stepKey: StepKey = steps[activeStep]?.key || "locations";
   const stepTitle = steps[activeStep]?.title || "Locations";
 
@@ -255,10 +263,15 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   const nextStep = () => goToStep(activeStep + 1);
   const prevStep = () => goToStep(activeStep - 1);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveStep(0);
+  }, [isOpen, isEditMode]);
+
   const processFiles = (files: File[]) => {
     setUploadError("");
-    const totalFiles = selectedDocuments.length + files.length;
-    if (totalFiles > 2) {
+
+    if (selectedDocuments.length + files.length > 2) {
       setUploadError("You can only upload maximum 2 files 😢");
       return;
     }
@@ -301,15 +314,16 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+
     const files = e.dataTransfer.files;
-    if (!files || files.length === 0) return;
+    if (!files?.length) return;
+
     processFiles(Array.from(files));
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    processFiles(Array.from(files));
+    if (!e.target.files) return;
+    processFiles(Array.from(e.target.files));
     e.target.value = "";
   };
 
@@ -324,9 +338,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     dispatch(setEditingLoad(loadItem));
 
     try {
-      // DHO
       if (loadItem.DHO) {
         const dhoCoords = await geocodeAddress(loadItem.DHO);
+
         dispatch(
           setDho(
             dhoCoords ||
@@ -342,9 +356,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         dispatch(setDho(null));
       }
 
-      // Origin
       if (loadItem.origin) {
         const originCoords = await geocodeAddress(loadItem.origin);
+
         dispatch(
           setOrigin(
             originCoords ||
@@ -360,7 +374,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         dispatch(setOrigin(null));
       }
 
-      // Destinations
       if (loadItem.destination) {
         const destArray = Array.isArray(loadItem.destination)
           ? loadItem.destination
@@ -369,6 +382,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         const destinationPlaces = await Promise.all(
           destArray.map(async (dest) => {
             const coords = await geocodeAddress(dest);
+
             return (
               coords ||
               ({
@@ -389,12 +403,10 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       console.error("Error geocoding addresses:", error);
     }
 
-    // Load Details
     dispatch(setLoadIDInp(loadItem.loadId || ""));
     dispatch(setPrice(loadItem.totalPrice?.toString() || ""));
     dispatch(setFees(loadItem.feesNumber?.toString() || ""));
 
-    // Dates
     dispatch(setPickupAt(loadItem.pickupAt || null));
     dispatch(setCompletedAt(loadItem.completedAt || null));
     dispatch(setArrivalAtShipper(loadItem.arrivalAtShipper || null));
@@ -402,7 +414,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     dispatch(setLeftShipper(loadItem.leftShipper || null));
     dispatch(setLeftReceiver(loadItem.leftReceiver || null));
 
-    // Assignment
     dispatch(setDriverId(String((loadItem as any)?.driverId?.driverId ?? "")));
     dispatch(setTruckType((loadItem.truckType as TTruckType) || "reefer"));
     dispatch(setTruckId(loadItem.truckId?.truckId?.toString() || ""));
@@ -443,19 +454,21 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
         setAverageTime(null);
         return;
       }
+
       try {
         const result = await calculateDhoToOriginDistance(
           { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) },
           { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) },
         );
+
         setDhoToOriginDistance(result.distance);
         setAverageTime(result.duration);
-      } catch (e) {
-        // console.error("Error calculating DHO to Origin distance:", e);
+      } catch {
         setDhoToOriginDistance(null);
         setAverageTime(null);
       }
     };
+
     run();
   }, [dho, origin]);
 
@@ -463,32 +476,32 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     const run = async () => {
       const validDestinations = destinations.filter(Boolean) as TPlace[];
 
-      if ((origin && validDestinations.length > 0) || (dho && origin && validDestinations.length > 0)) {
-        try {
-          const destinationsCoords = validDestinations.map((dest) => ({
-            lat: parseFloat(dest.lat),
-            lng: parseFloat(dest.lon),
-          }));
+      if (!origin || validDestinations.length === 0) {
+        setDistance(null);
+        setAllDistance("");
+        return;
+      }
 
-          const result = await calculateFullRouteDistance(
-            dho ? { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) } : null,
-            origin ? { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) } : null,
-            destinationsCoords,
-          );
+      try {
+        const destinationsCoords = validDestinations.map((dest) => ({
+          lat: parseFloat(dest.lat),
+          lng: parseFloat(dest.lon),
+        }));
 
-          setDistance(result.distance);
-          setAllDistance(result.distance.toFixed(2));
+        const result = await calculateFullRouteDistance(
+          dho ? { lat: parseFloat(dho.lat), lng: parseFloat(dho.lon) } : null,
+          { lat: parseFloat(origin.lat), lng: parseFloat(origin.lon) },
+          destinationsCoords,
+        );
 
-          if (price && Number(price) > 0) {
-            const perMile = Number(price) / result.distance;
-            setPricePerMile(perMile);
-          }
-        } catch (e) {
-          console.error("Error calculating total distance:", e);
-          setDistance(null);
-          setAllDistance("");
+        setDistance(result.distance);
+        setAllDistance(result.distance.toFixed(2));
+
+        if (price && Number(price) > 0) {
+          setPricePerMile(Number(price) / result.distance);
         }
-      } else {
+      } catch (e) {
+        console.error("Error calculating total distance:", e);
         setDistance(null);
         setAllDistance("");
       }
@@ -497,53 +510,59 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     run();
   }, [origin, destinations, dho, price]);
 
-  const formatTime = (hours: number): string => {
+  const formatTime = (hours: number) => {
     const totalMinutes = hours * 60;
     const h = Math.floor(totalMinutes / 60);
     const m = Math.round(totalMinutes % 60);
+
     if (h === 0) return `${m} minutes`;
     if (m === 0) return `${h} hours`;
+
     return `${h}h ${m}m`;
   };
 
   const handlePriceChange = (value: string) => {
     dispatch(setPrice(value));
+
     if (allDistance && Number(allDistance) > 0 && Number(value) > 0) {
       setPricePerMile(Number(value) / Number(allDistance));
     } else {
       setPricePerMile(null);
     }
   };
-  const validDestCount = destinations.filter(Boolean).length;
 
   const handleAddDestination = () => dispatch(addDestination());
-  const handleUpdateDestination = (index: number, place: TPlace | null) =>
-    dispatch(updateDestination({ index, place }));
-  const handleRemoveDestination = (index: number) => dispatch(removeDestination(index));
 
-  const extractErrorMessage = (error: unknown): string => {
+  const handleUpdateDestination = (index: number, place: TPlace | null) => {
+    dispatch(updateDestination({ index, place }));
+  };
+
+  const handleRemoveDestination = (index: number) => {
+    dispatch(removeDestination(index));
+  };
+
+  const extractErrorMessage = (error: unknown) => {
     if (typeof error === "string") return error;
     if (error instanceof Error) return error.message;
+
     if (typeof error === "object" && error !== null && "data" in error) {
       const rtk = error as { data?: { message?: string } };
       if (rtk.data?.message) return rtk.data.message;
     }
+
     if (typeof error === "object" && error !== null && "message" in error) {
       return (error as { message: string }).message;
     }
+
     return "An unknown error occurred";
   };
 
   const handleCreateLoad = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ block any automatic submit
     if (!submitIntentRef.current) return;
-
-    // reset immediately so it can't double submit
     submitIntentRef.current = false;
 
-    // ... your current code continues here
     const total = Number(price);
     const validDestinations = destinations.filter(Boolean) as TPlace[];
 
@@ -552,7 +571,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       return;
     }
 
-    // assignment only required on ADD
     if (!isEditMode && (!driverId || !truckId)) {
       toast.error("Please select driver and truck");
       return;
@@ -563,11 +581,15 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       return;
     }
 
-    const finalDistance = allDistance ? parseFloat(allDistance) : Math.round(distance || 0);
+    const finalDistance = allDistance
+      ? parseFloat(allDistance)
+      : Math.round(distance || 0);
+
     if (!finalDistance || finalDistance <= 0) {
       toast.error("Invalid distance calculated");
       return;
     }
+
     const formData = new FormData();
 
     formData.append("origin[address]", origin.display_name);
@@ -576,9 +598,10 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       formData.append(`destination[${index}][address]`, dest.display_name);
     });
 
-    if (dho?.display_name) formData.append("DHO[address]", dho.display_name);
+    if (dho?.display_name) {
+      formData.append("DHO[address]", dho.display_name);
+    }
 
-    // assignment only on ADD
     if (!isEditMode) {
       if (driverId) formData.append("driverId", driverId);
       if (truckId) formData.append("truckId", truckId);
@@ -606,38 +629,40 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       }
     });
 
-    if (selectedDocuments.length > 0) {
-      selectedDocuments.forEach((file) => formData.append("documents", file));
-    }
+    selectedDocuments.forEach((file) => {
+      formData.append("documents", file);
+    });
 
-    // adjustments
-    (adjustments || []).forEach((adj) => {
+    adjustments.forEach((adj) => {
       if (adj.type === "Bonus") formData.append("bonus", adj.amount.toString());
-      if (adj.type === "Detention") formData.append("detention", adj.amount.toString());
-      if (adj.type === "Deduction") formData.append("deduction", adj.amount.toString());
+      if (adj.type === "Detention")
+        formData.append("detention", adj.amount.toString());
+      if (adj.type === "Deduction")
+        formData.append("deduction", adj.amount.toString());
     });
 
     try {
       if (isEditMode && editingLoad?.id) {
         await updateLoad({ id: editingLoad.id, formData } as any).unwrap();
-        toast.success("Load updated ");
+        toast.success("Load updated");
       } else {
         await createLoad(formData as any).unwrap();
-        toast.success("Load created ");
+        toast.success("Load created");
       }
 
       handleClose();
     } catch (err) {
       const msg = extractErrorMessage(err);
-      console.error(" Request failed:", err);
-      toast.error(msg || `Load ${isEditMode ? "update" : "creation"} failed `);
+      toast.error(msg || `Load ${isEditMode ? "update" : "creation"} failed`);
     }
   };
+
   const submitNow = () => {
     submitIntentRef.current = true;
     const form = document.getElementById("load-form") as HTMLFormElement | null;
     form?.requestSubmit();
   };
+
   const handleClose = () => {
     dispatch(resetForm());
     setSelectedDocuments([]);
@@ -650,20 +675,18 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   };
 
   const selectedDriverName = useMemo(() => {
-    // edit mode
     const editName = (editingLoad as any)?.driverId?.name;
     if (isEditMode && editName) return twoWords(String(editName));
 
-    // add mode
     const list = (driversData as any)?.data || (driversData as any)?.drivers || [];
+
     const found = list.find((d: any) => {
       const id1 = String(d?.driverId ?? "");
       const id2 = String(d?._id ?? d?.id ?? "");
       return id1 === String(driverId) || id2 === String(driverId);
     });
 
-    const name = found?.name || found?.fullName || found?.username || "";
-    return twoWords(String(name));
+    return twoWords(String(found?.name || found?.fullName || found?.username || ""));
   }, [driversData, driverId, isEditMode, editingLoad]);
 
   const MapFallback = () => (
@@ -675,22 +698,27 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     </div>
   );
 
-
   const baseChipSx = {
     display: "inline-flex",
     alignItems: "center",
     gap: 1,
-    // height: 52,
     px: 2.2,
+    py: 0.5,
     borderRadius: 999,
     fontSize: 14,
-    // fontWeight: 800,
     whiteSpace: "nowrap",
-    py: 0.5,
+
+    "@media (max-width:999px)": {
+      px: 1.4,
+      py: 0.45,
+      fontSize: 12,
+      flex: "1 1 auto",
+      justifyContent: "center",
+    },
 
     "& svg": {
-      width: 10,
-      height: 10,
+      width: 16,
+      height: 16,
       flexShrink: 0,
       display: "block",
     },
@@ -715,7 +743,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   const greenChipSx = {
     ...baseChipSx,
     border: `2px solid ${alpha("#2e7d32", 0.55)}`,
-    bgcolor: alpha("#2e7d32", 0.10),
+    bgcolor: alpha("#2e7d32", 0.1),
     color: "#2e7d32",
     "& svg": { color: "#2e7d32" },
   } as const;
@@ -726,6 +754,10 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     bgcolor: alpha(theme.currentPalette.text, 0.12),
     borderRadius: 2,
     mx: 2.5,
+
+    "@media (max-width:999px)": {
+      display: "none",
+    },
   } as const;
 
   return (
@@ -738,64 +770,106 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
       PaperProps={{
         sx: {
           borderRadius: 2,
-          overflow: "auto",
+          overflow: "hidden",
           height: "100vh",
+          maxHeight: "100vh",
+
+          "@media (max-width:999px)": {
+            margin: 1,
+            width: "calc(100% - 16px)",
+            maxWidth: "calc(100% - 16px)",
+          },
         },
       }}
     >
-      {/* <IconButton
-        onClick={handleClose}
-        sx={{ position: "absolute", top: 24, right: 4, zIndex: 20, mb: 2 }}
-      >
-        <IoClose />
-      </IconButton> */}
-
-      <DialogContent sx={{ pt: 1, height: "100%" }}>
+      <DialogContent sx={{ p: 0, height: "100%" }}>
         <Box
           sx={{
             height: "100%",
             display: "flex",
-            // bgcolor: theme.currentPalette.background,
+
+            "@media (max-width:999px)": {
+              flexDirection: "column",
+            },
           }}
         >
-          {/* LEFT SIDEBAR STEPS */}
+          {/* STEPPER */}
           <Box
             sx={{
               width: 320,
               borderRight: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
-              // bgcolor: alpha(theme.currentPalette.text, 0.03),
               pt: 1.3,
+              flexShrink: 0,
+
+              "@media (max-width:999px)": {
+                width: "100%",
+                borderRight: "none",
+                borderBottom: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
+                pt: 0,
+              },
             }}
           >
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Typography sx={{ fontWeight: 900, fontSize: 20 }}>
-                {isEditMode ? "Edit Load" : "Add New Load"}
-              </Typography>
-              <Typography sx={{ mt: 0.5, color: alpha(theme.currentPalette.text, 0.55), fontSize: 13 }}>
-                Complete all steps
-              </Typography>
+            {/* MODAL TITLE */}
+            <Box
+              sx={{
+                px: { xs: 2, md: 3 },
+                py: { xs: 1.5, md: 0 },
+                pb: { xs: 1.5, md: 2 },
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: { xs: 18, md: 20 },
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {isEditMode ? "Edit Load" : "Add New Load"}
+                </Typography>
+
+                <Typography
+                  sx={{
+                    mt: 0.5,
+                    color: alpha(theme.currentPalette.text, 0.55),
+                    fontSize: 13,
+                  }}
+                >
+                  Complete all steps
+                </Typography>
+              </Box>
+
+              {/* MOBILE CLOSE */}
+              <IconButton
+                onClick={handleClose}
+                sx={{
+                  display: { xs: "flex", md: "none" },
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  mt: -0.5,
+                }}
+              >
+                <IoClose />
+              </IconButton>
             </Box>
 
-            <Divider
-              sx={{
-                width: "100%",
-                m: 0,
-                borderColor: alpha(theme.currentPalette.text, 0.12),
-              }}
-            />
+            <Divider sx={{ borderColor: alpha(theme.currentPalette.text, 0.12) }} />
 
-            <Box sx={{ px: 3, py: 2, flex: 1 }}>
+            {/* DESKTOP STEPPER */}
+            <Box
+              sx={{
+                display: { xs: "none", md: "block" },
+                px: 3,
+                py: 2,
+              }}
+            >
               {steps.map((s, idx) => {
                 const isActive = idx === activeStep;
-                const done =
-                  idx === 0
-                    ? false
-                    : idx === 1
-                      ? steps[1].canGo()
-                      : idx === 2
-                        ? steps[2].canGo()
-                        : steps[3]?.canGo?.() || false;
-
                 const disabled = !s.canGo();
 
                 return (
@@ -812,13 +886,13 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                       borderRadius: 2,
                       cursor: disabled ? "not-allowed" : "pointer",
                       opacity: disabled ? 0.45 : 1,
-                      bgcolor: isActive ? alpha(theme.currentPalette.primary, 0.12) : "transparent",
+                      bgcolor: isActive
+                        ? alpha(theme.currentPalette.primary, 0.12)
+                        : "transparent",
                       position: "relative",
                       mb: 1.2,
-                      transition: "0.15s",
                     }}
                   >
-                    {/* connector line */}
                     {idx !== steps.length - 1 && (
                       <Box
                         sx={{
@@ -832,7 +906,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                       />
                     )}
 
-                    {/* circle */}
                     <Box
                       sx={{
                         width: 28,
@@ -840,14 +913,14 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                         borderRadius: "50%",
                         display: "grid",
                         placeItems: "center",
-                        border: `2px solid ${isActive || done
-                          ? theme.currentPalette.primary
-                          : alpha(theme.currentPalette.text, 0.25)
+                        border: `2px solid ${isActive
+                            ? theme.currentPalette.primary
+                            : alpha(theme.currentPalette.text, 0.25)
                           }`,
-                        bgcolor: isActive ? theme.currentPalette.primary : "transparent",
-                        color: isActive ? theme.currentPalette.background : theme.currentPalette.primary,
-                        fontWeight: 900,
-                        mt: 0.2,
+                        bgcolor: isActive
+                          ? theme.currentPalette.primary
+                          : "transparent",
+                        color: isActive ? "#fff" : theme.currentPalette.primary,
                         flexShrink: 0,
                       }}
                     >
@@ -861,12 +934,21 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                         sx={{
                           fontWeight: 900,
                           fontSize: 15,
-                          color: isActive ? theme.currentPalette.primary : theme.currentPalette.text,
+                          color: isActive
+                            ? theme.currentPalette.primary
+                            : theme.currentPalette.text,
                         }}
                       >
                         {s.title}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: alpha(theme.currentPalette.text, 0.55), mt: 0.3 }}>
+
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          color: alpha(theme.currentPalette.text, 0.55),
+                          mt: 0.3,
+                        }}
+                      >
                         {s.desc}
                       </Typography>
                     </Box>
@@ -874,10 +956,95 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 );
               })}
             </Box>
+
+            {/* MOBILE STEPPER */}
+            <Box
+              sx={{
+                display: { xs: "grid", md: "none" },
+                gridTemplateColumns: `repeat(${steps.length}, 1fr)`,
+                gap: 0.6,
+                px: 1,
+                py: 1,
+              }}
+            >
+              {steps.map((s, idx) => {
+                const isActive = idx === activeStep;
+                const disabled = !s.canGo();
+
+                return (
+                  <Box
+                    key={s.key}
+                    onClick={() => {
+                      if (!disabled) goToStep(idx);
+                    }}
+                    sx={{
+                      p: 0.8,
+                      borderRadius: 1.5,
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      opacity: disabled ? 0.45 : 1,
+                      minHeight: 70,
+                      textAlign: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "column",
+                      gap: 0.5,
+                      border: `1px solid ${isActive
+                          ? alpha(theme.currentPalette.primary, 0.45)
+                          : alpha(theme.currentPalette.text, 0.1)
+                        }`,
+                      bgcolor: isActive
+                        ? alpha(theme.currentPalette.primary, 0.12)
+                        : alpha(theme.currentPalette.text, 0.02),
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: "50%",
+                        display: "grid",
+                        placeItems: "center",
+                        border: `2px solid ${isActive
+                            ? theme.currentPalette.primary
+                            : alpha(theme.currentPalette.text, 0.25)
+                          }`,
+                        bgcolor: isActive
+                          ? theme.currentPalette.primary
+                          : "transparent",
+                        color: isActive ? "#fff" : theme.currentPalette.primary,
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 11, fontWeight: 900 }}>
+                        {idx + 1}
+                      </Typography>
+                    </Box>
+
+                    <Typography
+                      sx={{
+                        fontWeight: 900,
+                        fontSize: 10,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {s.title}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
 
           {/* RIGHT CONTENT */}
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minWidth: 0,
+              minHeight: 0,
+            }}
+          >
             {/* HEADER BAR */}
             <Box
               sx={{
@@ -888,26 +1055,26 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 justifyContent: "space-between",
                 borderBottom: `1px solid ${alpha(theme.currentPalette.text, 0.12)}`,
                 gap: 2,
-                overflowX: { xs: "auto", md: "visible" },
-                overflowY: "hidden",
-                WebkitOverflowScrolling: "touch",
-                "&::-webkit-scrollbar": {
-                  height: 6,
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  backgroundColor: alpha(theme.currentPalette.text, 0.18),
-                  borderRadius: 999,
+
+                "@media (max-width:999px)": {
+                  px: 2,
+                  py: 1.5,
+                  flexDirection: "column",
+                  alignItems: "stretch",
                 },
               }}
             >
-              <Box
-                sx={{
-                  flexShrink: 0,
-                  minWidth: "fit-content",
-                }}
-              >
-                <Typography sx={{ fontWeight: 900, fontSize: 20 }}>{stepTitle}</Typography>
-                <Typography sx={{ fontSize: 12, color: alpha(theme.currentPalette.text, 0.55) }}>
+              <Box>
+                <Typography sx={{ fontWeight: 900, fontSize: 20 }}>
+                  {stepTitle}
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    color: alpha(theme.currentPalette.text, 0.55),
+                  }}
+                >
                   Step {activeStep + 1} of {steps.length}
                 </Typography>
               </Box>
@@ -916,21 +1083,23 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 0.2,
-                  flexShrink: 0,
-                  minWidth: "max-content",
-                  pr: { xs: 1, md: 0 },
+                  gap: 1,
+                  flexWrap: "wrap",
+
+                  "@media (max-width:999px)": {
+                    width: "100%",
+                  },
                 }}
               >
                 <Box sx={chipSx}>
-                  <KeyRound size={20} />
+                  <KeyRound />
                   {loadIDInp?.trim() ? loadIDInp : "0"}
                 </Box>
 
                 <Box sx={chipDividerSx} />
 
                 <Box sx={blueChipSx}>
-                  <ShieldUser size={20} />
+                  <ShieldUser />
                   {selectedDriverName
                     ? selectedDriverName
                     : driverId?.trim()
@@ -941,10 +1110,11 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 <Box sx={chipDividerSx} />
 
                 <Box sx={greenChipSx}>
-                  <DollarSign size={20} />
+                  <DollarSign />
                   {price?.trim() ? `$${Number(price).toLocaleString()}` : "$0"}
                 </Box>
 
+                {/* DESKTOP CLOSE */}
                 <IconButton
                   onClick={handleClose}
                   sx={{
@@ -953,6 +1123,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                     height: 40,
                     borderRadius: 2,
                     flexShrink: 0,
+                    display: { xs: "none", md: "flex" },
                   }}
                 >
                   <IoClose />
@@ -961,7 +1132,18 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
             </Box>
 
             {/* BODY */}
-            <Box sx={{ flex: 1, overflow: "auto", p: 3 }}>
+            <Box
+              sx={{
+                flex: 1,
+                overflow: "auto",
+                p: 3,
+                minHeight: 0,
+
+                "@media (max-width:999px)": {
+                  p: 2,
+                },
+              }}
+            >
               <form
                 id="load-form"
                 onSubmit={handleCreateLoad}
@@ -972,7 +1154,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   }
                 }}
               >
-                {/* LOCATIONS */}
                 {stepKey === "locations" && (
                   <Box
                     sx={{
@@ -981,9 +1162,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                       gap: 3,
                     }}
                   >
-                    {/* LEFT */}
                     <Box>
-                      {/* Route info card */}
                       <Box
                         sx={{
                           border: `2px solid ${alpha(theme.currentPalette.primary, 0.85)}`,
@@ -997,36 +1176,58 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           Route Distance Information
                         </Typography>
 
-                        <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto", rowGap: 0.75 }}>
-                          <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr auto",
+                            rowGap: 0.75,
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              color: alpha(theme.currentPalette.text, 0.65),
+                            }}
+                          >
                             Total distance:
                           </Typography>
+
                           <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
                             {allDistance
                               ? `${Math.trunc(Number(allDistance))} miles`
                               : "Not calculated yet"}
                           </Typography>
 
-                          <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              color: alpha(theme.currentPalette.text, 0.65),
+                            }}
+                          >
                             DHO to Origin:
                           </Typography>
-                          <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
 
+                          <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
                             {dho && origin && dhoToOriginDistance
                               ? `${Math.trunc(Number(dhoToOriginDistance))} miles`
                               : "Not calculated yet"}
                           </Typography>
 
-                          <Typography sx={{ fontSize: 13, color: alpha(theme.currentPalette.text, 0.65) }}>
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              color: alpha(theme.currentPalette.text, 0.65),
+                            }}
+                          >
                             Including:
                           </Typography>
+
                           <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
                             {destinations.filter(Boolean).length} destination(s)
                           </Typography>
                         </Box>
                       </Box>
 
-                      {/* Inputs */}
                       <Box sx={{ display: "grid", gap: 2 }}>
                         <LocationAutocomplete
                           label="DHO (Driver Home Origin)"
@@ -1045,7 +1246,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           placeholder="Enter origin address"
                           showZipCode
                         />
-                        {/* Destinations Section */}
+
                         <div className="space-y-4">
                           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
                             <Typography
@@ -1059,6 +1260,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                             >
                               Destinations
                             </Typography>
+
                             <Button
                               variant="contained"
                               type="button"
@@ -1071,13 +1273,8 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           </div>
 
                           {destinations.map((destination, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-3"
-                            >
+                            <div key={index} className="flex items-center gap-3">
                               <div className="flex-1">
-
-
                                 <LocationAutocomplete
                                   label={`Destination ${index + 1}`}
                                   value={destination}
@@ -1085,12 +1282,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                                   setValue={(place) =>
                                     handleUpdateDestination(index, place)
                                   }
-                                  placeholder={`Enter destination ${index + 1
-                                    } address`}
-                                  // googleMapsApiKey={googleMapsApiKey!}
-                                  showZipCode={true}
+                                  placeholder={`Enter destination ${index + 1} address`}
+                                  showZipCode
                                 />
-
                               </div>
 
                               {destinations.length > 1 && (
@@ -1106,12 +1300,25 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                           ))}
                         </div>
 
-
-                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                            gap: 2,
+                          }}
+                        >
                           <Box>
-                            <Typography sx={{ color: theme.currentPalette.primary, fontSize: 13, fontWeight: 900, mb: 0.8 }}>
+                            <Typography
+                              sx={{
+                                color: theme.currentPalette.primary,
+                                fontSize: 13,
+                                fontWeight: 900,
+                                mb: 0.8,
+                              }}
+                            >
                               DHO to Origin Distance
                             </Typography>
+
                             <TextField
                               fullWidth
                               placeholder="Auto Calculated Distance"
@@ -1121,38 +1328,32 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                                   : ""
                               }
                               inputProps={{ readOnly: true }}
-                              sx={{
-                                "& .MuiOutlinedInput-root": {
-                                  bgcolor: alpha(theme.currentPalette.text, 0.03),
-                                  borderRadius: 2,
-                                },
-                              }}
                             />
                           </Box>
 
                           <Box>
-                            <Typography sx={{ color: theme.currentPalette.primary, fontSize: 13, fontWeight: 900, mb: 0.8 }}>
+                            <Typography
+                              sx={{
+                                color: theme.currentPalette.primary,
+                                fontSize: 13,
+                                fontWeight: 900,
+                                mb: 0.8,
+                              }}
+                            >
                               Average Time To Pickup
                             </Typography>
+
                             <TextField
-                              placeholder="Auto Calculated Time"
                               fullWidth
+                              placeholder="Auto Calculated Time"
                               value={averageTime ? formatTime(averageTime) : ""}
                               inputProps={{ readOnly: true }}
-                              sx={{
-                                "& .MuiOutlinedInput-root": {
-                                  bgcolor: alpha(theme.currentPalette.text, 0.03),
-                                  borderRadius: 2,
-                                },
-                              }}
                             />
                           </Box>
                         </Box>
-
                       </Box>
                     </Box>
 
-                    {/* RIGHT MAP */}
                     <Box
                       sx={{
                         borderRadius: 2,
@@ -1160,14 +1361,15 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                         overflow: "hidden",
                         minHeight: 520,
                         bgcolor: alpha(theme.currentPalette.text, 0.02),
+
+                        "@media (max-width:999px)": {
+                          display: "none",
+                        },
                       }}
                     >
                       {showMaps ? (
                         <Suspense fallback={<MapFallback />}>
-                          <LazyGoogleMapsLoader
-                            onLoad={() => console.log("Maps loaded successfully")}
-                            onError={(error) => console.error("Failed to load maps:", error)}
-                          >
+                          <LazyGoogleMapsLoader>
                             <LazyMapWithRoute
                               dho={dho}
                               origin={origin}
@@ -1192,7 +1394,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   </Box>
                 )}
 
-                {/* ASSIGNMENT  */}
                 {stepKey === "assignment" && !isEditMode && (
                   <AssignmentTab
                     isEditing={isEditing}
@@ -1203,7 +1404,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                     truckTemp={truckTemp}
                     onDriverIdChange={(value) => dispatch(setDriverId(value))}
                     onTruckIdChange={(value) => dispatch(setTruckId(value))}
-                    onTruckTypeChange={(value) => dispatch(setTruckType(value as TTruckType))}
+                    onTruckTypeChange={(value) =>
+                      dispatch(setTruckType(value as TTruckType))
+                    }
                     onTruckTempChange={(value) => dispatch(setTruckTemp(value))}
                     isTabValid={isAssignmentValid()}
                     onPrevTab={prevStep}
@@ -1212,7 +1415,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   />
                 )}
 
-                {/* TIMELINE */}
                 {stepKey === "timeline" && (
                   <LoadDetailsTab
                     pickupAt={pickupAtDayjs}
@@ -1221,16 +1423,28 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                     arrivalAtReceiver={arrivalAtReceiverDayjs}
                     leftShipper={leftShipperDayjs}
                     leftReceiver={leftReceiverDayjs}
-                    onPickupAtChange={(value) => dispatch(setPickupAt(value ? value.toISOString() : null))}
-                    onCompletedAtChange={(value) => dispatch(setCompletedAt(value ? value.toISOString() : null))}
+                    onPickupAtChange={(value) =>
+                      dispatch(setPickupAt(value ? value.toISOString() : null))
+                    }
+                    onCompletedAtChange={(value) =>
+                      dispatch(setCompletedAt(value ? value.toISOString() : null))
+                    }
                     onArrivalAtShipperChange={(value) =>
-                      dispatch(setArrivalAtShipper(value ? value.toISOString() : null))
+                      dispatch(
+                        setArrivalAtShipper(value ? value.toISOString() : null),
+                      )
                     }
                     onArrivalAtReceiverChange={(value) =>
-                      dispatch(setArrivalAtReceiver(value ? value.toISOString() : null))
+                      dispatch(
+                        setArrivalAtReceiver(value ? value.toISOString() : null),
+                      )
                     }
-                    onLeftShipperChange={(value) => dispatch(setLeftShipper(value ? value.toISOString() : null))}
-                    onLeftReceiverChange={(value) => dispatch(setLeftReceiver(value ? value.toISOString() : null))}
+                    onLeftShipperChange={(value) =>
+                      dispatch(setLeftShipper(value ? value.toISOString() : null))
+                    }
+                    onLeftReceiverChange={(value) =>
+                      dispatch(setLeftReceiver(value ? value.toISOString() : null))
+                    }
                     isEditing={isEditing}
                     isTabValid={isTimelineValid()}
                     onPrevTab={prevStep}
@@ -1238,7 +1452,6 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   />
                 )}
 
-                {/* FINANCIAL */}
                 {stepKey === "financials" && (
                   <FinancialTab
                     allDistance={allDistance}
@@ -1269,22 +1482,26 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                 )}
               </form>
             </Box>
-            <Divider
-              sx={{
-                width: "100%",
-                mb: 1.5,
-                borderColor: alpha(theme.currentPalette.text, 0.12),
-              }}
-            />
-            {/* footer */}
+
+            <Divider sx={{ borderColor: alpha(theme.currentPalette.text, 0.12) }} />
+
+            {/* FOOTER */}
             <Box
               sx={{
-                // mt: 3,
                 display: "flex",
                 pb: 2,
+                pt: 1.5,
                 px: 3,
                 alignItems: "center",
                 justifyContent: "space-between",
+                gap: 2,
+
+                "@media (max-width:999px)": {
+                  px: 2,
+                  pb: 1.5,
+                  bgcolor: "#fff",
+                  flexShrink: 0,
+                },
               }}
             >
               <Button
@@ -1316,13 +1533,17 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
                   },
                 }}
               >
-                {isLastStep ? (isEditMode ? "Update Load" : "Create Load") : "Next"}
+                {isLastStep
+                  ? isEditMode
+                    ? "Update Load"
+                    : "Create Load"
+                  : "Next"}
               </Button>
             </Box>
           </Box>
         </Box>
-      </DialogContent >
-    </Dialog >
+      </DialogContent>
+    </Dialog>
   );
 };
 

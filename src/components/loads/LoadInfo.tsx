@@ -237,8 +237,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
       <Paper
         elevation={0}
         sx={{
-          p: 4,
-          my: 5,
+          p: { xs: 2, md: 4 },
+          my: { xs: 2, md: 5 },
           bgcolor: theme.currentPalette.background,
           border: `1px solid ${alpha(theme.currentPalette.text, 0.2)}`,
           borderRadius: 2,
@@ -246,21 +246,65 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
         }}
       >
         <Stack
-          direction="row"
+          direction={{ xs: "column", md: "row" }}
           justifyContent="space-between"
-          alignItems="flex-start"
+          alignItems={{ xs: "stretch", md: "flex-start" }}
+          spacing={{ xs: 2, md: 0 }}
         >
-          <Box>
+          {/* LEFT SIDE */}
+          <Box flex={1}>
+            {/* MOBILE HEADER */}
+            <Box
+              sx={{
+                display: { xs: "flex", md: "none" },
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1.5,
+              }}
+            >
+              <Typography
+                variant="h6"
+                color={theme.currentPalette.text}
+                fontWeight="700"
+              >
+                Load ({load.loadId})
+              </Typography>
+
+              <Chip
+                label={load.status.toUpperCase()}
+                variant="outlined"
+                size="small"
+                sx={{
+                  fontWeight: 600,
+                  borderWidth: 1.5,
+                  color: theme.currentPalette.primary,
+                }}
+              />
+            </Box>
+
+            {/* DESKTOP HEADER */}
             <Typography
               variant="h4"
               component="h1"
               gutterBottom
               color={theme.currentPalette.text}
               fontWeight="700"
+              sx={{
+                display: { xs: "none", md: "block" },
+              }}
             >
               Load ({load.loadId})
             </Typography>
-            <Stack direction="row" spacing={2} alignItems="center">
+
+            {/* DESKTOP STATUS + CREATOR */}
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{
+                display: { xs: "none", md: "flex" },
+              }}
+            >
               <Chip
                 label={load.status.toUpperCase()}
                 variant="outlined"
@@ -270,6 +314,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                   color: theme.currentPalette.primary,
                 }}
               />
+
               <Typography
                 variant="body2"
                 color={theme.currentPalette.secondary}
@@ -277,8 +322,49 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                 Created by {load.createdBy}
               </Typography>
             </Stack>
+
+            {/* MOBILE CREATOR + PRICE */}
+            <Box
+              sx={{
+                display: { xs: "flex", md: "none" },
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              }}
+            >
+              <Typography
+                variant="body2"
+                color={theme.currentPalette.secondary}
+                sx={{ pr: 2 }}
+              >
+                Created by {load.createdBy}
+              </Typography>
+
+              <Box textAlign="right">
+                <Typography
+                  variant="h6"
+                  color={theme.currentPalette.primary}
+                  fontWeight="700"
+                >
+                  ${load.totalPrice}
+                </Typography>
+
+                <Typography
+                  variant="caption"
+                  color={theme.currentPalette.secondary}
+                >
+                  {load.currency}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
-          <Box textAlign="right">
+
+          {/* DESKTOP PRICE */}
+          <Box
+            textAlign="right"
+            sx={{
+              display: { xs: "none", md: "block" },
+            }}
+          >
             <Typography
               variant="h4"
               color={theme.currentPalette.primary}
@@ -286,7 +372,11 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
             >
               ${load.totalPrice}
             </Typography>
-            <Typography variant="body2" color={theme.currentPalette.secondary}>
+
+            <Typography
+              variant="body2"
+              color={theme.currentPalette.secondary}
+            >
               {load.currency}
             </Typography>
           </Box>
@@ -399,7 +489,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
 
           <Grid container spacing={3}>
             {/* Load Information */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }}>
               <InfoCard title="Load Information" icon={<LocalShipping />}>
                 <List dense sx={{ py: 0 }}>
                   <InfoItem
@@ -432,7 +522,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
             </Grid>
 
             {/* Trip Details */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }}>
               <InfoCard title="Trip Details" icon={<CalendarToday />}>
                 <List dense sx={{ py: 0 }}>
                   <InfoItem
@@ -461,8 +551,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                     icon={<AttachMoney fontSize="small" />}
                     primary="Price Details"
                     secondary={`${load.distanceMiles != null
-                        ? Math.trunc(Number(load.distanceMiles))
-                        : "-"
+                      ? Math.trunc(Number(load.distanceMiles))
+                      : "-"
                       } miles • ${load.pricePerMile != null
                         ? `$${Number(load.pricePerMile).toFixed(0)}`
                         : "-"
@@ -473,7 +563,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
             </Grid>
 
             {/* Driver Information */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }}>
               <InfoCard title="Driver Information" icon={<Person />}>
                 {load.driverId ? (
                   <List dense sx={{ py: 0 }}>
@@ -517,7 +607,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
             </Grid>
 
             {/* Truck Information */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }}>
               <InfoCard title="Truck Information" icon={<DirectionsCar />}>
                 {load.truckId ? (
                   <List dense sx={{ py: 0 }}>
@@ -571,7 +661,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
             </Grid>
 
             {/* Documents */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }}>
               <InfoCard title="Documents" icon={<Description />}>
                 {load.documents?.length > 0 ? (
                   <List dense sx={{ py: 0 }}>
@@ -638,7 +728,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
               </InfoCard>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 6, xl: 4 }}>
               <InfoCard title="Documents For Driver" icon={<Description />}>
                 {load.documentsForDriver?.length > 0 ? (
                   <List dense sx={{ py: 0 }}>

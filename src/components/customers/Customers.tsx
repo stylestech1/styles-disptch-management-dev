@@ -89,7 +89,12 @@ const CustomerPage = () => {
     onSearch: (term) => {
       setPage(1);
       if (term.trim()) {
-        triggerSearchQuery(encodeURIComponent(term));
+        // triggerSearchQuery(encodeURIComponent(term));
+        triggerSearchQuery({
+          keyword: term.trim(),
+          page,
+          limit: 10,
+        });
       }
     },
     onReset: () => {

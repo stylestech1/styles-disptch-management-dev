@@ -992,10 +992,12 @@ export const apiSlice = api.injectEndpoints({
 
     // ! ========== Customers ==========
     getCustomerById: builder.query({
-      query: (customerId) => `/api/v1/customers?customerId=${customerId}`,
-      providesTags: (result, error, customerId) => [
-        { type: "Customers", id: customerId },
-      ],
+      query: ({ keyword }) => ({
+        url: "/api/v1/customers",
+        params: {
+          keyword,
+        },
+      }),
     }),
 
     getCustomerWithFilter: builder.query({
