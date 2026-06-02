@@ -1,9 +1,8 @@
-import HiringDrivers from "@/components/drivers/DirverHiringPage";
-
-export default function HiringDriversPage() {
+import HiringDriversPage from "@/components/drivers/DriverHiringPageDragDrop";
+export default function HiringDriver() {
     return (
         <>
-            <HiringDrivers />
+            <HiringDriversPage />
         </>
     )
 }

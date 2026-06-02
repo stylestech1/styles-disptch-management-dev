@@ -194,6 +194,9 @@ export type TDriver = {
 export type tDriverHiring = {
   _id: string;
   name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   phone: string;
   state: string;
   experienceYears: number;
