@@ -623,7 +623,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                     />
                     <InfoItem
                       icon={<LocalShipping fontSize="small" />}
-                      primary="Plate Number"
+                      primary="Truck Number"
                       secondary={load.truckId.plateNumber}
                     />
                     <Divider

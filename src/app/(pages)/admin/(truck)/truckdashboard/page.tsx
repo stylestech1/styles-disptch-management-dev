@@ -278,7 +278,7 @@ const TruckDashboard = () => {
           router.push(`/admin/truckSummary/${truckItem._id}`);
         }}
       >
-        {/* Plate Number */}
+        {/* Truck Number */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
             {truckItem.plateNumber}
@@ -359,7 +359,7 @@ const TruckDashboard = () => {
           router.push(`/admin/truckSummary/${truckItem._id}`);
         }}
       >
-        {/* Plate Number */}
+        {/* Truck Number */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
             {truckItem.plateNumber}
@@ -429,7 +429,7 @@ const TruckDashboard = () => {
           router.push(`/admin/truckSummary/${truckItem._id}`);
         }}
       >
-        {/* Plate Number */}
+        {/* Truck Number */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
             {truckItem.plateNumber}
@@ -733,7 +733,7 @@ const TruckDashboard = () => {
               value={searchTerm}
               onChange={handleSearchChange}
               onClear={handleClearSearch}
-              placeholder="Search by plate number..."
+              placeholder="Search by Truck Number..."
               fullWidth
               showClearButton
               inputSx={{

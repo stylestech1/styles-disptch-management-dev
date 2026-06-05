@@ -504,13 +504,13 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
                       name="plateNumber"
                       control={control}
                       rules={{
-                        required: "Plate number is required",
-                        minLength: { value: 3, message: "Plate number must be at least 3 characters" },
+                        required: "Truck Number is required",
+                        minLength: { value: 3, message: "Truck Number must be at least 3 characters" },
                       }}
                       render={({ field }) => (
                         <TextField
                           {...field}
-                          label="Plate Number"
+                          label="Truck Number"
                           placeholder="e.g. ABC-123"
                           error={!!errors.plateNumber}
                           helperText={errors.plateNumber?.message}

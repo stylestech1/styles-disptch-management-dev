@@ -230,7 +230,7 @@ export function ViewTruckDialog({
                         <InfoItem
                             theme={theme}
                             icon={<IdCard size={24} />}
-                            label="Plate Number"
+                            label="Truck Number"
                             value={selectedTruck?.plateNumber ?? "-"}
                         />
 

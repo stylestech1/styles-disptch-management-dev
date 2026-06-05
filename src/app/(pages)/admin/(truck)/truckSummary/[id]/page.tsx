@@ -8,7 +8,14 @@ import {
 import { RootState, useAppSelector } from "@/redux/store";
 import { useParams } from "next/navigation";
 import { Toaster } from "react-hot-toast";
-import { alpha, Box, Chip, Typography } from "@mui/material";
+import {
+  alpha,
+  Box,
+  Chip,
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
 import {
   IdCard,
   Calendar,
@@ -23,17 +30,19 @@ import {
   Boxes,
   LandPlot,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import NetProfitTrend from "@/components/truck/NetProfitTrend";
 import ProfitMarginChart from "@/components/truck/ProfitMarginChart";
 import CostBreakdownChart from "@/components/truck/CostBreakdownChart";
 import { useFilter } from "@/providers/FilterProvider";
-import { useMemo } from "react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
+type SummaryMode = "total" | "perMile";
 const TruckSummary = () => {
   const { id } = useParams();
   const theme = useAppSelector((state: RootState) => state.palette);
   const { fromDate, toDate, isFiltered } = useFilter();
+  const [summaryMode, setSummaryMode] = useState<SummaryMode>("total");
+
 
   // ✅ RTK Query hooks
   const { data: profileData, isLoading: profileLoading } = useGetTruckByIdQuery(
@@ -47,25 +56,28 @@ const TruckSummary = () => {
   const {
     data: specificTruckSummaryData,
     isLoading: specificTruckSummaryLoading,
+    refetch: refetchSpecificTruckSummary,
   } = useGetSpecificTruckSummaryQuery(id as string, {
     skip: !id,
     refetchOnFocus: false,
     refetchOnReconnect: false,
     refetchOnMountOrArgChange: false,
   });
-
-  const { data: truckSummaryFilterData, isLoading: summaryFilterLoading } =
-    useGetTruckSummaryWithFilterQuery(
-      {
-        id: id as string,
-        from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
-        to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
-      },
-      {
-        skip: !isFiltered || !fromDate || !toDate,
-        refetchOnFocus: false,
-      }
-    );
+  const {
+    data: truckSummaryFilterData,
+    isLoading: summaryFilterLoading,
+    refetch: refetchTruckSummaryFilter,
+  } = useGetTruckSummaryWithFilterQuery(
+    {
+      id: id as string,
+      from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
+      to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
+    },
+    {
+      skip: !isFiltered || !fromDate || !toDate,
+      refetchOnFocus: false,
+    }
+  );
 
   // Get Truck Summary data based on filter state
   const TrucksSummaryData = useMemo(() => {
@@ -74,6 +86,55 @@ const TruckSummary = () => {
     }
     return specificTruckSummaryData?.data?.summary;
   }, [isFiltered, truckSummaryFilterData, specificTruckSummaryData]);
+
+  const money = (value?: number) => `$${Number(value || 0).toLocaleString()}`;
+
+  const statCards =
+    summaryMode === "total"
+      ? [
+        {
+          title: "Net Profit",
+          value: money(TrucksSummaryData?.netProfit),
+          icon: <TrendingUp color={theme.currentPalette.primary} />,
+        },
+        {
+          title: "Total Revenue",
+          value: money(TrucksSummaryData?.totalRevenue),
+          icon: <DollarSign color={theme.currentPalette.primary} />,
+        },
+        {
+          title: "Total Loads",
+          value: TrucksSummaryData?.totalLoads || 0,
+          icon: <Boxes color={theme.currentPalette.primary} />,
+        },
+        {
+          title: "Total Miles",
+          value: TrucksSummaryData?.totalMiles?.toLocaleString() || 0,
+          icon: <LandPlot color={theme.currentPalette.primary} />,
+        },
+      ]
+      : [
+        {
+          title: "Profit / Mile",
+          value: money(TrucksSummaryData?.avgProfitPerMile),
+          icon: <TrendingUp color={theme.currentPalette.primary} />,
+        },
+        {
+          title: "Revenue / Mile",
+          value: money(TrucksSummaryData?.avgRevenuePerMile),
+          icon: <DollarSign color={theme.currentPalette.primary} />,
+        },
+        {
+          title: "Cost / Mile",
+          value: money(TrucksSummaryData?.avgExpensePerMile),
+          icon: <Boxes color={theme.currentPalette.primary} />,
+        },
+        {
+          title: "Profit Margin",
+          value: `${Number(TrucksSummaryData?.profitMargin || 0).toFixed(0)}%`,
+          icon: <LandPlot color={theme.currentPalette.primary} />,
+        },
+      ];
 
   // Get Truck NetProfit data based on filter state
   const NetProfitData = useMemo(() => {
@@ -100,7 +161,7 @@ const TruckSummary = () => {
     {
       id: 1,
       icon: <IdCard size={25} />,
-      name: "Plate Number",
+      name: "Truck Number",
       value: profile?.plateNumber || "N/A",
     },
     {
@@ -163,6 +224,61 @@ const TruckSummary = () => {
         textColor={alpha(theme.currentPalette.text, 0.8)}
         separatorColor={alpha(theme.currentPalette.text, 0.5)}
       />
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+        <ToggleButtonGroup
+          value={summaryMode}
+          exclusive
+          onChange={(_, value: SummaryMode | null) => {
+            if (!value) return;
+
+            setSummaryMode(value);
+
+            if (isFiltered && fromDate && toDate) {
+              refetchTruckSummaryFilter();
+            } else {
+              refetchSpecificTruckSummary();
+            }
+          }}
+        >
+          <ToggleButton
+            value="total"
+            sx={{
+              textTransform: "none",
+              px: 2,
+              py: 1,
+              color: theme.currentPalette.primary,
+              "&.Mui-selected": {
+                backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                color: theme.currentPalette.background,
+              },
+              "&.Mui-selected:hover": {
+                backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+              },
+            }}
+          >
+            Total
+          </ToggleButton>
+
+          <ToggleButton
+            value="perMile"
+            sx={{
+              textTransform: "none",
+              px: 2,
+              py: 1,
+              color: theme.currentPalette.primary,
+              "&.Mui-selected": {
+                backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                color: theme.currentPalette.background,
+              },
+              "&.Mui-selected:hover": {
+                backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+              },
+            }}
+          >
+            Per Mile
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
       {/* Profile */}
       <Box className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-6">
@@ -226,114 +342,31 @@ const TruckSummary = () => {
         </Box>
 
         {/* RIGHT SMALL STAT CARDS */}
-        <div className="grid grid-cols-2 gap-5">
-          {/* Net Profit */}
-          <Box
-            sx={{
-              p: 3,
-              border: 1,
-              borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 2,
-              bgcolor: theme.currentPalette.background,
-            }}
-            className="flex flex-col justify-center"
-          >
-            <Typography
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+        <div className="grid grid-cols-2 gap-3">
+          {statCards.map((card) => (
+            <Box
+              key={card.title}
+              sx={{
+                p: 1,
+                border: 1,
+                borderColor: alpha(theme.currentPalette.primary, 0.3),
+                borderRadius: 2,
+                bgcolor: theme.currentPalette.background,
+              }}
+              className="flex flex-col justify-center"
             >
-              <span style={{ color: theme.currentPalette.text }}>
-                Net Profit
-              </span>
-              <TrendingUp color={theme.currentPalette.primary} />
-            </Typography>
+              <Typography
+                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              >
+                <span style={{ color: theme.currentPalette.text }}>{card.title}</span>
+                {card.icon}
+              </Typography>
 
-            <Typography
-              sx={{ fontSize: "30px", color: theme.currentPalette.text }}
-            >
-              ${TrucksSummaryData?.netProfit?.toLocaleString() || 0}
-            </Typography>
-          </Box>
-
-          {/* Revenue */}
-          <Box
-            sx={{
-              p: 3,
-              border: 1,
-              borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 2,
-              bgcolor: theme.currentPalette.background,
-            }}
-            className="flex flex-col justify-center"
-          >
-            <Typography
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
-              <span style={{ color: theme.currentPalette.text }}>
-                Total Revenue
-              </span>
-              <DollarSign color={theme.currentPalette.primary} />
-            </Typography>
-
-            <Typography
-              sx={{ fontSize: "30px", color: theme.currentPalette.text }}
-            >
-              ${TrucksSummaryData?.totalRevenue?.toLocaleString() || 0}
-            </Typography>
-          </Box>
-
-          {/* Total Loads */}
-          <Box
-            sx={{
-              p: 3,
-              border: 1,
-              borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 2,
-              bgcolor: theme.currentPalette.background,
-            }}
-            className="flex flex-col justify-center"
-          >
-            <Typography
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
-              <span style={{ color: theme.currentPalette.text }}>
-                Total Loads
-              </span>
-              <Boxes color={theme.currentPalette.primary} />
-            </Typography>
-
-            <Typography
-              sx={{ fontSize: "30px", color: theme.currentPalette.text }}
-            >
-              {TrucksSummaryData?.totalLoads || 0}
-            </Typography>
-          </Box>
-
-          {/* Total Miles */}
-          <Box
-            sx={{
-              p: 3,
-              border: 1,
-              borderColor: alpha(theme.currentPalette.primary, 0.3),
-              borderRadius: 2,
-              bgcolor: theme.currentPalette.background,
-            }}
-            className="flex flex-col justify-center"
-          >
-            <Typography
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
-              <span style={{ color: theme.currentPalette.text }}>
-                Total Miles
-              </span>
-              <LandPlot color={theme.currentPalette.primary} />
-            </Typography>
-
-            <Typography
-              sx={{ fontSize: "30px", color: theme.currentPalette.text }}
-            >
-              {TrucksSummaryData?.totalMiles?.toLocaleString() || 0}
-            </Typography>
-          </Box>
+              <Typography sx={{ fontSize: "24px", color: theme.currentPalette.text }}>
+                {card.value}
+              </Typography>
+            </Box>
+          ))}
         </div>
       </Box>
 
