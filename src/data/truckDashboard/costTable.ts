@@ -7,5 +7,5 @@ export const costColumns: Column[] = [
   { key: "maintenance", header: "Maintenance", align: "center" },
   { key: "driverPay", header: "Driver Pay", align: "center" },
   { key: "insurance", header: "Insurance", align: "center" },
-  { key: "totalCost", header: "Total Cost", align: "center" },
+  { key: "Cost", header: "Cost", align: "center" },
  ];

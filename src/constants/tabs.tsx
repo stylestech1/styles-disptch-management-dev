@@ -48,6 +48,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <CircleDivide />,
     },
     {
+      label: "Truck Dashboard",
+      subtitle:
+        "View detailed revenue metrics per truck to track earnings. Identify high-performing vehicles and monitor overall fleet performance.",
+      icon: <ChartNoAxesCombined />,
+    },
+    {
       label: "Trucks",
       subtitle: "Manage your trucks and their access",
       icon: <Truck />,
@@ -90,13 +96,6 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       subtitle: "Manage your dispatch team members and their access",
       icon: <Users />,
     },
-    {
-      label: "Truck Dashboard",
-      subtitle:
-        "View detailed revenue metrics per truck to track earnings. Identify high-performing vehicles and monitor overall fleet performance.",
-      icon: <ChartNoAxesCombined />,
-    },
-
     {
       label: "Customers",
       subtitle: "Handle your customers with love",

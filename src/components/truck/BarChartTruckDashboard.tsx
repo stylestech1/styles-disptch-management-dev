@@ -16,11 +16,14 @@ import { useEffect, useRef, useState } from "react";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
+type SummaryMode = "total" | "perMile";
+
 type Props = {
   data: TTruckWithSummary[];
+  summaryMode: SummaryMode;
 };
 
-const BarChartTruckDashboard = ({ data }: Props) => {
+const BarChartTruckDashboard = ({ data, summaryMode }: Props) => {
   const theme = useAppSelector((state: RootState) => state.palette);
   const labels = data.map((t) => `${t.plateNumber}`);
   const patternCanvas = useRef<HTMLCanvasElement>(
@@ -30,11 +33,13 @@ const BarChartTruckDashboard = ({ data }: Props) => {
     CanvasPattern | string
   >("#00A63E");
 
-  const profitPerMileData = data.map((t) =>
-    t.summary?.totalMiles
-      ? Number((t.summary?.netProfit / t.summary?.totalMiles).toFixed(2))
-      : 0
-  );
+  const profitData = data.map((t) => {
+    if (summaryMode === "total") {
+      return Number((t.summary?.netProfit || 0).toFixed(2));
+    }
+
+    return Number((t.summary?.avgProfitPerMile || 0).toFixed(2));
+  });
 
   useEffect(() => {
     const ctx = patternCanvas.current.getContext("2d");
@@ -59,36 +64,41 @@ const BarChartTruckDashboard = ({ data }: Props) => {
     }
   }, []);
 
+  const isTotal = summaryMode === "total";
+
   const chartData = {
     labels,
     datasets: [
       {
-        label: "Cost/Mile",
-        data: data.map((t) => t.summary?.avgExpensePerMile || 0),
+        label: isTotal ? "Total Cost" : "Cost/Mile",
+        data: data.map((t) =>
+          isTotal
+            ? Number((t.summary?.totalExpenses || 0).toFixed(2))
+            : Number((t.summary?.avgExpensePerMile || 0).toFixed(2))
+        ),
         backgroundColor: darken(theme.currentPalette.primary, 0.2),
         borderRadius: 6,
       },
       {
-        label: "Profit/Mile",
-        data: profitPerMileData,
-        backgroundColor: profitPerMileData.map((value) => {
-          if (value < 0) {
-            return negativePattern;
-          } else {
-            return theme.currentPalette.primary;
-          }
-        }),
+        label: isTotal ? "Total Profit" : "Profit/Mile",
+        data: profitData,
+        backgroundColor: profitData.map((value) =>
+          value < 0 ? negativePattern : theme.currentPalette.primary
+        ),
         borderRadius: 6,
       },
       {
-        label: "Revenue/Mile",
-        data: data.map((t) => t.summary?.avgRevenuePerMile || 0),
+        label: isTotal ? "Total Revenue" : "Revenue/Mile",
+        data: data.map((t) =>
+          isTotal
+            ? Number((t.summary?.totalRevenue || 0).toFixed(2))
+            : Number((t.summary?.avgRevenuePerMile || 0).toFixed(2))
+        ),
         backgroundColor: alpha(theme.currentPalette.primary, 0.8),
         borderRadius: 6,
       },
     ],
   };
-
   const options = {
     responsive: true,
     maintainAspectRatio: true,
@@ -164,14 +174,18 @@ const BarChartTruckDashboard = ({ data }: Props) => {
         variant="h6"
         sx={{ fontWeight: 400, color: theme.currentPalette.primary }}
       >
-        Cost per Mile vs Revenue per Mile
+        {isTotal
+          ? "Total Cost vs Total Revenue"
+          : "Cost per Mile vs Revenue per Mile"}
       </Typography>
 
       <Typography
         variant="body2"
         sx={{ mb: 3, color: theme.currentPalette.primary }}
       >
-        Per-mile profitability analysis (Red stripes indicate loss)
+        {isTotal
+          ? "Total profitability analysis (stripes indicate loss)"
+          : "Per-mile profitability analysis (stripes indicate loss)"}
       </Typography>
 
       <Bar data={chartData} options={options} />

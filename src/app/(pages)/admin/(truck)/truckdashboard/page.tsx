@@ -13,7 +13,10 @@ import {
   Typography,
   MenuItem,
   FormControl,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
+
 import { AiFillTool } from "react-icons/ai";
 import { FiDollarSign } from "react-icons/fi";
 import { MdOutlineShield } from "react-icons/md";
@@ -36,6 +39,7 @@ import toast from "react-hot-toast";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 type TableType = "Profit" | "Revenue" | "cost";
+type SummaryMode = "total" | "perMile";
 
 const TruckDashboard = () => {
   const router = useRouter();
@@ -45,13 +49,14 @@ const TruckDashboard = () => {
   const [currentTable, setCurrentTable] = useState<TableType>("Profit");
   const { fromDate, toDate, isFiltered } = useFilter();
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [summaryMode, setSummaryMode] = useState<SummaryMode>("total");
   // API Queries
   const {
     data: allTrucksData,
     isLoading: trucksLoading,
     error: trucksError,
     isFetching: trucksFetching,
+    refetch: refetchTruckSummary,
   } = useGetTruckSummaryQuery(undefined, {
     skip: !token,
     refetchOnFocus: false,
@@ -144,6 +149,55 @@ const TruckDashboard = () => {
     setSearchTerm("");
     setDebouncedSearchTerm("");
   };
+  const money = (value?: number) => `$${Number(value || 0).toFixed(2)}`;
+  const percent = (value?: number) => `${Number(value || 0).toFixed(0)}%`;
+
+  const overviewCards =
+    summaryMode === "total"
+      ? [
+        {
+          title: "Total Revenue",
+          value: money(totalSummaryData?.totalRevenue),
+          change: totalSummaryData?.totalRevenue || 0,
+        },
+        {
+          title: "Total Expenses",
+          value: money(totalSummaryData?.totalExpenses),
+          change: totalSummaryData?.totalExpenses || 0,
+        },
+        {
+          title: "Total Profit",
+          value: money(totalSummaryData?.netProfit),
+          change: totalSummaryData?.netProfit || 0,
+        },
+        {
+          title: "Profit Margin %",
+          value: percent(totalSummaryData?.profitMargin),
+          change: totalSummaryData?.profitMarginChange || 0,
+        },
+      ]
+      : [
+        {
+          title: "Revenue / Mile",
+          value: money(totalSummaryData?.avgRevenuePerMile),
+          change: totalSummaryData?.avgRevenuePerMileChange || 0,
+        },
+        {
+          title: "Expenses / Mile",
+          value: money(totalSummaryData?.avgExpensePerMile),
+          change: totalSummaryData?.avgExpensePerMileChange || 0,
+        },
+        {
+          title: "Profit / Mile",
+          value: money(totalSummaryData?.avgProfitPerMile),
+          change: totalSummaryData?.avgProfitPerMileChange || 0,
+        },
+        {
+          title: "Profit Margin %",
+          value: percent(totalSummaryData?.profitMargin),
+          change: totalSummaryData?.profitMargin || 0,
+        },
+      ];
 
   // Stat Card Component
   const StatCard = ({
@@ -246,21 +300,25 @@ const TruckDashboard = () => {
         {/* Revenue */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {`$${summary?.avgRevenuePerMile?.toFixed(2) || "0.00"}`}
+            {summaryMode === "total"
+              ? money(summary?.totalRevenue)
+              : money(summary?.avgRevenuePerMile)}
           </span>
         </td>
 
-        {/* Cost */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {`$${summary?.avgExpensePerMile?.toFixed(2) || "0.00"}`}
+            {summaryMode === "total"
+              ? money(summary?.totalExpenses)
+              : money(summary?.avgExpensePerMile)}
           </span>
         </td>
 
-        {/* Net Profit */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {`$${summary?.netProfit?.toFixed(2) || "0.00"}`}
+            {summaryMode === "total"
+              ? money(summary?.netProfit)
+              : money(summary?.avgProfitPerMile)}
           </span>
         </td>
 
@@ -323,7 +381,9 @@ const TruckDashboard = () => {
         {/* Net Rev/Mile  */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {`$${summary?.avgRevenuePerMile?.toFixed(2) || "0.00"}`}
+            {summaryMode === "total"
+              ? money(summary?.totalRevenue)
+              : money(summary?.avgRevenuePerMile)}
           </span>
         </td>
 
@@ -535,6 +595,64 @@ const TruckDashboard = () => {
           Performance Overview
         </Typography>
 
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={summaryMode}
+            onChange={(_, value: SummaryMode | null) => {
+              if (!value) return;
+
+              setSummaryMode(value);
+              setPage(1);
+              refetchTruckSummary();
+            }}
+            sx={{
+              borderRadius: 2,
+              overflow: "hidden",
+              border: `1px solid ${alpha(theme.currentPalette.primary, 0.5)}`,
+            }}
+          >
+            <ToggleButton
+              value="total"
+              sx={{
+                textTransform: "none",
+                px: 2,
+                py: 1,
+                color: theme.currentPalette.primary,
+                "&.Mui-selected": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                  color: theme.currentPalette.background,
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+                },
+              }}
+            >
+              Total
+            </ToggleButton>
+
+            <ToggleButton
+              value="perMile"
+              sx={{
+                textTransform: "none",
+                px: 2,
+                py: 1,
+                color: theme.currentPalette.primary,
+                "&.Mui-selected": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                  color: theme.currentPalette.background,
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+                },
+              }}
+            >
+              Per Mile
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         <Box
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
           sx={{
@@ -545,29 +663,14 @@ const TruckDashboard = () => {
             bgcolor: theme.currentPalette.background,
           }}
         >
-          <StatCard
-            title="Total Revenue/Mile"
-            value={`$${totalSummaryData?.avgRevenuePerMile || "0.00"}`}
-            change={totalSummaryData?.avgRevenuePerMileChange || 0}
-          />
-
-          <StatCard
-            title="Total Cost/Mile"
-            value={`$${totalSummaryData?.avgExpensePerMile || "0.00"}`}
-            change={totalSummaryData?.avgExpensePerMileChange || 0}
-          />
-
-          <StatCard
-            title="Total Profit/Mile"
-            value={`$${totalSummaryData?.avgProfitPerMile}`}
-            change={totalSummaryData?.avgProfitPerMileChange || 0}
-          />
-
-          <StatCard
-            title="Profit Margin %"
-            value={`${totalSummaryData?.profitMargin}%`}
-            change={totalSummaryData?.profitMarginChange || 0}
-          />
+          {overviewCards.map((card) => (
+            <StatCard
+              key={card.title}
+              title={card.title}
+              value={card.value}
+              change={card.change}
+            />
+          ))}
         </Box>
       </Box>
 
@@ -581,7 +684,10 @@ const TruckDashboard = () => {
         </Typography>
 
         <Box sx={{ my: 3 }}>
-          <BarChartTruckDashboard data={finalDisplayTruckData} />
+          <BarChartTruckDashboard
+            data={finalDisplayTruckData}
+            summaryMode={summaryMode}
+          />
         </Box>
       </Box>
 
@@ -797,8 +903,8 @@ const TruckDashboard = () => {
                       Number(cost.changeVsLastMonth) === 0
                         ? theme.currentPalette.primary
                         : parseFloat(cost.changeVsLastMonth) > 0
-                        ? "#b91c1c"
-                        : "#065f46",
+                          ? "#b91c1c"
+                          : "#065f46",
                   }}
                 >
                   {cost.changeVsLastMonth}
