@@ -70,6 +70,16 @@ const BarChartTruckDashboard = ({ data, summaryMode }: Props) => {
     labels,
     datasets: [
       {
+        label: isTotal ? "Total Revenue" : "Revenue/Mile",
+        data: data.map((t) =>
+          isTotal
+            ? Number((t.summary?.totalRevenue || 0).toFixed(2))
+            : Number((t.summary?.avgRevenuePerMile || 0).toFixed(2))
+        ),
+        backgroundColor: alpha(theme.currentPalette.primary, 0.8),
+        borderRadius: 6,
+      },
+      {
         label: isTotal ? "Total Cost" : "Cost/Mile",
         data: data.map((t) =>
           isTotal
@@ -85,16 +95,6 @@ const BarChartTruckDashboard = ({ data, summaryMode }: Props) => {
         backgroundColor: profitData.map((value) =>
           value < 0 ? negativePattern : theme.currentPalette.primary
         ),
-        borderRadius: 6,
-      },
-      {
-        label: isTotal ? "Total Revenue" : "Revenue/Mile",
-        data: data.map((t) =>
-          isTotal
-            ? Number((t.summary?.totalRevenue || 0).toFixed(2))
-            : Number((t.summary?.avgRevenuePerMile || 0).toFixed(2))
-        ),
-        backgroundColor: alpha(theme.currentPalette.primary, 0.8),
         borderRadius: 6,
       },
     ],

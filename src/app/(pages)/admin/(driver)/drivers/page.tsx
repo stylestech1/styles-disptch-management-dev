@@ -1152,629 +1152,648 @@ const DriversPage = () => {
   };
 
   return (
-    <Box sx={containerSx}>
-      <Toaster position="top-center" />
+    <>
+      <Box sx={containerSx}>
+        <Toaster position="top-center" />
 
-      {/* Toggle Button */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-        <ToggleButtonGroup
-          value={togglePage}
-          exclusive
-          onChange={handleToggleChange}
-          sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-            border: `1px solid ${alpha(theme.currentPalette.primary, 0.5)}`,
-          }}
-        >
-          <ToggleButton
-            value="drivers"
+        {/* Toggle Button */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <ToggleButtonGroup
+            value={togglePage}
+            exclusive
+            onChange={handleToggleChange}
             sx={{
-              textTransform: "none",
-              px: 2,
-              py: 1,
-              "&.Mui-selected": {
-                backgroundColor: alpha(theme.currentPalette.primary, 0.9),
-                color: theme.currentPalette.background,
-              },
-              "&.Mui-selected:hover": {
-                backgroundColor: alpha(theme.currentPalette.primary, 0.5),
-              },
+              borderRadius: 2,
+              overflow: "hidden",
+              border: `1px solid ${alpha(theme.currentPalette.primary, 0.5)}`,
             }}
           >
-            Driver Management
-          </ToggleButton>
-
-          <ToggleButton
-            value="timeoff"
-            sx={{
-              textTransform: "none",
-              px: 2,
-              py: 1,
-              "&.Mui-selected": {
-                backgroundColor: alpha(theme.currentPalette.primary, 0.9),
-                color: theme.currentPalette.background,
-              },
-              "&.Mui-selected:hover": {
-                backgroundColor: alpha(theme.currentPalette.primary, 0.5),
-              },
-            }}
-          >
-            Time off requests
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-
-      {/* Dynamic Stats Cards */}
-      <Box sx={{ mt: 4, mb: 5 }}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {togglePage === "drivers" ? (
-            <>
-              <StatsCard
-                title="Total Drivers"
-                value={statsData.total}
-                icon={UsersRound}
-              />
-              <StatsCard
-                title="Available"
-                value={statsData.available}
-                icon={UserRoundCheck}
-              />
-              <StatsCard
-                title="Busy"
-                value={statsData.busy}
-                icon={UserRoundX}
-              />
-            </>
-          ) : (
-            <>
-              <StatsCard
-                title="Approved Requests"
-                value={statsData.approved}
-                icon={ClipboardCheck}
-              />
-              <StatsCard
-                title="Pending Requests"
-                value={statsData.pending}
-                icon={ClipboardClock}
-              />
-              <StatsCard
-                title="Rejected Requests"
-                value={statsData.rejected}
-                icon={ClipboardX}
-              />
-            </>
-          )}
-        </div>
-      </Box>
-
-      {/* Search & Filter */}
-      <Box sx={searchFilterContainerSx}>
-        {/* Left title */}
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
-          >
-            {togglePage === "drivers" ? "Driver Details" : "Time off requests"}
-          </Typography>
-
-          <Typography
-            variant="body2"
-            sx={{
-              color: theme.currentPalette.primary,
-              fontWeight: 400,
-              fontSize: { xs: 13 },
-            }}
-          >
-            {togglePage === "drivers"
-              ? "Check the list of all drivers"
-              : "Manage your driver time off requests"}
-          </Typography>
-        </Box>
-
-        {/* Right controls */}
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: { xs: "flex-start", md: "flex-end" },
-            alignItems: "center",
-            gap: 2,
-            width: { xs: "100%", md: "auto" },
-          }}
-        >
-          <TextField
-            size="small"
-            value={keyword}
-            placeholder={
-              togglePage === "drivers"
-                ? "Search by driver Id..."
-                : "Search by timeoff Id..."
-            }
-            onChange={(e) => {
-              setKeyword(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const value = keyword.trim();
-
-                setPage(1);
-
-                if (value) {
-                  setActiveKeyword(value);
-
-                  if (togglePage === "drivers") {
-                    triggerSearchQuery(value);
-                  } else {
-                    triggerTimeOffSearch(value);
-                  }
-                } else {
-                  setActiveKeyword("");
-                  resetSearchQuery();
-                  resetTimeOffSearch();
-
-                  if (togglePage === "drivers") refetchDrivers();
-                  if (togglePage === "timeoff") refetchTimeOffs();
-                }
-              }
-            }}
-            InputProps={{
-              endAdornment: keyword ? (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setKeyword("");
-                      setActiveKeyword("");
-                      setPage(1);
-                      resetSearchQuery();
-
-                      if (togglePage === "drivers") refetchDrivers();
-                      if (togglePage === "timeoff") refetchTimeOffs();
-                    }}
-                  >
-                    <X size={16} color="red" />
-                  </IconButton>
-                </InputAdornment>
-              ) : null,
-            }}
-            sx={{
-              width: { xs: "100%", sm: 320 },
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                backgroundColor: theme.currentPalette.background,
-                minHeight: { xs: 46, md: 56 },
-              },
-            }}
-          />
-          {togglePage === "drivers" && (
-            <FormControl size="small" sx={{ width: { xs: "100%", sm: 170 } }}>
-              <Select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value as TStatusFilter);
-                  setPage(1);
-                }}
-                sx={{
-                  ...controlSx,
-                  minHeight: { xs: 46, md: 56 },
-                }}
-                displayEmpty
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="available&busy">Available & busy</MenuItem>
-                <MenuItem value="available">Available</MenuItem>
-                <MenuItem value="busy">Busy</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-          )}
-          {togglePage === "drivers" && (
-            <Button
-              onClick={() => setOpenStepper(true)}
-              variant="contained"
-              startIcon={<Link size={18} />}
+            <ToggleButton
+              value="drivers"
               sx={{
-                ...newLoadButtonSx,
-                width: { xs: "100%", sm: 220 },
-                minHeight: { xs: 46, md: 56 },
-                whiteSpace: "nowrap",
+                textTransform: "none",
+                px: 2,
+                py: 1,
+                "&.Mui-selected": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                  color: theme.currentPalette.background,
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+                },
               }}
             >
-              Link Driver
-            </Button>
+              Driver Management
+            </ToggleButton>
+
+            <ToggleButton
+              value="timeoff"
+              sx={{
+                textTransform: "none",
+                px: 2,
+                py: 1,
+                "&.Mui-selected": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                  color: theme.currentPalette.background,
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+                },
+              }}
+            >
+              Time off requests
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* Dynamic Stats Cards */}
+        <Box sx={{ mt: 4, mb: 5 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {togglePage === "drivers" ? (
+              <>
+                <StatsCard
+                  title="Total Drivers"
+                  value={statsData.total}
+                  icon={UsersRound}
+                />
+                <StatsCard
+                  title="Available"
+                  value={statsData.available}
+                  icon={UserRoundCheck}
+                />
+                <StatsCard
+                  title="Busy"
+                  value={statsData.busy}
+                  icon={UserRoundX}
+                />
+              </>
+            ) : (
+              <>
+                <StatsCard
+                  title="Approved Requests"
+                  value={statsData.approved}
+                  icon={ClipboardCheck}
+                />
+                <StatsCard
+                  title="Pending Requests"
+                  value={statsData.pending}
+                  icon={ClipboardClock}
+                />
+                <StatsCard
+                  title="Rejected Requests"
+                  value={statsData.rejected}
+                  icon={ClipboardX}
+                />
+              </>
+            )}
+          </div>
+        </Box>
+
+        {/* Search & Filter */}
+        <Box sx={searchFilterContainerSx}>
+          {/* Left title */}
+          <Box>
+            <Typography
+              variant="h6"
+              sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
+            >
+              {togglePage === "drivers" ? "Driver Details" : "Time off requests"}
+            </Typography>
+
+            <Typography
+              variant="body2"
+              sx={{
+                color: theme.currentPalette.primary,
+                fontWeight: 400,
+                fontSize: { xs: 13 },
+              }}
+            >
+              {togglePage === "drivers"
+                ? "Check the list of all drivers"
+                : "Manage your driver time off requests"}
+            </Typography>
+          </Box>
+
+          {/* Right controls */}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: { xs: "flex-start", md: "flex-end" },
+              alignItems: "center",
+              gap: 2,
+              width: { xs: "100%", md: "auto" },
+            }}
+          >
+            <TextField
+              size="small"
+              value={keyword}
+              placeholder={
+                togglePage === "drivers"
+                  ? "Search by driver Id..."
+                  : "Search by timeoff Id..."
+              }
+              onChange={(e) => {
+                setKeyword(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const value = keyword.trim();
+
+                  setPage(1);
+
+                  if (value) {
+                    setActiveKeyword(value);
+
+                    if (togglePage === "drivers") {
+                      triggerSearchQuery(value);
+                    } else {
+                      triggerTimeOffSearch(value);
+                    }
+                  } else {
+                    setActiveKeyword("");
+                    resetSearchQuery();
+                    resetTimeOffSearch();
+
+                    if (togglePage === "drivers") refetchDrivers();
+                    if (togglePage === "timeoff") refetchTimeOffs();
+                  }
+                }
+              }}
+              InputProps={{
+                endAdornment: keyword ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setKeyword("");
+                        setActiveKeyword("");
+                        setPage(1);
+                        resetSearchQuery();
+
+                        if (togglePage === "drivers") refetchDrivers();
+                        if (togglePage === "timeoff") refetchTimeOffs();
+                      }}
+                    >
+                      <X size={16} color="red" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+              sx={{
+                width: { xs: "100%", sm: 320 },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  backgroundColor: theme.currentPalette.background,
+                  minHeight: { xs: 46, md: 56 },
+                },
+              }}
+            />
+            {togglePage === "drivers" && (
+              <FormControl size="small" sx={{ width: { xs: "100%", sm: 170 } }}>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as TStatusFilter);
+                    setPage(1);
+                  }}
+                  sx={{
+                    ...controlSx,
+                    minHeight: { xs: 46, md: 56 },
+                  }}
+                  displayEmpty
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="available&busy">Available & busy</MenuItem>
+                  <MenuItem value="available">Available</MenuItem>
+                  <MenuItem value="busy">Busy</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+            {togglePage === "drivers" && (
+              <Button
+                onClick={() => setOpenStepper(true)}
+                variant="contained"
+                startIcon={<Link size={18} />}
+                sx={{
+                  ...newLoadButtonSx,
+                  width: { xs: "100%", sm: 220 },
+                  minHeight: { xs: 46, md: 56 },
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Link Driver
+              </Button>
+            )}
+          </Box>
+        </Box>
+
+        {error && (
+          <Box sx={{ mb: 3 }}>
+            <Erros message={error} />
+          </Box>
+        )}
+
+        {/* Dynamic Table */}
+        <DataTable
+          columns={currentColumns}
+          data={currentData}
+          renderRow={renderRow}
+          loading={isLoading}
+        />
+
+        {/* Pagination */}
+        {currentPagination &&
+          timeOffFilter === "all" &&
+          currentData.length > 0 && (
+            <Pagination
+              pagination={currentPagination}
+              page={page}
+              setPage={setPage}
+              pageSize={10}
+            />
           )}
-        </Box>
-      </Box>
 
-      {error && (
-        <Box sx={{ mb: 3 }}>
-          <Erros message={error} />
-        </Box>
-      )}
+        {/* Driver Form Modal */}
+        <DriverForm
+          open={open}
+          onClose={() => setOpen(false)}
+          formData={formData}
+          onChange={handleFormChange}
+          onSubmit={editMode ? handleUpdate : handleCreate}
+          editMode={editMode}
+          isLoading={isCreating || isUpdating}
+        />
 
-      {/* Dynamic Table */}
-      <DataTable
-        columns={currentColumns}
-        data={currentData}
-        renderRow={renderRow}
-        loading={isLoading}
-      />
-
-      {/* Pagination */}
-      {currentPagination &&
-        timeOffFilter === "all" &&
-        currentData.length > 0 && (
-          <Pagination
-            pagination={currentPagination}
-            page={page}
-            setPage={setPage}
-            pageSize={10}
+        {/* MUI Delete Confirmation Toast */}
+        {deleteToast.open && (
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.1)",
+              backdropFilter: "blur(2px)",
+              zIndex: 1299,
+            }}
           />
         )}
 
-      {/* Driver Form Modal */}
-      <DriverForm
-        open={open}
-        onClose={() => setOpen(false)}
-        formData={formData}
-        onChange={handleFormChange}
-        onSubmit={editMode ? handleUpdate : handleCreate}
-        editMode={editMode}
-        isLoading={isCreating || isUpdating}
-      />
-
-      {/* MUI Delete Confirmation Toast */}
-      {deleteToast.open && (
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.1)",
-            backdropFilter: "blur(2px)",
-            zIndex: 1299,
+        {/* Delete Confirmation Dialog - Centered */}
+        <Dialog
+          open={deleteToast.open}
+          onClose={cancelDelete}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+              minWidth: 300,
+              maxWidth: 400,
+              margin: 2,
+            },
           }}
-        />
-      )}
-
-      {/* Delete Confirmation Dialog - Centered */}
-      <Dialog
-        open={deleteToast.open}
-        onClose={cancelDelete}
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-            minWidth: 300,
-            maxWidth: 400,
-            margin: 2,
-          },
-        }}
-        sx={{
-          zIndex: 1300,
-          "& .MuiDialog-container": {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          },
-        }}
-      >
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ fontWeight: 600, color: "text.primary" }}
-          >
-            Confirm Delete
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
-            {deleteToast.message}
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
-            <Button
-              variant="outlined"
-              color="inherit"
-              onClick={cancelDelete}
-              sx={{
-                borderRadius: 2,
-                minWidth: 80,
-                borderColor: "grey.400",
-                "&:hover": {
-                  borderColor: "grey.600",
-                  backgroundColor: "grey.50",
-                },
-              }}
+          sx={{
+            zIndex: 1300,
+            "& .MuiDialog-container": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+          }}
+        >
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ fontWeight: 600, color: "text.primary" }}
             >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={confirmDelete}
-              sx={{
-                borderRadius: 2,
-                minWidth: 80,
-                backgroundColor: "error.main",
-                "&:hover": {
-                  backgroundColor: "error.dark",
-                },
-              }}
-            >
-              Delete
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
-
-      {/* Time Off Details Dialog */}
-      <Dialog
-        open={openTimeOffDialog}
-        onClose={() => setOpenTimeOffDialog(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            overflow: "hidden",
-            width: 400,
-            bgcolor: "#fff"
-          },
-        }}
-      >
-        {selectedTimeOff && selectedTimeOff.from && selectedTimeOff.to && (
-          <>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                p: 2,
-                borderBottom: 1,
-                borderColor: alpha(theme.currentPalette.text, 0.1),
-                bgcolor: "#fff"
-              }}
-            >
-              <Typography
+              Confirm Delete
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
+              {deleteToast.message}
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={cancelDelete}
                 sx={{
-                  color: darken(theme.currentPalette.primary, 0.5),
-                  fontWeight: 600,
-                  fontSize: "24px",
+                  borderRadius: 2,
+                  minWidth: 80,
+                  borderColor: "grey.400",
+                  "&:hover": {
+                    borderColor: "grey.600",
+                    backgroundColor: "grey.50",
+                  },
                 }}
               >
-                Request details
-              </Typography>
-
-              <IconButton
-                onClick={() => setOpenTimeOffDialog(false)}
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={confirmDelete}
                 sx={{
-                  position: "absolute",
-                  right: 12,
-                  top: 12,
-                  color: theme.currentPalette.text,
+                  borderRadius: 2,
+                  minWidth: 80,
+                  backgroundColor: "error.main",
+                  "&:hover": {
+                    backgroundColor: "error.dark",
+                  },
                 }}
               >
-                <X size={20} />
-              </IconButton>
+                Delete
+              </Button>
             </Box>
+          </Box>
+        </Dialog>
 
-            <Box sx={{ p: 4 }}>
-              <Box>
-                {/* Status */}
-                <Box
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-start"}
-                  gap={1}
+        {/* Time Off Details Dialog */}
+        <Dialog
+          open={openTimeOffDialog}
+          onClose={() => setOpenTimeOffDialog(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              overflow: "hidden",
+              width: 400,
+              bgcolor: "#fff"
+            },
+          }}
+        >
+          {selectedTimeOff && selectedTimeOff.from && selectedTimeOff.to && (
+            <>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  p: 2,
+                  borderBottom: 1,
+                  borderColor: alpha(theme.currentPalette.text, 0.1),
+                  bgcolor: "#fff"
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: darken(theme.currentPalette.primary, 0.5),
+                    fontWeight: 600,
+                    fontSize: "24px",
+                  }}
                 >
-                  <Typography
-                    color={theme.currentPalette.primary}
+                  Request details
+                </Typography>
+
+                <IconButton
+                  onClick={() => setOpenTimeOffDialog(false)}
+                  sx={{
+                    position: "absolute",
+                    right: 12,
+                    top: 12,
+                    color: theme.currentPalette.text,
+                  }}
+                >
+                  <X size={20} />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ p: 4 }}>
+                <Box>
+                  {/* Status */}
+                  <Box
                     display={"flex"}
-                    alignItems={"center"}
+                    flexDirection={"column"}
+                    alignItems={"flex-start"}
                     gap={1}
                   >
-                    <span>
-                      <StickyNote />
-                    </span>
-                    <span className="font-semibold">Status</span>
-                  </Typography>
-                  {selectedTimeOff.status === "approved" && (
-                    <Chip
-                      sx={{
-                        bgcolor: theme.currentPalette.primary,
-                        color: theme.currentPalette.background,
-                        px: 0.5,
-                        py: 0.5,
-                      }}
-                      icon={
-                        <BadgeCheck
-                          style={{ color: theme.currentPalette.background }}
-                        />
-                      }
-                      label={selectedTimeOff.status}
-                    />
-                  )}
-                  {selectedTimeOff.status === "pending" && (
-                    <Chip
-                      sx={{
-                        bgcolor: alpha(theme.currentPalette.primary, 0.1),
-                        color: theme.currentPalette.primary,
-                        px: 0.5,
-                        py: 0.5,
-                      }}
-                      icon={
-                        <Clock3
-                          style={{ color: theme.currentPalette.primary }}
-                        />
-                      }
-                      label={selectedTimeOff.status}
-                    />
-                  )}
-                  {(selectedTimeOff.status === "rejected" ||
-                    selectedTimeOff.status === "cancelled") && (
+                    <Typography
+                      color={theme.currentPalette.primary}
+                      display={"flex"}
+                      alignItems={"center"}
+                      gap={1}
+                    >
+                      <span>
+                        <StickyNote />
+                      </span>
+                      <span className="font-semibold">Status</span>
+                    </Typography>
+                    {selectedTimeOff.status === "approved" && (
                       <Chip
                         sx={{
-                          bgcolor: "#B52C17",
+                          bgcolor: theme.currentPalette.primary,
                           color: theme.currentPalette.background,
                           px: 0.5,
                           py: 0.5,
                         }}
                         icon={
-                          <OctagonX
+                          <BadgeCheck
                             style={{ color: theme.currentPalette.background }}
                           />
                         }
                         label={selectedTimeOff.status}
                       />
                     )}
-                </Box>
+                    {selectedTimeOff.status === "pending" && (
+                      <Chip
+                        sx={{
+                          bgcolor: alpha(theme.currentPalette.primary, 0.1),
+                          color: theme.currentPalette.primary,
+                          px: 0.5,
+                          py: 0.5,
+                        }}
+                        icon={
+                          <Clock3
+                            style={{ color: theme.currentPalette.primary }}
+                          />
+                        }
+                        label={selectedTimeOff.status}
+                      />
+                    )}
+                    {(selectedTimeOff.status === "rejected" ||
+                      selectedTimeOff.status === "cancelled") && (
+                        <Chip
+                          sx={{
+                            bgcolor: "#B52C17",
+                            color: theme.currentPalette.background,
+                            px: 0.5,
+                            py: 0.5,
+                          }}
+                          icon={
+                            <OctagonX
+                              style={{ color: theme.currentPalette.background }}
+                            />
+                          }
+                          label={selectedTimeOff.status}
+                        />
+                      )}
+                  </Box>
 
-                {/* Requested Dates */}
-                <Box
-                  sx={{ my: 2 }}
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-start"}
-                  gap={1}
-                >
-                  <Typography
-                    color={theme.currentPalette.primary}
+                  {/* Requested Dates */}
+                  <Box
+                    sx={{ my: 2 }}
                     display={"flex"}
-                    alignItems={"center"}
+                    flexDirection={"column"}
+                    alignItems={"flex-start"}
                     gap={1}
                   >
-                    <span>
-                      <Calendar />
-                    </span>
-                    <span className="font-semibold">Requested dates</span>
-                  </Typography>
+                    <Typography
+                      color={theme.currentPalette.primary}
+                      display={"flex"}
+                      alignItems={"center"}
+                      gap={1}
+                    >
+                      <span>
+                        <Calendar />
+                      </span>
+                      <span className="font-semibold">Requested dates</span>
+                    </Typography>
 
-                  <Box display={"flex"} alignItems={"center"} gap={1}>
-                    <Chip
-                      label={(() => {
-                        const from = new Date(selectedTimeOff.from);
-                        const to = new Date(selectedTimeOff.to);
-                        if (isNaN(from.getTime()) || isNaN(to.getTime()))
-                          return "Invalid date";
-                        const diffTime = Math.abs(
-                          to.getTime() - from.getTime(),
-                        );
-                        const diffDays = Math.ceil(
-                          diffTime / (1000 * 60 * 60 * 24),
-                        );
-                        return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
-                      })()}
+                    <Box display={"flex"} alignItems={"center"} gap={1}>
+                      <Chip
+                        label={(() => {
+                          const from = new Date(selectedTimeOff.from);
+                          const to = new Date(selectedTimeOff.to);
+                          if (isNaN(from.getTime()) || isNaN(to.getTime()))
+                            return "Invalid date";
+                          const diffTime = Math.abs(
+                            to.getTime() - from.getTime(),
+                          );
+                          const diffDays = Math.ceil(
+                            diffTime / (1000 * 60 * 60 * 24),
+                          );
+                          return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+                        })()}
+                        sx={{
+                          color: theme.currentPalette.primary,
+                          fontWeight: "bold",
+                          bgcolor: alpha(theme.currentPalette.primary, 0.1),
+                          borderRadius: 2,
+                        }}
+                      />
+                      <span style={{ color: theme.currentPalette.primary }}>
+                        {new Date(selectedTimeOff.from).toLocaleDateString()} -{" "}
+                        {new Date(selectedTimeOff.to).toLocaleDateString()}
+                      </span>
+                    </Box>
+                  </Box>
+
+                  {/* Reason */}
+                  <Box
+                    display={"flex"}
+                    flexDirection={"column"}
+                    alignItems={"flex-start"}
+                    gap={1}
+                  >
+                    <Typography
+                      color={theme.currentPalette.primary}
+                      display={"flex"}
+                      alignItems={"center"}
+                      gap={1}
+                    >
+                      <span>
+                        <NotebookText />
+                      </span>
+                      <span className="font-semibold">Reason</span>
+                    </Typography>
+                    <Typography
                       sx={{
-                        color: theme.currentPalette.primary,
-                        fontWeight: "bold",
+                        color: theme.currentPalette.text,
                         bgcolor: alpha(theme.currentPalette.primary, 0.1),
+                        p: 2,
+                        width: "100%",
                         borderRadius: 2,
                       }}
-                    />
-                    <span style={{ color: theme.currentPalette.primary }}>
-                      {new Date(selectedTimeOff.from).toLocaleDateString()} -{" "}
-                      {new Date(selectedTimeOff.to).toLocaleDateString()}
-                    </span>
+                    >
+                      {selectedTimeOff.reason}
+                    </Typography>
                   </Box>
                 </Box>
 
-                {/* Reason */}
-                <Box
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-start"}
-                  gap={1}
-                >
-                  <Typography
-                    color={theme.currentPalette.primary}
-                    display={"flex"}
-                    alignItems={"center"}
-                    gap={1}
-                  >
-                    <span>
-                      <NotebookText />
-                    </span>
-                    <span className="font-semibold">Reason</span>
-                  </Typography>
-                  <Typography
+                {/* pending */}
+                {selectedTimeOff.status === "pending" && (
+                  <Box
                     sx={{
-                      color: theme.currentPalette.text,
-                      bgcolor: alpha(theme.currentPalette.primary, 0.1),
-                      p: 2,
-                      width: "100%",
-                      borderRadius: 2,
+                      mt: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                      justifyContent: "center",
                     }}
                   >
-                    {selectedTimeOff.reason}
-                  </Typography>
-                </Box>
+                    <Button
+                      variant="contained"
+                      sx={{
+                        bgcolor: theme.currentPalette.primary,
+                        color: theme.currentPalette.background,
+                        borderRadius: 2,
+                        width: "full",
+                        py: 1,
+                        textTransform: "capitalize",
+                      }}
+                      disabled={updatingId === selectedTimeOff.id}
+                      onClick={() => {
+                        handleTimeOffStatus(
+                          selectedTimeOff.id,
+                          "approved",
+                          "Approved by admin",
+                        );
+                        setOpenTimeOffDialog(false);
+                      }}
+                    >
+                      {updatingId === selectedTimeOff.id
+                        ? "Approving..."
+                        : "Approve"}
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      sx={{
+                        border: `1px solid ${theme.currentPalette.primary}`,
+                        color: theme.currentPalette.primary,
+                        borderRadius: 2,
+                        width: "full",
+                        py: 1,
+                        textTransform: "capitalize",
+                      }}
+                      disabled={updatingId === selectedTimeOff.id}
+                      onClick={() => {
+                        handleTimeOffStatus(
+                          selectedTimeOff.id,
+                          "rejected",
+                          "Not available",
+                        );
+                        setOpenTimeOffDialog(false);
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </Box>
+                )}
               </Box>
+            </>
+          )}
+        </Dialog>
+      </Box>
 
-              {/* pending */}
-              {selectedTimeOff.status === "pending" && (
-                <Box
-                  sx={{
-                    mt: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    sx={{
-                      bgcolor: theme.currentPalette.primary,
-                      color: theme.currentPalette.background,
-                      borderRadius: 2,
-                      width: "full",
-                      py: 1,
-                      textTransform: "capitalize",
-                    }}
-                    disabled={updatingId === selectedTimeOff.id}
-                    onClick={() => {
-                      handleTimeOffStatus(
-                        selectedTimeOff.id,
-                        "approved",
-                        "Approved by admin",
-                      );
-                      setOpenTimeOffDialog(false);
-                    }}
-                  >
-                    {updatingId === selectedTimeOff.id
-                      ? "Approving..."
-                      : "Approve"}
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    sx={{
-                      border: `1px solid ${theme.currentPalette.primary}`,
-                      color: theme.currentPalette.primary,
-                      borderRadius: 2,
-                      width: "full",
-                      py: 1,
-                      textTransform: "capitalize",
-                    }}
-                    disabled={updatingId === selectedTimeOff.id}
-                    onClick={() => {
-                      handleTimeOffStatus(
-                        selectedTimeOff.id,
-                        "rejected",
-                        "Not available",
-                      );
-                      setOpenTimeOffDialog(false);
-                    }}
-                  >
-                    Reject
-                  </Button>
-                </Box>
-              )}
-            </Box>
-          </>
-        )}
-      </Dialog>
-    </Box>
+      {openStepper && (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1300,
+            bgcolor: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            p: 2,
+          }}
+        >
+          <LinkDriverPopup onClose={() => setOpenStepper(false)} />
+        </Box>
+      )}
+    </>
   );
 };
 

@@ -177,6 +177,16 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <UserPlus />,
     },
     {
+      label: "Drivers",
+      subtitle: "Manage your driver team members and their access",
+      icon: <ShieldUser />,
+    },
+    {
+      label: "Repaires",
+      subtitle: "Manage and track all your truck repairs in one place.",
+      icon: <MdOutlineHandyman size={20} />,
+    },
+    {
       label: "Maintenance",
       icon: <Wrench />,
       children: [
@@ -194,6 +204,7 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
         },
       ],
     },
+
     {
       label: "Users",
       subtitle: "Manage your dispatch team members and their access",

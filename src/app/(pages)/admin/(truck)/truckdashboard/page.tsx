@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+import html2pdf from "html2pdf.js";
 import {
   useGetAllTruckSummaryWithFilterQuery,
   useGetTruckSummaryQuery,
@@ -15,6 +17,7 @@ import {
   FormControl,
   ToggleButton,
   ToggleButtonGroup,
+  Button,
 } from "@mui/material";
 
 import { AiFillTool } from "react-icons/ai";
@@ -116,6 +119,54 @@ const TruckDashboard = () => {
 
   // Debounced search for better performance
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const handleDownloadAllTrucks = async () => {
+    try {
+      const from = fromDate ? fromDate.format("YYYY-MM-DD") : "2026-05-01";
+      const to = toDate ? toDate.format("YYYY-MM-DD") : "2026-05-30";
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const url = `${baseUrl}/api/v1/summary/truck/pdf?from=${from}&to=${to}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch trucks report");
+      }
+
+      const html = await response.text();
+
+      const element = document.createElement("div");
+      element.innerHTML = html;
+
+      await html2pdf()
+        .set({
+          margin: 8,
+          filename: `trucks-summary-${from}-to-${to}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+          },
+          jsPDF: {
+            unit: "mm",
+            format: "a4",
+            orientation: "landscape",
+          },
+        })
+        .from(element)
+        .save();
+
+      toast.success("Trucks PDF downloaded successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to download trucks PDF");
+    }
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -796,6 +847,25 @@ const TruckDashboard = () => {
               </MenuItem>
             </Select>
           </FormControl>
+          <Button
+            variant="contained"
+            onClick={handleDownloadAllTrucks}
+            disabled={!token}
+            sx={{
+              height: 44,
+              whiteSpace: "nowrap",
+              textTransform: "none",
+              borderRadius: 2,
+              bgcolor: theme.currentPalette.primary,
+              color: theme.currentPalette.background,
+              "&:hover": {
+                bgcolor: alpha(theme.currentPalette.primary, 0.8),
+              },
+              width: { xs: "100%", md: "auto" },
+            }}
+          >
+            Download All Trucks
+          </Button>
         </Box>
       </Box>
 
