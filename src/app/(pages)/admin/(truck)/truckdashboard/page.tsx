@@ -877,7 +877,7 @@ const TruckDashboard = () => {
               onClick={handleDownloadAllTrucks}
               disabled={!token || reportLoading}
             >
-              {reportLoading ? "Loading..." : "Preview All Trucks"}
+              {reportLoading ? "Loading..." : "Preview Reports "}
             </Button>
           </Box>
         </Box>

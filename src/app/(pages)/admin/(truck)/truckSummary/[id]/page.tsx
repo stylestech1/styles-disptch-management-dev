@@ -415,7 +415,7 @@ const TruckSummary = () => {
               },
             }}
           >
-            {reportLoading ? "Loading..." : "Preview / Download PDF"}
+            {reportLoading ? "Loading..." : "Preview Reports "}
           </Button>
         </Box>
 
