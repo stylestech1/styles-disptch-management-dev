@@ -1,7 +1,7 @@
 import { Column } from "@/components/ui/DataTable";
 
 export const costColumns: Column[] = [
-  { key: "plateNumber", header: "Truck Number", align: "center" },
+  { key: "truckNumber", header: "Truck Number", align: "center" },
   { key: "source", header: "Ownership", align: "center" },
   { key: "fuel", header: "Fuel", align: "center" },
   { key: "maintenance", header: "Maintenance", align: "center" },

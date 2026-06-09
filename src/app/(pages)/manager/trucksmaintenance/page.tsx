@@ -223,7 +223,7 @@ const TruckMaintenance = () => {
         if (!(trucksData as any)?.data) return [];
         return (trucksData as any).data.map((truck: TTruck) => ({
             id: (truck as any).id,
-            plateNumber: (truck as any).plateNumber || "--",
+            truckNumber: (truck as any).truckNumber || "--",
         }));
     }, [trucksData]);
 

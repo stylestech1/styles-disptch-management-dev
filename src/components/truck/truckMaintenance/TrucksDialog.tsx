@@ -166,7 +166,7 @@ const TrucksDialog: React.FC<TrucksDialogProps> = ({
                                   fontWeight: 600,
                                 }}
                               >
-                                {truck.plateNumber.charAt(0)}
+                                {truck.truckNumber.charAt(0)}
                               </Avatar>
                               <Box>
                                 <Typography
@@ -176,7 +176,7 @@ const TrucksDialog: React.FC<TrucksDialogProps> = ({
                                     color: theme.currentPalette.text,
                                   }}
                                 >
-                                  {truck.plateNumber}
+                                  {truck.truckNumber}
                                 </Typography>
                               </Box>
                             </Box>

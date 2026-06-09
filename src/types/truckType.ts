@@ -2,7 +2,7 @@ export type TMaintenanceStatus = "upcoming" | "overdue";
 
 export type TStatusPerTruck = {
   truckId: string;
-  plateNumber: string;
+  truckNumber: string;
   totalMileage: number;
   status: TMaintenanceStatus;
   nextDueMile?: number;

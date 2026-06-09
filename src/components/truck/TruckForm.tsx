@@ -40,7 +40,7 @@ export type TruckFormProps = {
 
 interface TruckFormData {
   model: string;
-  plateNumber: string;
+  truckNumber: string;
   type: string;
   year: string;
   capacity: string;
@@ -121,7 +121,7 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
   } = useForm<TruckFormData>({
     defaultValues: {
       model: "",
-      plateNumber: "",
+      truckNumber: "",
       type: "",
       year: "",
       source: "",
@@ -147,7 +147,7 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
 
       reset({
         model: (raw as any).model ?? "",
-        plateNumber: (raw as any).plateNumber ?? "",
+        truckNumber: (raw as any).truckNumber ?? "",
         type: (raw as any).type ?? "",
         year: (raw as any).year ?? "",
         source: (raw as any).source ?? "",
@@ -238,7 +238,7 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
     if (!editMode) {
       reset({
         model: "",
-        plateNumber: "",
+        truckNumber: "",
         type: "",
         year: "",
         source: "",
@@ -273,7 +273,7 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
   };
 
   const validateStep0 = async () => {
-    const ok = await trigger(["model", "plateNumber", "year", "type", "source", "status"]);
+    const ok = await trigger(["model", "truckNumber", "year", "type", "source", "status"]);
     return ok;
   };
 
@@ -501,7 +501,7 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
                     }}
                   >
                     <Controller
-                      name="plateNumber"
+                      name="truckNumber"
                       control={control}
                       rules={{
                         required: "Truck Number is required",
@@ -512,11 +512,11 @@ export const TruckForm = React.memo(function TruckFormComp(props: TruckFormProps
                           {...field}
                           label="Truck Number"
                           placeholder="e.g. ABC-123"
-                          error={!!errors.plateNumber}
-                          helperText={errors.plateNumber?.message}
+                          error={!!errors.truckNumber}
+                          helperText={errors.truckNumber?.message}
                           fullWidth
                           size="medium"
-                          onChange={(e) => handleFieldChange("plateNumber", e.target.value)}
+                          onChange={(e) => handleFieldChange("truckNumber", e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start" sx={{ color: alpha(theme.currentPalette.text, 0.55) }}>

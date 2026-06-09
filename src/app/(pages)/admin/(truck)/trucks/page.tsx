@@ -418,7 +418,7 @@ const TrucksPage: React.FC = () => {
     setFormData({
       id: truck.id,
       model: truck.model,
-      plateNumber: truck.plateNumber,
+      truckNumber: truck.truckNumber,
       type: truck.type,
       year: truck.year,
       capacity: truck.capacity,
@@ -521,7 +521,7 @@ const TrucksPage: React.FC = () => {
 
     return (
       <TableRow sx={tableRowSx} key={t.id || (t as any).truckId}>
-        <td className="p-4 text-center text-slate-700 font-medium">{t.plateNumber || "-"}</td>
+        <td className="p-4 text-center text-slate-700 font-medium">{t.truckNumber || "-"}</td>
 
         <td className="p-4 text-center">
           {typeof t.assignedDriver === "object"

@@ -9,7 +9,7 @@ export type TTruckSource = "company" | "other";
 export type TTruckId = {
   model: string;
   truckId: number;
-  plateNumber: string;
+  truckNumber: string;
 };
 export type PaginationResult = {
   currentPage: number;
@@ -213,7 +213,7 @@ export type tDriverHiring = {
 export type TTruck = {
   id: string;
   truckId: number;
-  plateNumber: string;
+  truckNumber: string;
   model: string;
   year: string;
   capacity: string;
@@ -372,7 +372,7 @@ export interface InfoItemProps {
 export type TTruckWithSummary = TTruck & {
   _id: string;
   truckId: number;
-  plateNumber: string;
+  truckNumber: string;
   summary?: TTruckSummary;
   model?: string;
   year?: string;

@@ -43,7 +43,7 @@ interface EditDialogProps {
     remindBeforeDays: string;
     trucks: Array<{
       truckId: string;
-      plateNumber: string;
+      truckNumber: string;
       lastDoneMile?: string;
       lastDoneAt?: string | null;
     }>;
@@ -68,7 +68,7 @@ interface EditDialogProps {
       remindBeforeDays: string;
       trucks: Array<{
         truckId: string;
-        plateNumber: string;
+        truckNumber: string;
         lastDoneMile?: string;
         lastDoneAt?: string | null;
       }>;
@@ -263,7 +263,7 @@ const EditDialog: React.FC<EditDialogProps> = ({
                             key={availableTruck.id}
                             value={availableTruck.id}
                           >
-                            {availableTruck.plateNumber}
+                            {availableTruck.truckNumber}
                           </MenuItem>
                         )
                       )}

@@ -702,10 +702,10 @@ export const apiSlice = api.injectEndpoints({
       keepUnusedDataFor: 60 * 60,
     }),
 
-    getTruckByPlateNumber: builder.query({
-      query: (plateNumber) => `/api/v1/trucks?plateNumber=${plateNumber}`,
-      providesTags: (result, error, plateNumber) => [
-        { type: "Trucks", plateNumber },
+    getTruckBytruckNumber: builder.query({
+      query: (truckNumber) => `/api/v1/trucks?truckNumber=${truckNumber}`,
+      providesTags: (result, error, truckNumber) => [
+        { type: "Trucks", truckNumber },
       ],
     }),
 
@@ -1176,8 +1176,8 @@ export const {
   useGetTruckWithSearchQuery,
   useGetSpecificTruckSummaryQuery,
   useLazyGetSpecificTruckSummaryQuery,
-  useGetTruckByPlateNumberQuery,
-  useLazyGetTruckByPlateNumberQuery,
+  useGetTruckBytruckNumberQuery,
+  useLazyGetTruckBytruckNumberQuery,
   useGetTruckSummaryWithFilterQuery,
   useGetAllTruckSummaryWithFilterQuery,
   useGetTruckByIdQuery,

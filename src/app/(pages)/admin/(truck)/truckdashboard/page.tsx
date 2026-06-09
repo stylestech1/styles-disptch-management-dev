@@ -101,7 +101,7 @@ const TruckDashboard = () => {
 
     return (trucks as TTruckWithSummary[]).filter(
       (truck) =>
-        truck.plateNumber.toLowerCase().includes(searchTermLower) ||
+        truck.truckNumber.toLowerCase().includes(searchTermLower) ||
         (truck.source &&
           truck.source.toLowerCase().includes(searchTermLower)) ||
         (truck.truckId &&
@@ -356,7 +356,7 @@ const TruckDashboard = () => {
         {/* Truck Number */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {truckItem.plateNumber}
+            {truckItem.truckNumber}
           </span>
         </td>
 
@@ -437,7 +437,7 @@ const TruckDashboard = () => {
         {/* Truck Number */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {truckItem.plateNumber}
+            {truckItem.truckNumber}
           </span>
         </td>
 
@@ -507,7 +507,7 @@ const TruckDashboard = () => {
         {/* Truck Number */}
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">
-            {truckItem.plateNumber}
+            {truckItem.truckNumber}
           </span>
         </td>
 

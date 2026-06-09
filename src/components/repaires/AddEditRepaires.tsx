@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useGetTrucksQuery } from "@/redux/slices/apiSlice";
+import { useGetAllTrucksQuery } from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
 import {
     Box,
@@ -31,7 +31,7 @@ type TruckOption = {
     _id?: string;
     id?: string;
     truckId?: number;
-    plateNumber?: string;
+    truckNumber?: string;
     model?: string;
     type?: string;
 };
@@ -105,7 +105,7 @@ export const CreateEditRepaires = ({
     const [filesOpen, setFilesOpen] = useState(true);
     const [repairPlace, setRepairPlace] = useState<TPlace | null>(null);
 
-    const { data: trucksData } = useGetTrucksQuery({});
+    const { data: trucksData } = useGetAllTrucksQuery({});
     const trucks: TruckOption[] = trucksData?.data || [];
     const handleCloseModal = () => {
         reset({
@@ -366,8 +366,8 @@ export const CreateEditRepaires = ({
                                         displayEmpty: true,
                                         renderValue: () => (
                                             <span className="font-semibold">
-                                                {selectedTruck?.plateNumber ||
-                                                    currentTruck?.plateNumber ||
+                                                {selectedTruck?.truckNumber ||
+                                                    currentTruck?.truckNumber ||
                                                     "Select Truck"}
                                             </span>
                                         ),
@@ -375,7 +375,7 @@ export const CreateEditRepaires = ({
                                 >
                                     {editTruck?.id && (
                                         <MenuItem value={editTruck.id}>
-                                            {editTruck.plateNumber}
+                                            {editTruck.truckNumber}
                                         </MenuItem>
                                     )}
 
@@ -384,7 +384,7 @@ export const CreateEditRepaires = ({
 
                                         return (
                                             <MenuItem key={value} value={value}>
-                                                {truck.plateNumber}
+                                                {truck.truckNumber}
                                             </MenuItem>
                                         );
                                     })}

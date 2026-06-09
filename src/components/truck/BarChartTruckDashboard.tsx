@@ -25,7 +25,7 @@ type Props = {
 
 const BarChartTruckDashboard = ({ data, summaryMode }: Props) => {
   const theme = useAppSelector((state: RootState) => state.palette);
-  const labels = data.map((t) => `${t.plateNumber}`);
+  const labels = data.map((t) => `${t.truckNumber}`);
   const patternCanvas = useRef<HTMLCanvasElement>(
     document.createElement("canvas")
   );

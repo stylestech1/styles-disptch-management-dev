@@ -231,7 +231,7 @@ export function ViewTruckDialog({
                             theme={theme}
                             icon={<IdCard size={24} />}
                             label="Truck Number"
-                            value={selectedTruck?.plateNumber ?? "-"}
+                            value={selectedTruck?.truckNumber ?? "-"}
                         />
 
                         <InfoItem

@@ -68,7 +68,7 @@ type RepairItem = {
         id?: string;
         _id?: string;
         truckId?: number;
-        plateNumber?: string;
+        truckNumber?: string;
         model?: string;
     };
     truckId?: string;
@@ -338,7 +338,7 @@ const RepairPage = () => {
             >
                 <td className="p-4 text-center">
                     <Typography sx={{ fontWeight: 700, color: theme.currentPalette.primary }}>
-                        {repair?.truck?.plateNumber || "-"}
+                        {repair?.truck?.truckNumber || "-"}
                     </Typography>
                 </td>
                 <td className="p-4 text-center">

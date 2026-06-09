@@ -376,7 +376,7 @@ const DriverSummary = () => {
         <td className="p-4 text-center">
           <span className="text-sm px-2 py-1 rounded">{l.loadId}</span>
         </td>
-        <td className="p-4 text-center">{l.truckId?.plateNumber}</td>
+        <td className="p-4 text-center">{l.truckId?.truckNumber}</td>
         <td className="p-4 text-center">{l.deliveredAt ? l.deliveredAt.split("T")[0] : "-"}</td>
         <td className="p-4 text-center max-w-10">
           <div className="truncate" title={l.origin}>
