@@ -161,15 +161,17 @@ export const CreateEditRepaires = ({
     const selectedTruckId = watch("truckId");
 
     const selectedTruck = useMemo(() => {
+        if (!editMode && !selectedTruckId) return null;
+
         return (
             trucks.find((truck) => {
                 const value = truck.id || truck._id || String(truck.truckId);
                 return String(value) === String(selectedTruckId);
             }) ||
-            formData?.truck ||
+            (editMode ? formData?.truck : null) ||
             null
         );
-    }, [trucks, selectedTruckId, formData?.truck]);
+    }, [trucks, selectedTruckId, formData?.truck, editMode]);
 
     useEffect(() => {
         if (!open) return;
@@ -366,7 +368,7 @@ export const CreateEditRepaires = ({
                         control={control}
                         rules={{ required: "Truck is required" }}
                         render={({ field, fieldState }) => {
-                            const editTruck = formData?.truck;
+                            const editTruck = editMode ? formData?.truck : undefined;
 
                             const fieldValue =
                                 field.value ||
@@ -397,9 +399,7 @@ export const CreateEditRepaires = ({
                                         displayEmpty: true,
                                         renderValue: () => (
                                             <span className="font-semibold">
-                                                {selectedTruck?.truckNumber ||
-                                                    currentTruck?.truckNumber ||
-                                                    "Select Truck"}
+                                                {selectedTruck?.truckNumber || "Select Truck"}
                                             </span>
                                         ),
                                     }}

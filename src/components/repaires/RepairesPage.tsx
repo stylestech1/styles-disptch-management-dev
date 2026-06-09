@@ -562,7 +562,11 @@ const RepairPage = () => {
                         sx={{ height: CONTROL_H, width: { xs: "100%", sm: 130 } }}
                         onClick={() => {
                             setEditingRepairId(null);
-                            setShowCreateEditModal(true);
+                            setShowCreateEditModal(false);
+
+                            setTimeout(() => {
+                                setShowCreateEditModal(true);
+                            }, 0);
                         }}
                     >
                         Add Repair
@@ -596,13 +600,18 @@ const RepairPage = () => {
             )}
 
             <CreateEditRepaires
+                key={editingRepairId ? `edit-${editingRepairId}` : "create"}
                 open={showCreateEditModal}
                 onClose={() => {
                     setShowCreateEditModal(false);
                     setEditingRepairId(null);
                 }}
                 editMode={!!editingRepairId}
-                formData={editingRepair ? mapRepairToFormData(editingRepair) : undefined}
+                formData={
+                    editingRepairId && editingRepair
+                        ? mapRepairToFormData(editingRepair)
+                        : undefined
+                }
                 isLoading={isCreating || isUpdating || isFetchingRepairDetails}
                 onSubmit={editingRepairId ? handleUpdateRepair : handleCreateRepair}
             />
