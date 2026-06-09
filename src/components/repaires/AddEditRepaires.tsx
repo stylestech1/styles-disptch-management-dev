@@ -174,6 +174,39 @@ export const CreateEditRepaires = ({
     useEffect(() => {
         if (!open) return;
 
+        // CREATE MODE => clear everything
+        if (!editMode) {
+            reset({
+                truckId: "",
+                truck: undefined,
+                title: "",
+                description: "",
+                status: "pending",
+                cost: "",
+                repairDate: "",
+                note: "",
+                repairLocation: {
+                    type: "repair_shop",
+                    location: "",
+                    phoneNumber: "",
+                    shopName: "",
+                },
+                uploadedReceipts: [],
+                additionalPhotos: [],
+                existingReceipts: [],
+                existingPhotos: [],
+            });
+
+            setReceipts([]);
+            setPhotos([]);
+            setExistingReceipts([]);
+            setExistingPhotos([]);
+            setRepairPlace(null);
+            setFilesOpen(true);
+            return;
+        }
+
+        // EDIT MODE => fill data
         const locationString = formData?.repairLocation?.location || "";
 
         reset({
@@ -186,9 +219,7 @@ export const CreateEditRepaires = ({
             description: formData?.description || "",
             status: formData?.status || "pending",
             cost: formData?.cost || "",
-            repairDate: formData?.repairDate
-                ? formData.repairDate.slice(0, 10)
-                : "",
+            repairDate: formData?.repairDate ? formData.repairDate.slice(0, 10) : "",
             note: formData?.note || "",
             repairLocation: {
                 type: formData?.repairLocation?.type || "repair_shop",
@@ -215,7 +246,7 @@ export const CreateEditRepaires = ({
         setPhotos([]);
         setExistingReceipts(formData?.existingReceipts || []);
         setExistingPhotos(formData?.existingPhotos || []);
-    }, [open, formData, reset]);
+    }, [open, editMode, formData, reset]);
 
     const fieldSx = {
         "& .MuiOutlinedInput-root": {
