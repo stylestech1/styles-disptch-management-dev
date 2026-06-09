@@ -18,6 +18,10 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Button,
+  Dialog,
+  DialogContent,
+  CircularProgress,
+  DialogActions,
 } from "@mui/material";
 
 import { AiFillTool } from "react-icons/ai";
@@ -53,6 +57,10 @@ const TruckDashboard = () => {
   const { fromDate, toDate, isFiltered } = useFilter();
   const [searchTerm, setSearchTerm] = useState("");
   const [summaryMode, setSummaryMode] = useState<SummaryMode>("total");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportHtml, setReportHtml] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+
   // API Queries
   const {
     data: allTrucksData,
@@ -121,6 +129,8 @@ const TruckDashboard = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const handleDownloadAllTrucks = async () => {
     try {
+      setReportLoading(true);
+
       const from = fromDate ? fromDate.format("YYYY-MM-DD") : "2026-05-01";
       const to = toDate ? toDate.format("YYYY-MM-DD") : "2026-05-30";
 
@@ -140,57 +150,46 @@ const TruckDashboard = () => {
 
       const html = await response.text();
 
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "0";
-      iframe.style.visibility = "hidden";
-
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-
-      if (!iframeDoc) {
-        throw new Error("Could not create iframe document");
-      }
-
-      iframeDoc.open();
-      iframeDoc.write(html);
-      iframeDoc.close();
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const element = iframeDoc.body;
-
-      await html2pdf()
-        .set({
-          margin: 8,
-          filename: `trucks-summary-${from}-to-${to}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            windowWidth: 1200,
-          },
-          jsPDF: {
-            unit: "mm",
-            format: "a4",
-            orientation: "landscape",
-          },
-        })
-        .from(element)
-        .save();
-
-      document.body.removeChild(iframe);
-
-      toast.success("Trucks PDF downloaded successfully");
+      setReportHtml(html);
+      setReportOpen(true);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to download trucks PDF");
+      toast.error("Failed to open trucks report");
+    } finally {
+      setReportLoading(false);
     }
+  };
+
+  const handleDownloadReportPdf = async () => {
+    const iframe = document.getElementById(
+      "truck-report-preview"
+    ) as HTMLIFrameElement | null;
+
+    const iframeDoc = iframe?.contentDocument || iframe?.contentWindow?.document;
+
+    if (!iframeDoc) return;
+
+    const from = fromDate ? fromDate.format("YYYY-MM-DD") : "2026-05-01";
+    const to = toDate ? toDate.format("YYYY-MM-DD") : "2026-05-30";
+
+    await html2pdf()
+      .set({
+        margin: 8,
+        filename: `trucks-summary-${from}-to-${to}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          windowWidth: 1400,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "landscape",
+        },
+      })
+      .from(iframeDoc.documentElement)
+      .save();
   };
 
   useEffect(() => {
@@ -661,355 +660,394 @@ const TruckDashboard = () => {
   };
 
   return (
-    <Box sx={containerSx}>
-      {/* Stats Cards */}
-      <Box>
-        <Typography
-          variant="h5"
-          sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
-        >
-          Performance Overview
-        </Typography>
-
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={summaryMode}
-            onChange={(_, value: SummaryMode | null) => {
-              if (!value) return;
-
-              setSummaryMode(value);
-              setPage(1);
-              refetchTruckSummary();
-            }}
-            sx={{
-              borderRadius: 2,
-              overflow: "hidden",
-              border: `1px solid ${alpha(theme.currentPalette.primary, 0.5)}`,
-            }}
-          >
-            <ToggleButton
-              value="total"
-              sx={{
-                textTransform: "none",
-                px: 2,
-                py: 1,
-                color: theme.currentPalette.primary,
-                "&.Mui-selected": {
-                  backgroundColor: alpha(theme.currentPalette.primary, 0.9),
-                  color: theme.currentPalette.background,
-                },
-                "&.Mui-selected:hover": {
-                  backgroundColor: alpha(theme.currentPalette.primary, 0.5),
-                },
-              }}
-            >
-              Total
-            </ToggleButton>
-
-            <ToggleButton
-              value="perMile"
-              sx={{
-                textTransform: "none",
-                px: 2,
-                py: 1,
-                color: theme.currentPalette.primary,
-                "&.Mui-selected": {
-                  backgroundColor: alpha(theme.currentPalette.primary, 0.9),
-                  color: theme.currentPalette.background,
-                },
-                "&.Mui-selected:hover": {
-                  backgroundColor: alpha(theme.currentPalette.primary, 0.5),
-                },
-              }}
-            >
-              Per Mile
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Box
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-          sx={{
-            my: 3,
-            border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
-            borderRadius: "12px",
-            overflow: "hidden",
-            bgcolor: theme.currentPalette.background,
-          }}
-        >
-          {overviewCards.map((card) => (
-            <StatCard
-              key={card.title}
-              title={card.title}
-              value={card.value}
-              change={card.change}
-            />
-          ))}
-        </Box>
-      </Box>
-
-      {/* Profitability Analysis */}
-      <Box sx={{ my: 5 }}>
-        <Typography
-          variant="h5"
-          sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
-        >
-          Profitability Analysis
-        </Typography>
-
-        <Box sx={{ my: 3 }}>
-          <BarChartTruckDashboard
-            data={finalDisplayTruckData}
-            summaryMode={summaryMode}
-          />
-        </Box>
-      </Box>
-
-      {/* Tables Section */}
-      <Box sx={searchFilterContainerSx}>
+    <>
+      <Box sx={containerSx}>
+        {/* Stats Cards */}
         <Box>
           <Typography
-            variant="h6"
+            variant="h5"
             sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
           >
-            {currentTable === "Profit" && "Profitability Breakdown per Truck"}
-            {currentTable === "Revenue" && "Revenue Breakdown per Truck"}
-            {currentTable === "cost" && "Cost Breakdown per Truck"}
+            Performance Overview
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
-          >
-            {currentTable === "Profit" &&
-              "Net profit margins and profitability metrics"}
-            {currentTable === "Revenue" && "Total revenue and rates per truck"}
-            {currentTable === "cost" &&
-              "Full costs for Company-owned, driver pay % for O/O trucks"}
-          </Typography>
-        </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: { xs: "stretch", md: "center" },
-            gap: 2,
-            width: { xs: "100%", md: "auto" },
-          }}
-        >
-          {/* Search Input */}
-          <Box
-            sx={{
-              width: { xs: "100%", md: 300, lg: 350 },
-            }}
-          >
-            <SearchInput
-              value={searchTerm}
-              onChange={handleSearchChange}
-              onClear={handleClearSearch}
-              placeholder="Search by Truck Number..."
-              fullWidth
-              showClearButton
-              inputSx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  backgroundColor: theme.currentPalette.background,
-                  borderColor: theme.currentPalette.primary,
-                },
-              }}
-            />
-          </Box>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={summaryMode}
+              onChange={(_, value: SummaryMode | null) => {
+                if (!value) return;
 
-          {/* Table Type Selector */}
-          <FormControl size="small">
-            <Select
-              displayEmpty
-              value={currentTable}
-              onChange={(e) => setCurrentTable(e.target.value as TableType)}
-              renderValue={(selected) => {
-                if (!selected) {
-                  return (
-                    <span style={{ color: theme.currentPalette.primary }}>
-                      Select table type...
-                    </span>
-                  );
-                }
-                return selected;
+                setSummaryMode(value);
+                setPage(1);
+                refetchTruckSummary();
               }}
               sx={{
-                py: 0.5,
                 borderRadius: 2,
-                color: theme.currentPalette.primary,
+                overflow: "hidden",
+                border: `1px solid ${alpha(theme.currentPalette.primary, 0.5)}`,
               }}
             >
-              <MenuItem
-                sx={{ color: theme.currentPalette.primary }}
-                disabled
-                value=""
+              <ToggleButton
+                value="total"
+                sx={{
+                  textTransform: "none",
+                  px: 2,
+                  py: 1,
+                  color: theme.currentPalette.primary,
+                  "&.Mui-selected": {
+                    backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                    color: theme.currentPalette.background,
+                  },
+                  "&.Mui-selected:hover": {
+                    backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+                  },
+                }}
               >
-                <em>Select table type...</em>
-              </MenuItem>
+                Total
+              </ToggleButton>
 
-              <MenuItem
-                sx={{ color: theme.currentPalette.primary }}
-                value="Profit"
+              <ToggleButton
+                value="perMile"
+                sx={{
+                  textTransform: "none",
+                  px: 2,
+                  py: 1,
+                  color: theme.currentPalette.primary,
+                  "&.Mui-selected": {
+                    backgroundColor: alpha(theme.currentPalette.primary, 0.9),
+                    color: theme.currentPalette.background,
+                  },
+                  "&.Mui-selected:hover": {
+                    backgroundColor: alpha(theme.currentPalette.primary, 0.5),
+                  },
+                }}
               >
-                Profit
-              </MenuItem>
-              <MenuItem
-                sx={{ color: theme.currentPalette.primary }}
-                value="Revenue"
-              >
-                Revenue
-              </MenuItem>
-              <MenuItem
-                sx={{ color: theme.currentPalette.primary }}
-                value="cost"
-              >
-                Cost
-              </MenuItem>
-            </Select>
-          </FormControl>
-          <Button
-            variant="contained"
-            onClick={handleDownloadAllTrucks}
-            disabled={!token}
+                Per Mile
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          <Box
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
             sx={{
-              height: 44,
-              whiteSpace: "nowrap",
-              textTransform: "none",
-              borderRadius: 2,
-              bgcolor: theme.currentPalette.primary,
-              color: theme.currentPalette.background,
-              "&:hover": {
-                bgcolor: alpha(theme.currentPalette.primary, 0.8),
-              },
+              my: 3,
+              border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
+              borderRadius: "12px",
+              overflow: "hidden",
+              bgcolor: theme.currentPalette.background,
+            }}
+          >
+            {overviewCards.map((card) => (
+              <StatCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                change={card.change}
+              />
+            ))}
+          </Box>
+        </Box>
+
+        {/* Profitability Analysis */}
+        <Box sx={{ my: 5 }}>
+          <Typography
+            variant="h5"
+            sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
+          >
+            Profitability Analysis
+          </Typography>
+
+          <Box sx={{ my: 3 }}>
+            <BarChartTruckDashboard
+              data={finalDisplayTruckData}
+              summaryMode={summaryMode}
+            />
+          </Box>
+        </Box>
+
+        {/* Tables Section */}
+        <Box sx={searchFilterContainerSx}>
+          <Box>
+            <Typography
+              variant="h6"
+              sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
+            >
+              {currentTable === "Profit" && "Profitability Breakdown per Truck"}
+              {currentTable === "Revenue" && "Revenue Breakdown per Truck"}
+              {currentTable === "cost" && "Cost Breakdown per Truck"}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
+            >
+              {currentTable === "Profit" &&
+                "Net profit margins and profitability metrics"}
+              {currentTable === "Revenue" && "Total revenue and rates per truck"}
+              {currentTable === "cost" &&
+                "Full costs for Company-owned, driver pay % for O/O trucks"}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: { xs: "stretch", md: "center" },
+              gap: 2,
               width: { xs: "100%", md: "auto" },
             }}
           >
-            Download All Trucks
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Search Results Info */}
-      {debouncedSearchTerm && (
-        <Box sx={{ mb: 2, p: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{ color: theme.currentPalette.primary }}
-          >
-            Showing {finalDisplayTruckData.length} results for{" "}
-            {debouncedSearchTerm}
-            {finalDisplayTruckData.length === 0 &&
-              " - No matching trucks found"}
-          </Typography>
-        </Box>
-      )}
-
-      {/* Data Table */}
-      <DataTable
-        columns={selectedConfig.columns}
-        data={finalDisplayTruckData}
-        renderRow={selectedConfig.render}
-        loading={isLoading}
-      />
-
-      {/* Operational Costs */}
-      <Box sx={{ my: 5 }}>
-        <Typography
-          variant="h5"
-          sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
-        >
-          Operational Costs
-        </Typography>
-
-        <Box className="grid grid-cols-1 md:grid-cols-2 gap-5 my-5">
-          {operationalCostCards.map((cost) => (
+            {/* Search Input */}
             <Box
-              key={cost.id}
               sx={{
-                p: 3,
-                border: 1,
-                borderColor: alpha(theme.currentPalette.primary, 0.3),
-                borderRadius: 2,
-                bgcolor: theme.currentPalette.background,
+                width: { xs: "100%", md: 300, lg: 350 },
               }}
             >
-              <Typography
-                variant="body2"
+              <SearchInput
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onClear={handleClearSearch}
+                placeholder="Search by Truck Number..."
+                fullWidth
+                showClearButton
+                inputSx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: theme.currentPalette.background,
+                    borderColor: theme.currentPalette.primary,
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Table Type Selector */}
+            <FormControl size="small">
+              <Select
+                displayEmpty
+                value={currentTable}
+                onChange={(e) => setCurrentTable(e.target.value as TableType)}
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return (
+                      <span style={{ color: theme.currentPalette.primary }}>
+                        Select table type...
+                      </span>
+                    );
+                  }
+                  return selected;
+                }}
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
+                  py: 0.5,
+                  borderRadius: 2,
                   color: theme.currentPalette.primary,
-                  mb: 2,
                 }}
               >
-                <span
-                  className="p-2 rounded-md"
-                  style={{
-                    backgroundColor: alpha(theme.currentPalette.primary, 0.1),
-                    color: theme.currentPalette.primary,
-                  }}
+                <MenuItem
+                  sx={{ color: theme.currentPalette.primary }}
+                  disabled
+                  value=""
                 >
-                  {cost.icon}
-                </span>
-                <span
-                  style={{ color: theme.currentPalette.primary }}
-                  className="text-lg"
-                >
-                  {cost.title}
-                </span>
-              </Typography>
+                  <em>Select table type...</em>
+                </MenuItem>
 
+                <MenuItem
+                  sx={{ color: theme.currentPalette.primary }}
+                  value="Profit"
+                >
+                  Profit
+                </MenuItem>
+                <MenuItem
+                  sx={{ color: theme.currentPalette.primary }}
+                  value="Revenue"
+                >
+                  Revenue
+                </MenuItem>
+                <MenuItem
+                  sx={{ color: theme.currentPalette.primary }}
+                  value="cost"
+                >
+                  Cost
+                </MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              onClick={handleDownloadAllTrucks}
+              disabled={!token || reportLoading}
+            >
+              {reportLoading ? "Loading..." : "Preview All Trucks"}
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Search Results Info */}
+        {debouncedSearchTerm && (
+          <Box sx={{ mb: 2, p: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: theme.currentPalette.primary }}
+            >
+              Showing {finalDisplayTruckData.length} results for{" "}
+              {debouncedSearchTerm}
+              {finalDisplayTruckData.length === 0 &&
+                " - No matching trucks found"}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Data Table */}
+        <DataTable
+          columns={selectedConfig.columns}
+          data={finalDisplayTruckData}
+          renderRow={selectedConfig.render}
+          loading={isLoading}
+        />
+
+        {/* Operational Costs */}
+        <Box sx={{ my: 5 }}>
+          <Typography
+            variant="h5"
+            sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
+          >
+            Operational Costs
+          </Typography>
+
+          <Box className="grid grid-cols-1 md:grid-cols-2 gap-5 my-5">
+            {operationalCostCards.map((cost) => (
               <Box
-                sx={{ borderColor: alpha(theme.currentPalette.text, 0.1) }}
-                className={`flex justify-between items-center py-2 border-b`}
+                key={cost.id}
+                sx={{
+                  p: 3,
+                  border: 1,
+                  borderColor: alpha(theme.currentPalette.primary, 0.3),
+                  borderRadius: 2,
+                  bgcolor: theme.currentPalette.background,
+                }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{ color: theme.currentPalette.primary, fontSize: "16px" }}
-                >
-                  Total Cost
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: theme.currentPalette.primary, fontSize: "16px" }}
-                >
-                  {cost.totalCost}
-                </Typography>
-              </Box>
-
-              <Box className={`flex justify-between items-center py-2`}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: theme.currentPalette.primary, fontSize: "16px" }}
-                >
-                  Change vs Last Month
-                </Typography>
                 <Typography
                   variant="body2"
                   sx={{
-                    fontSize: "16px",
-                    color:
-                      Number(cost.changeVsLastMonth) === 0
-                        ? theme.currentPalette.primary
-                        : parseFloat(cost.changeVsLastMonth) > 0
-                          ? "#b91c1c"
-                          : "#065f46",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    color: theme.currentPalette.primary,
+                    mb: 2,
                   }}
                 >
-                  {cost.changeVsLastMonth}
+                  <span
+                    className="p-2 rounded-md"
+                    style={{
+                      backgroundColor: alpha(theme.currentPalette.primary, 0.1),
+                      color: theme.currentPalette.primary,
+                    }}
+                  >
+                    {cost.icon}
+                  </span>
+                  <span
+                    style={{ color: theme.currentPalette.primary }}
+                    className="text-lg"
+                  >
+                    {cost.title}
+                  </span>
                 </Typography>
+
+                <Box
+                  sx={{ borderColor: alpha(theme.currentPalette.text, 0.1) }}
+                  className={`flex justify-between items-center py-2 border-b`}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ color: theme.currentPalette.primary, fontSize: "16px" }}
+                  >
+                    Total Cost
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: theme.currentPalette.primary, fontSize: "16px" }}
+                  >
+                    {cost.totalCost}
+                  </Typography>
+                </Box>
+
+                <Box className={`flex justify-between items-center py-2`}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: theme.currentPalette.primary, fontSize: "16px" }}
+                  >
+                    Change vs Last Month
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "16px",
+                      color:
+                        Number(cost.changeVsLastMonth) === 0
+                          ? theme.currentPalette.primary
+                          : parseFloat(cost.changeVsLastMonth) > 0
+                            ? "#b91c1c"
+                            : "#065f46",
+                    }}
+                  >
+                    {cost.changeVsLastMonth}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
+          </Box>
         </Box>
       </Box>
-    </Box>
+      <Dialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0, height: "80vh" }}>
+          {reportHtml ? (
+            <iframe
+              id="truck-report-preview"
+              srcDoc={reportHtml}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+                background: "white",
+              }}
+              title="Truck Report Preview"
+            />
+          ) : (
+            <Box
+              sx={{
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setReportOpen(false)}>Close</Button>
+
+          <Button
+            variant="contained"
+            onClick={handleDownloadReportPdf}
+            sx={{
+              textTransform: "none",
+              bgcolor: theme.currentPalette.primary,
+              color: theme.currentPalette.background,
+            }}
+          >
+            Download PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
