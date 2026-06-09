@@ -140,8 +140,30 @@ const TruckDashboard = () => {
 
       const html = await response.text();
 
-      const element = document.createElement("div");
-      element.innerHTML = html;
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      iframe.style.visibility = "hidden";
+
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+
+      if (!iframeDoc) {
+        throw new Error("Could not create iframe document");
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(html);
+      iframeDoc.close();
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const element = iframeDoc.body;
 
       await html2pdf()
         .set({
@@ -151,6 +173,7 @@ const TruckDashboard = () => {
           html2canvas: {
             scale: 2,
             useCORS: true,
+            windowWidth: 1200,
           },
           jsPDF: {
             unit: "mm",
@@ -160,6 +183,8 @@ const TruckDashboard = () => {
         })
         .from(element)
         .save();
+
+      document.body.removeChild(iframe);
 
       toast.success("Trucks PDF downloaded successfully");
     } catch (error) {
