@@ -329,7 +329,7 @@ const Login = () => {
         } else if (role === "superadmin" || role === "super-admin" || role === "super_admin") {
           router.replace("/superAdmin/companies");
         } else if (role === "manager") {
-          router.replace("/manager/hiringdrivers");
+          router.replace("/manager/loads");
         } else if (role === "employee") {
           router.replace("/dispatchers/loads");
         } else if (role === "driver") {
