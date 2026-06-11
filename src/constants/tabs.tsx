@@ -172,6 +172,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
   ],
   manager: [
     {
+      label: "Loads",
+      subtitle:
+        "Manage and track all your shipments and deliveries in one place.",
+      icon: <Boxes />,
+    },
+    {
       label: "Hiring Drivers",
       subtitle: "Review, approve, and manage driver recruitment requests",
       icon: <UserPlus />,

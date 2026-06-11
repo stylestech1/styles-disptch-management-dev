@@ -872,6 +872,10 @@ export const apiSlice = api.injectEndpoints({
       query: (jobId) => `/api/v1/adminDashboard?jobId=${jobId}`,
       providesTags: (result, error, jobId) => [{ type: "Dispatchers", id: jobId }],
     }),
+    getUserByRole: builder.query({
+      query: (role) => `/api/v1/adminDashboard?role=${role}`,
+      providesTags: (result, error, role) => [{ type: "Dispatchers", id: role }],
+    }),
 
     getUserWithSearch: builder.query({
       query: ({ from, to, page, limit }) => {
@@ -1263,6 +1267,7 @@ export const {
   useUpdateactivationcompanyMutation,
   useUpdatedeactivationcompanyMutation,
   // TODO: ----- settings  -----
+  useGetUserByRoleQuery,
   useGetSettingsQuery,
   useCreateSettingMutation,
   useUpdateSettingMutation,
