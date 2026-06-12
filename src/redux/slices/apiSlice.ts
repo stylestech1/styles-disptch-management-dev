@@ -682,7 +682,12 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     getTruckSummary: builder.query<TTrucksSummaryResponse, void>({
-      query: () => `/api/v1/summary/truck`,
+      query: () => {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+        return `/api/v1/summary/truck?from=${today}&to=${today}`;
+      },
+
       providesTags: (result) =>
         result
           ? [
@@ -693,6 +698,7 @@ export const apiSlice = api.injectEndpoints({
             { type: "TruckSummary", id: "LIST" },
           ]
           : [{ type: "TruckSummary", id: "LIST" }],
+
       keepUnusedDataFor: 60 * 60,
     }),
 
