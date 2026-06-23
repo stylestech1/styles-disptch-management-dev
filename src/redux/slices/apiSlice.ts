@@ -83,6 +83,22 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["centermaintenance"],
     }),
+    // verify Email 
+    verifyEmail: builder.mutation<any, { email: string; code: string }>({
+      query: (body) => ({
+        url: "/api/v1/auth/verify-email",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    resendVerificationCode: builder.mutation<any, { email: string }>({
+      query: (body) => ({
+        url: "/api/v1/auth/resend-verification-code",
+        method: "POST",
+        body,
+      }),
+    }),
 
     // -----settings -----
     getSettings: builder.query<
@@ -1296,4 +1312,7 @@ export const {
   useCreateRepairMutation,
   useUpdateRepairMutation,
   useGetRepairByIdQuery,
+  // verify email
+  useVerifyEmailMutation,
+  useResendVerificationCodeMutation
 } = apiSlice;

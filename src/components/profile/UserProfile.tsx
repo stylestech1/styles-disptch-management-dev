@@ -15,6 +15,7 @@ import {
   useGetUserInfoQuery,
   useUpdateUserInfoMutation,
   useUpdateUserPasswordMutation,
+  useResendVerificationCodeMutation,
 } from "@/redux/slices/apiSlice";
 
 import {
@@ -85,6 +86,9 @@ const UserProfile = () => {
   const [updateUser, { isLoading: updatingUser }] = useUpdateUserInfoMutation();
   const [updatePassword, { isLoading: updatingPassword }] =
     useUpdateUserPasswordMutation();
+
+  const [resendVerificationCode, { isLoading: sendingVerifyCode }] =
+    useResendVerificationCodeMutation();
 
   // Token Checking
   useEffect(() => {
@@ -170,6 +174,21 @@ const UserProfile = () => {
       throw err;
     }
   };
+  const handleOpenVerifyEmail = async () => {
+    if (!profile?.email) return;
+
+    try {
+      await resendVerificationCode({ email: profile.email }).unwrap();
+
+      sessionStorage.setItem("verify_email", profile.email);
+      sessionStorage.setItem("after_verify_redirect", "/user-profile");
+
+      router.push("/verify-email");
+    } catch (err: any) {
+      const errorMessage = getErrorMessage(err);
+      toast.error(errorMessage || "Failed to send verification code");
+    }
+  };
 
   const dialogPaperSx = {
     borderRadius: 2,
@@ -246,10 +265,10 @@ const UserProfile = () => {
 
   return (
     <section className="container mx-auto p-6">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 md:flex items-center justify-between">
         <div>
           <Titles>User Profile</Titles>
-          <p className="text-slate-600 mt-2 text-sm">
+          <p className="text-slate-600 mt-2 mb-2 md:mb-0 text-sm">
             You can Update or View your information
           </p>
         </div>
@@ -326,9 +345,34 @@ const UserProfile = () => {
             </div>
 
             <div className="space-y-3.5">
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex flex-wrap items-center gap-3 text-sm">
                 <IoMailOutline className="text-slate-400" size={16} />
+
                 <span className="text-slate-600 truncate">{profile.email}</span>
+
+                {profile.emailVerifiedAt ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <IoCheckmarkCircleOutline size={14} />
+                    Verified at {new Date(profile.emailVerifiedAt).toLocaleDateString()}
+                  </span>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={handleOpenVerifyEmail}
+                    disabled={sendingVerifyCode}
+                    sx={{
+                      borderRadius: 999,
+                      textTransform: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: theme.currentPalette.primary,
+                      borderColor: alpha(theme.currentPalette.primary, 0.5),
+                    }}
+                  >
+                    {sendingVerifyCode ? "Sending..." : "Verify Email"}
+                  </Button>
+                )}
               </div>
 
               <div className="flex items-center gap-3 text-sm">
@@ -343,10 +387,13 @@ const UserProfile = () => {
                 </span>
               </div>
 
-              <div className="flex items-center gap-3 text-sm">
-                <IoCalendarOutline className="text-slate-400" size={16} />
-                <span className="text-slate-600">{profile.position}</span>
-              </div>
+              {profile.position && (
+                <div className="flex items-center gap-3 text-sm">
+                  <IoCalendarOutline className="text-slate-400" size={16} />
+                  <span className="text-slate-600">{profile.position}</span>
+                </div>
+              )}
+
 
               <div className="flex items-center gap-3 text-sm">
                 <IoCheckmarkCircleOutline

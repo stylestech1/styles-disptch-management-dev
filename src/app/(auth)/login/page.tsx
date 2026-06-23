@@ -319,31 +319,62 @@ const Login = () => {
         return;
       }
 
+      // dispatch(loginSuccess({ user: result.data, token: result.token }));
+
+      // // Small delay to ensure cookies are set before redirecting
+      // setTimeout(() => {
+      //   const role = result.data.role?.toLowerCase();
+      //   if (role === "admin") {
+      //     router.replace("/admin/loads");
+      //   } else if (role === "superadmin" || role === "super-admin" || role === "super_admin") {
+      //     router.replace("/superAdmin/companies");
+      //   } else if (role === "manager") {
+      //     router.replace("/manager/loads");
+      //   } else if (role === "employee") {
+      //     router.replace("/dispatchers/loads");
+      //   } else if (role === "driver") {
+      //     router.replace("/dispatchers/loads");
+      //   } else {
+      //     router.replace("/dispatchers/loads");
+      //   }
+      // }, 100);
+
       dispatch(loginSuccess({ user: result.data, token: result.token }));
 
-      // Small delay to ensure cookies are set before redirecting
-      setTimeout(() => {
-        const role = result.data.role?.toLowerCase();
-        if (role === "admin") {
-          router.replace("/admin/loads");
-        } else if (role === "superadmin" || role === "super-admin" || role === "super_admin") {
-          router.replace("/superAdmin/companies");
-        } else if (role === "manager") {
-          router.replace("/manager/loads");
-        } else if (role === "employee") {
-          router.replace("/dispatchers/loads");
-        } else if (role === "driver") {
-          router.replace("/dispatchers/loads");
-        } else {
-          router.replace("/dispatchers/loads");
-        }
-      }, 100);
+      const role = result.data.role?.toLowerCase();
+
+      let redirectPath = "/dispatchers/loads";
+
+      if (role === "admin") {
+        redirectPath = "/admin/loads";
+      } else if (
+        role === "superadmin" ||
+        role === "super-admin" ||
+        role === "super_admin"
+      ) {
+        redirectPath = "/superAdmin/companies";
+      } else if (role === "manager") {
+        redirectPath = "/manager/loads";
+      }
+
+      const isEmailVerified = Boolean(result.data.emailVerifiedAt);
+
+      if (!isEmailVerified) {
+        sessionStorage.setItem("verify_email", em);
+        sessionStorage.setItem("after_verify_redirect", redirectPath);
+
+        router.replace("/verify-email");
+        return;
+      }
+
+      router.replace(redirectPath);
+
     } catch (error: any) {
       const msg = error?.message || "Something went wrong";
       setFieldError("form", msg);
     }
   };
-  const OTP_SIZE = 54;         
+  const OTP_SIZE = 54;
   const OTP_GAP = 12;
   const OTP_ROW_W = OTP_SIZE * OTP_LEN + OTP_GAP * (OTP_LEN - 1);
 
@@ -492,7 +523,7 @@ const Login = () => {
   }
 
   if (mode === "verify") {
-    const OTP_SIZE = 54; 
+    const OTP_SIZE = 54;
     const OTP_GAP = 12;
     const OTP_ROW_W = OTP_SIZE * OTP_LEN + OTP_GAP * (OTP_LEN - 1);
 
