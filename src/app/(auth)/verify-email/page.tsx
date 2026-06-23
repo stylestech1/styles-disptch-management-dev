@@ -3,6 +3,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { RootState, useAppSelector } from "@/redux/store";
 import {
   Box,
   Button,
@@ -22,13 +23,13 @@ export default function VerifyEmailPage() {
 
   const [email, setEmail] = useState("");
   const [redirectPath, setRedirectPath] = useState("/dispatchers/loads");
-
+  const user = useAppSelector((state: RootState) => state.auth.user);
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
   const [resendCode, { isLoading: isResending }] =
     useResendVerificationCodeMutation();
 
 
-  const RESEND_SECONDS = 2;
+  const RESEND_SECONDS = 120; // 2 minutes
   const BLOCK_SECONDS = 60 * 60; // 1 hour
   const BLOCK_KEY = "verify_email_resend_block_until";
 
@@ -179,7 +180,29 @@ export default function VerifyEmailPage() {
     sessionStorage.removeItem("verify_email");
     sessionStorage.removeItem("after_verify_redirect");
 
-    router.replace(redirectPath);
+    const role = user?.role?.toLowerCase();
+
+    switch (role) {
+      case "admin":
+        router.replace("/admin/loads");
+        break;
+
+      case "superadmin":
+      case "super-admin":
+      case "super_admin":
+        router.replace("/superAdmin/companies");
+        break;
+
+      case "manager":
+        router.replace("/manager/loads");
+        break;
+
+      case "employee":
+      case "driver":
+      default:
+        router.replace("/dispatchers/loads");
+        break;
+    }
   };
 
   return (
