@@ -394,7 +394,6 @@ const UserProfile = () => {
                 </div>
               )}
 
-h
               <div className="flex items-center gap-3 text-sm">
                 <IoCheckmarkCircleOutline
                   className="text-slate-400"
