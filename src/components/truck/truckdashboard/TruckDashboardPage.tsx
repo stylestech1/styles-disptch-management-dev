@@ -74,7 +74,6 @@ const TruckDashboard = () => {
     refetchOnReconnect: false,
     refetchOnMountOrArgChange: false,
   });
-
   const {
     data: filteredData,
     isLoading: filterLoading,
