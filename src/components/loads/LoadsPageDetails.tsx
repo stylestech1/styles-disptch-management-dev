@@ -273,7 +273,10 @@ const LoadsPageDetails = () => {
   const searchHook = useSearchSubmit({
     onSearch: (term) => {
       setPage(1);
-      if (term.trim()) triggerSearchQuery(encodeURIComponent(term));
+
+      if (term.trim() === "") return;
+
+      triggerSearchQuery(term);
     },
     onReset: () => {
       setPage(1);
@@ -487,7 +490,7 @@ const LoadsPageDetails = () => {
             ? `${Math.trunc(Number(loadItem.distanceMiles))} miles`
             : "-"}
         </td>
-        
+
         {/* price per mile  */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }}>
           {loadItem.pricePerMile ? `$${loadItem.pricePerMile?.toFixed(2)}` : "-"}
@@ -684,11 +687,11 @@ const LoadsPageDetails = () => {
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  const value = keyword.trim();
+                  const value = keyword;
 
                   setPage(1);
 
-                  if (value) {
+                  if (value !== "") {
                     setActiveKeyword(value);
                     triggerSearchQuery(value);
                   } else {

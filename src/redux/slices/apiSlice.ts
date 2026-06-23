@@ -408,10 +408,10 @@ export const apiSlice = api.injectEndpoints({
 
     // ! ========== Loads Using Id ==========
     getLoadById: builder.query({
-      query: (loadId) => `/api/v1/loads?keyword=${loadId}`,
+      query: (loadId) => `/api/v1/loads?keyword=${encodeURIComponent(loadId)}`,
       providesTags: (result, error, loadId) => [{ type: "Loads", id: loadId }],
     }),
-
+    
     getLoadByMongoId: builder.query({
       query: (_id) => `/api/v1/loads?_id=${_id}`,
       providesTags: (result, error, _id) => [{ type: "Loads", id: _id }],
