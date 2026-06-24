@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -29,6 +30,7 @@ import Navbar from "@/components/layout/Header";
 import { FilterProvider } from "@/providers/FilterProvider";
 import { socketService } from "@/services/socketService";
 import { InfoIcon } from "lucide-react";
+import { useGetUserInfoQuery } from "@/redux/slices/apiSlice";
 
 const DRAWER_WIDTH = 300;
 
@@ -46,6 +48,14 @@ export default function AdminLayout({
   const router = useRouter();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(isDesktop);
+  const token = useAppSelector((state: RootState) => state.auth.token);
+
+  const { data: userInfoData } = useGetUserInfoQuery(undefined as any, {
+    skip: !token,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const currentUser = userInfoData?.data || user;
 
   // Google hook
   const isGoogleMapsLoaded = useGoogleMaps();
@@ -55,11 +65,12 @@ export default function AdminLayout({
     setIsSidebarOpen(isDesktop);
   }, [isDesktop]);
 
-  if (!user) return null;
+  if (!currentUser) return null;
 
-  const tabs = TABS_CONFIG[user.role];
-  const base = "/dispatchers";
+  const roleKey = (currentUser?.role || "").toLowerCase() as keyof typeof TABS_CONFIG;
+  const base = currentUser.role === "admin" ? "/admin" : "/dispatchers";
 
+  const tabs = Array.isArray(TABS_CONFIG[roleKey]) ? TABS_CONFIG[roleKey] : [];
   const handleLogout = () => {
     // 🔴 Disconnect Socket
     socketService.disconnect();
@@ -108,14 +119,14 @@ export default function AdminLayout({
       {/* User Header */}
       <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Link
-          href={`${base}/${user.id}`}
+          href={`${base}/${currentUser.id}`}
           display="flex"
           alignItems="center"
           gap={2}
           underline="none"
         >
           <Avatar sx={{ bgcolor: themePalette.currentPalette.primary }}>
-            {getInitials(user.name)}
+            {getInitials(currentUser.name)}
           </Avatar>
           <Box sx={{ flex: 1 }}>
             <Box
@@ -132,7 +143,7 @@ export default function AdminLayout({
                 sx={{ color: themePalette.currentPalette.text }}
                 noWrap
               >
-                {user.name}
+                {currentUser.name}
               </Typography>
 
               {!user?.emailVerifiedAt && (
@@ -154,7 +165,7 @@ export default function AdminLayout({
                 textTransform: "capitalize",
               }}
             >
-              {user.role}
+              {currentUser.role}
             </Typography>
           </Box>
         </Link>

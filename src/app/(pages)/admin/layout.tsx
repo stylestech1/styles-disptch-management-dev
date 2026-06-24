@@ -33,6 +33,7 @@ import { socketService } from "@/services/socketService";
 import { Collapse } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { InfoIcon } from "lucide-react";
+import { useGetUserInfoQuery } from "@/redux/slices/apiSlice";
 
 const DRAWER_WIDTH = 300;
 
@@ -50,6 +51,14 @@ export default function AdminLayout({
   const router = useRouter();
   const [openTabs, setOpenTabs] = useState<Record<string, boolean>>({});
 
+  const token = useAppSelector((state: RootState) => state.auth.token);
+
+  const { data: userInfoData } = useGetUserInfoQuery(undefined as any, {
+    skip: !token,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const currentUser = userInfoData?.data || user;
   const toggleTab = (label: string) => {
     setOpenTabs((prev) => ({
       ...prev,
@@ -67,11 +76,13 @@ export default function AdminLayout({
     setIsSidebarOpen(isDesktop);
   }, [isDesktop]);
 
-  if (!user) return null;
 
-  const roleKey = (user?.role || "").toLowerCase() as keyof typeof TABS_CONFIG;
+  if (!currentUser) return null;
+
+  const roleKey = (currentUser?.role || "").toLowerCase() as keyof typeof TABS_CONFIG;
+  const base = currentUser.role === "admin" ? "/admin" : "/dispatchers";
+
   const tabs = Array.isArray(TABS_CONFIG[roleKey]) ? TABS_CONFIG[roleKey] : [];
-  const base = user.role === "admin" ? "/admin" : "/dispatchers";
 
   const handleLogout = () => {
     // 🔴 Disconnect Socket
@@ -161,14 +172,14 @@ export default function AdminLayout({
       {/* User Header */}
       <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Link
-          href={`${base}/${user.id}`}
+          href={`${base}/${currentUser.id}`}
           display="flex"
           alignItems="center"
           gap={2}
           underline="none"
         >
           <Avatar sx={{ bgcolor: themePalette.currentPalette.primary }}>
-            {getInitials(user.name)}
+            {getInitials(currentUser.name)}
           </Avatar>
           <Box sx={{ flex: 1 }}>
             <Box
@@ -185,10 +196,10 @@ export default function AdminLayout({
                 sx={{ color: themePalette.currentPalette.text }}
                 noWrap
               >
-                {user.name}
+                {currentUser.name}
               </Typography>
 
-              {!user?.emailVerifiedAt && (
+              {!currentUser?.emailVerifiedAt && (
                 <Tooltip title="Email not verified" arrow>
                   <InfoIcon
 
@@ -207,7 +218,7 @@ export default function AdminLayout({
                 textTransform: "capitalize",
               }}
             >
-              {user.role}
+              {currentUser.role}
             </Typography>
           </Box>
         </Link>
@@ -362,7 +373,7 @@ export default function AdminLayout({
       {/* Logout */}
       <Divider />
       <Box sx={{ p: 2, display: "flex", gap: 2, flexDirection: "column" }}>
-        {user.role === "admin" && (
+        {currentUser.role === "admin" && (
           <Button
             component={NextLink}
             href="/admin/settings"

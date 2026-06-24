@@ -180,8 +180,32 @@ const UserProfile = () => {
     try {
       await resendVerificationCode({ email: profile.email }).unwrap();
 
+      let redirectPath = "/dispatchers/loads";
+
+      switch (profile?.role?.toLowerCase()) {
+        case "admin":
+          redirectPath = "/admin/loads";
+          break;
+
+        case "superadmin":
+        case "super-admin":
+        case "super_admin":
+          redirectPath = "/superAdmin/companies";
+          break;
+
+        case "manager":
+          redirectPath = "/manager/loads";
+          break;
+
+        case "employee":
+        case "driver":
+        default:
+          redirectPath = "/dispatchers/loads";
+          break;
+      }
+
       sessionStorage.setItem("verify_email", profile.email);
-      sessionStorage.setItem("after_verify_redirect", "/user-profile");
+      sessionStorage.setItem("after_verify_redirect", redirectPath);
 
       router.push("/verify-email");
     } catch (err: any) {
