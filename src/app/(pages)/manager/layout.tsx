@@ -17,6 +17,7 @@ import {
   CircularProgress,
   Link,
   alpha,
+  Tooltip,
 } from "@mui/material";
 import NextLink from "next/link";
 import { IoLogOutOutline } from "react-icons/io5";
@@ -30,6 +31,7 @@ import { FilterProvider } from "@/providers/FilterProvider";
 import { socketService } from "@/services/socketService";
 import { Collapse } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
+import { Info, InfoIcon } from "lucide-react";
 
 const DRAWER_WIDTH = 300;
 
@@ -167,26 +169,45 @@ export default function ManagerLayout({
           <Avatar sx={{ bgcolor: themePalette.currentPalette.primary }}>
             {getInitials(user.name)}
           </Avatar>
-          <Box>
-            <Typography
-              variant="subtitle1"
-              fontWeight={600}
-              sx={{ color: themePalette.currentPalette.text }}
-              noWrap
+          <Box sx={{ flex: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 1,
+              }}
             >
-              {user.name}
-            </Typography>
-            <div className="flex items-center gap-2">
               <Typography
-                variant="body2"
-                sx={{
-                  color: alpha(themePalette.currentPalette.text, 0.8),
-                  textTransform: "capitalize",
-                }}
+                variant="subtitle1"
+                fontWeight={600}
+                sx={{ color: themePalette.currentPalette.text }}
+                noWrap
               >
-                {user.role}
+                {user.name}
               </Typography>
-            </div>
+
+              {!user?.emailVerifiedAt && (
+                <Tooltip title="Email not verified" arrow>
+                  <InfoIcon
+
+                    color="#f59e0b"
+                    fontSize="small"
+                  // sx={{ cursor: "pointer" }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
+
+            <Typography
+              variant="body2"
+              sx={{
+                color: alpha(themePalette.currentPalette.text, 0.8),
+                textTransform: "capitalize",
+              }}
+            >
+              {user.role}
+            </Typography>
           </Box>
         </Link>
       </Box>

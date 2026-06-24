@@ -31,6 +31,7 @@ export type RawGetSettingsResponse = {
 export type SettingsDto = { id: string; repairPerMile: number; insurancePerMile: number } | null;
 
 export type TUser = {
+  emailVerifiedAt: string | null;
   id: string;
   name: string;
   active: boolean;

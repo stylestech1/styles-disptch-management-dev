@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { RootState, useAppSelector } from "@/redux/store";
 import {
   Box,
@@ -19,22 +19,26 @@ import {
 
 export default function VerifyEmailPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const [email, setEmail] = useState("");
   const [redirectPath, setRedirectPath] = useState("/dispatchers/loads");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+
   const user = useAppSelector((state: RootState) => state.auth.user);
+
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
   const [resendCode, { isLoading: isResending }] =
     useResendVerificationCodeMutation();
 
-
-  const RESEND_SECONDS = 120; // 2 minutes
-  const BLOCK_SECONDS = 60 * 60; // 1 hour
+  const RESEND_SECONDS = 120;
   const BLOCK_KEY = "verify_email_resend_block_until";
 
-  const [timer, setTimer] = useState(RESEND_SECONDS);
+  const [timer, setTimer] = useState(0);
   const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+
+  const primary = "#205DAC";
 
   const getRemainingSeconds = (until: number | null) => {
     if (!until) return 0;
@@ -42,24 +46,9 @@ export default function VerifyEmailPage() {
   };
 
   const remainingBlockSeconds = getRemainingSeconds(blockedUntil);
-  const isResendDisabled = timer > 0 || remainingBlockSeconds > 0 || isResending;
 
-  useEffect(() => {
-    if (timer <= 0) return;
-
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timer]);
-
-  const mmss = useMemo(() => {
-    const m = Math.floor(timer / 60);
-    const s = timer % 60;
-
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }, [timer]);
+  const isResendDisabled =
+    timer > 0 || remainingBlockSeconds > 0 || isResending;
 
   useEffect(() => {
     const savedEmail = sessionStorage.getItem("verify_email");
@@ -76,7 +65,9 @@ export default function VerifyEmailPage() {
       setBlockedUntil(Number(savedUntil));
     }
   }, []);
+
   useEffect(() => {
+    if (!showOtpInput) return;
     if (timer <= 0 && remainingBlockSeconds <= 0) return;
 
     const interval = setInterval(() => {
@@ -89,34 +80,8 @@ export default function VerifyEmailPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timer, blockedUntil, remainingBlockSeconds]);
+  }, [showOtpInput, timer, blockedUntil, remainingBlockSeconds]);
 
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-
-
-  const primary = "#205DAC";
-
-  const handleVerify = async () => {
-    setError("");
-
-    if (!code.trim()) {
-      setError("Please enter the verification code.");
-      return;
-    }
-
-    try {
-      await verifyEmail({ email, code }).unwrap();
-
-      sessionStorage.removeItem("verify_email");
-      sessionStorage.removeItem("after_verify_redirect");
-
-      router.replace(redirectPath);
-      // router.replace("/");
-    } catch (error: any) {
-      setError(error?.data?.message || "Invalid verification code.");
-    }
-  };
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -134,12 +99,39 @@ export default function VerifyEmailPage() {
 
   const resendText =
     remainingBlockSeconds > 0
-      ? `Resend available Later`
+      ? "Resend available later"
       : timer > 0
         ? `Resend in ${formatTime(timer)}`
         : isResending
           ? "Resending..."
           : "Resend";
+
+  const handleVerifyNow = () => {
+    setShowOtpInput(true);
+    setTimer(RESEND_SECONDS);
+    setError("");
+  };
+
+  const handleVerify = async () => {
+    setError("");
+
+    if (!code.trim()) {
+      setError("Please enter the verification code.");
+      return;
+    }
+
+    try {
+      await verifyEmail({ email, code }).unwrap();
+
+      sessionStorage.removeItem("verify_email");
+      sessionStorage.removeItem("after_verify_redirect");
+
+      router.replace(redirectPath);
+    } catch (error: any) {
+      setError(error?.data?.message || "Invalid verification code.");
+    }
+  };
+
   const handleResend = async () => {
     if (isResendDisabled) return;
 
@@ -158,10 +150,7 @@ export default function VerifyEmailPage() {
 
       if (msg.toLowerCase().includes("please wait")) {
         const match = msg.match(/(\d+)/);
-
-        // Use backend seconds if present, otherwise 1 hour
         const seconds = match ? Number(match[1]) : 60 * 60;
-
         const until = Date.now() + seconds * 1000;
 
         localStorage.setItem(BLOCK_KEY, String(until));
@@ -171,10 +160,9 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      // Only show other errors
       setError(msg || "Failed to resend code.");
     }
-  }
+  };
 
   const handleSkip = () => {
     sessionStorage.removeItem("verify_email");
@@ -243,13 +231,7 @@ export default function VerifyEmailPage() {
           <Typography sx={{ fontSize: 38 }}>✉️</Typography>
         </Box>
 
-        <Typography
-          sx={{
-            fontWeight: 800,
-            fontSize: 26,
-            color: "#0f172a",
-          }}
-        >
+        <Typography sx={{ fontWeight: 800, fontSize: 26, color: "#0f172a" }}>
           Verify your email
         </Typography>
 
@@ -272,78 +254,102 @@ export default function VerifyEmailPage() {
           </Alert>
         )}
 
-        <TextField
-          fullWidth
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="Enter verification code"
-          inputProps={{
-            maxLength: 6,
-            inputMode: "numeric",
-          }}
-          sx={{
-            mt: 3,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 2,
-              bgcolor: "#fff",
-              height: 56,
-              fontSize: 18,
-              fontWeight: 700,
-              letterSpacing: 2,
-            },
-            "& input": {
-              textAlign: "center",
-            },
-          }}
-        />
-
-        <Button
-          fullWidth
-          variant="contained"
-          onClick={handleVerify}
-          disabled={isLoading}
-          sx={{
-            mt: 2,
-            height: 50,
-            borderRadius: 2,
-            bgcolor: primary,
-            fontWeight: 800,
-            textTransform: "none",
-            "&:hover": {
-              bgcolor: alpha(primary, 0.9),
-            },
-          }}
-        >
-          {isLoading ? "Verifying..." : "Verify Email"}
-        </Button>
-
-        <Box
-          sx={{
-            mt: 2,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <Typography sx={{ fontSize: 13, color: "rgba(15,23,42,0.55)" }}>
-            Didn&apos;t receive the code?
-          </Typography>
+        {!showOtpInput ? (
           <Button
-            onClick={handleResend}
-            disabled={isResendDisabled}
+            fullWidth
+            variant="contained"
+            onClick={handleVerifyNow}
             sx={{
-              p: 0,
-              minWidth: "auto",
-              fontSize: 13,
-              fontWeight: 700,
+              mt: 3,
+              height: 50,
+              borderRadius: 2,
+              bgcolor: primary,
+              fontWeight: 800,
               textTransform: "none",
-              color: isResendDisabled ? "rgba(15,23,42,0.45)" : primary,
+              "&:hover": {
+                bgcolor: alpha(primary, 0.9),
+              },
             }}
           >
-            {resendText}
+            Verify Now
           </Button>
-        </Box>
+        ) : (
+          <>
+            <TextField
+              fullWidth
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="Enter verification code"
+              inputProps={{
+                maxLength: 6,
+                inputMode: "numeric",
+              }}
+              sx={{
+                mt: 3,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  bgcolor: "#fff",
+                  height: 56,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                },
+                "& input": {
+                  textAlign: "center",
+                },
+              }}
+            />
+
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleVerify}
+              disabled={isLoading}
+              sx={{
+                mt: 2,
+                height: 50,
+                borderRadius: 2,
+                bgcolor: primary,
+                fontWeight: 800,
+                textTransform: "none",
+                "&:hover": {
+                  bgcolor: alpha(primary, 0.9),
+                },
+              }}
+            >
+              {isLoading ? "Verifying..." : "Verify Email"}
+            </Button>
+
+            <Box
+              sx={{
+                mt: 2,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: "rgba(15,23,42,0.55)" }}>
+                Didn&apos;t receive the code?
+              </Typography>
+
+              <Button
+                onClick={handleResend}
+                disabled={isResendDisabled}
+                sx={{
+                  p: 0,
+                  minWidth: "auto",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textTransform: "none",
+                  color: isResendDisabled ? "rgba(15,23,42,0.45)" : primary,
+                }}
+              >
+                {resendText}
+              </Button>
+            </Box>
+          </>
+        )}
 
         <Button
           onClick={handleSkip}
