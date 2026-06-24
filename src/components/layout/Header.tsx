@@ -32,6 +32,9 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
     String(role || "").toLowerCase() === "superadmin" ||
     String(role || "").toLowerCase() === "super-admin";
 
+  const isDriver =
+    String(role || "").toLowerCase() === "driver"
+
   const shouldShowFilter = [
     "/admin/loads",
     "/admin/truckdashboard",
@@ -144,10 +147,8 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
               <GlobalFilter filterType={getFilterType()} />
             </Box>
           )}
-
-          {!isSuperAdmin && <ChatBubble />}
-
-          <NotificationProvider />
+          {!isSuperAdmin && !isDriver && <ChatBubble />}
+          {!isSuperAdmin && !isDriver && <NotificationProvider />}
         </Box>
       </Toolbar>
     </AppBar>
