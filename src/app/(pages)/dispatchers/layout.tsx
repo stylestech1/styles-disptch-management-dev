@@ -146,7 +146,7 @@ export default function AdminLayout({
                 {currentUser.name}
               </Typography>
 
-              {!user?.emailVerifiedAt && (
+              {!currentUser?.emailVerifiedAt && (
                 <Tooltip title="Email not verified" arrow>
                   <InfoIcon
 
