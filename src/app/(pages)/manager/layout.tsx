@@ -80,7 +80,7 @@ export default function ManagerLayout({
   if (!currentUser) return null;
 
   const roleKey = (currentUser?.role || "").toLowerCase() as keyof typeof TABS_CONFIG;
-  const base = currentUser.role === "admin" ? "/admin" : "/dispatchers";
+  const base = currentUser.role === "admin" ? "/admin" : "/manager";
 
   const tabs = Array.isArray(TABS_CONFIG[roleKey]) ? TABS_CONFIG[roleKey] : [];
 
