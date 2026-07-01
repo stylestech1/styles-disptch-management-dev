@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { RootState, useAppSelector } from "@/redux/store";
@@ -29,6 +30,7 @@ import {
   useGetCustomerWithFilterQuery,
   useLazyGetCustomerByIdQuery,
   useUpdateCustomerMutation,
+  useGetCustomersSearchQuery
 } from "@/redux/slices/apiSlice";
 import useError from "@/hook/useError";
 import StatsCard from "@/components/ui/StatsCard";
@@ -44,14 +46,22 @@ const CustomerPage = () => {
   const user = useAppSelector((state) => state.auth.user);
   const { error, setError } = useError();
   const theme = useAppSelector((state: RootState) => state.palette);
+  const [activeSearch, setActiveSearch] = useState<{
+    type: "keyword" | "state" | null;
+    value: string;
+  }>({
+    type: null,
+    value: "",
+  });
 
   // ✅ Search And Filter
   const [fromDate, setFromDate] = useState<Dayjs | null>(null);
   const [toDate, setToDate] = useState<Dayjs | null>(null);
   const [isFiltered, setIsFiltered] = useState(false);
   const [page, setPage] = useState(1);
-
   // 🔹 API Queries
+  const hasActiveSearch = Boolean(activeSearch.type && activeSearch.value);
+
   const {
     data: customersData,
     isLoading: customersLoading,
@@ -60,6 +70,7 @@ const CustomerPage = () => {
   } = useGetCustomersWithPaginationQuery(
     { page, limit: 10 },
     {
+      skip: hasActiveSearch,
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
@@ -74,6 +85,7 @@ const CustomerPage = () => {
       reset: resetSearchQuery,
     },
   ] = useLazyGetCustomerByIdQuery();
+
   const { data: filteredData } = useGetCustomerWithFilterQuery(
     {
       from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
@@ -87,23 +99,54 @@ const CustomerPage = () => {
   // Search Hook
   const searchHook = useSearchSubmit({
     onSearch: (term) => {
-      setPage(1);
       if (term.trim()) {
-        // triggerSearchQuery(encodeURIComponent(term));
+        setPage(1);
+        setActiveSearch({ type: "keyword", value: term.trim() });
+
         triggerSearchQuery({
           keyword: term.trim(),
-          page,
+          page: 1,
           limit: 10,
         });
       }
     },
     onReset: () => {
       setPage(1);
+      setActiveSearch({ type: null, value: "" });
       resetSearchQuery();
       refetchCustomer();
     },
   });
-  const { searchTerm, isSearching } = searchHook;
+  const capitalizeState = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const searchHookState = useSearchSubmit({
+    onSearch: (term) => {
+      if (term.trim()) {
+        const stateValue = capitalizeState(term);
+
+        setPage(1);
+        setActiveSearch({ type: "state", value: stateValue });
+
+        triggerSearchQuery({
+          state: stateValue,
+          page: 1,
+          limit: 10,
+        });
+      }
+    },
+    onReset: () => {
+      setPage(1);
+      setActiveSearch({ type: null, value: "" });
+      resetSearchQuery();
+      refetchCustomer();
+    },
+  });
+
+  const isSearching = searchHook.isSearching || searchHookState.isSearching;
 
   // 🔹 API Mutations
   const [createCustomer, { isLoading: isCreating }] =
@@ -116,15 +159,19 @@ const CustomerPage = () => {
     if (isSearching && Array.isArray(customerByIdData?.data)) {
       return customerByIdData.data.flat();
     }
+
     if (isFiltered && filteredData?.data) {
       return filteredData.data;
     }
+
     return customersData?.data || [];
   }, [isSearching, isFiltered, customerByIdData, filteredData, customersData]);
 
-  const pagination = isFiltered
-    ? filteredData?.paginationResult || null
-    : customersData?.paginationResult || null;
+  const pagination = isSearching
+    ? customerByIdData?.paginationResult || null
+    : isFiltered
+      ? filteredData?.paginationResult || null
+      : customersData?.paginationResult || null;
 
   // Loading state
   useEffect(() => {
@@ -133,15 +180,30 @@ const CustomerPage = () => {
 
   // Stats cards
   const statsData = useMemo(() => {
-    const statsCustomerData = customersData?.stats || [];
-    if (!statsCustomerData || statsCustomerData.length === 0)
-      return { totalCustomers: 0 };
+    const activeData = isSearching ? customerByIdData : customersData;
+
+    const statsCustomerData = activeData?.stats;
+
     return {
-      totalCustomers: statsCustomerData.total,
-      shipper: statsCustomerData.shipper,
-      receiver: statsCustomerData.receiver,
+      totalCustomers:
+        statsCustomerData?.total ?? activeData?.total ?? customer.length ?? 0,
+      shipper: statsCustomerData?.shipper ?? 0,
+      receiver: statsCustomerData?.receiver ?? 0,
     };
-  }, [customersData?.stats]);
+  }, [isSearching, customerByIdData, customersData, customer.length]);
+
+
+  useEffect(() => {
+    if (!activeSearch.type || !activeSearch.value) return;
+
+    triggerSearchQuery({
+      ...(activeSearch.type === "keyword"
+        ? { keyword: activeSearch.value }
+        : { state: activeSearch.value }),
+      page,
+      limit: 10,
+    });
+  }, [page]);
 
   // ✅ Modal States
   const [open, setOpen] = useState(false);
@@ -502,7 +564,25 @@ const CustomerPage = () => {
           {/* Search */}
           <SearchInput
             searchHook={searchHook}
-            placeholder="Search Customers by ID"
+            placeholder="Search Customers by id..."
+            showClearButton
+            sx={{
+              width: { xs: "100%", sm: "100%", md: 280, lg: 350 },
+            }}
+            inputSx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                backgroundColor: theme.currentPalette.background,
+                py: 0.5,
+                "&:hover": {
+                  borderColor: theme.currentPalette.primary,
+                },
+              },
+            }}
+          />
+          <SearchInput
+            searchHook={searchHookState}
+            placeholder="Search Customers by state"
             showClearButton
             sx={{
               width: { xs: "100%", sm: "100%", md: 280, lg: 350 },
@@ -552,7 +632,7 @@ const CustomerPage = () => {
       />
 
       {/* Pagination */}
-      {!isFiltered && !isSearching && pagination && customer.length > 0 && (
+      {pagination && customer.length > 0 && (
         <Pagination
           pagination={pagination}
           page={page}
