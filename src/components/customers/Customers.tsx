@@ -479,30 +479,31 @@ const CustomerPage = () => {
     p: 3,
   };
   const searchFilterContainerSx: SxProps = {
-    display: "flex",
-    flexDirection: { xs: "column", md: "row" },
-    alignItems: { xs: "flex-start", md: "center" },
-    justifyContent: "space-between",
-    gap: { xs: 2, md: 0 },
-    p: 2,
+    display: "grid",
+    gridTemplateColumns: {
+      xs: "1fr",
+      lg: "220px 1fr auto",
+    },
+    alignItems: "center",
+    gap: 2,
+    py: 1.5,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
     borderRadius: 2,
     backgroundColor: theme.currentPalette.background,
   };
+
   const newLoadButtonSx: SxProps = {
     py: 1.5,
-    px: 4,
+    px: 3,
+    minWidth: { xs: "100%", lg: 210 },
+    height: 56,
     fontWeight: "bold",
     fontSize: "1rem",
     borderRadius: 2,
-    width: { xs: "100%", md: "auto" },
     background: theme.currentPalette.primary,
     color: theme.currentPalette.background,
     textTransform: "capitalize",
-    "&:hover": {
-      background: darken(theme.currentPalette.primary, 0.1),
-    },
   };
 
   return (
@@ -537,7 +538,9 @@ const CustomerPage = () => {
 
       {/* Search */}
       <Box sx={searchFilterContainerSx}>
-        <Box>
+        <Box
+          sx={{ mx: 2 }}
+        >
           <Typography
             variant="h6"
             sx={{ color: theme.currentPalette.primary, fontWeight: 500 }}
@@ -548,18 +551,18 @@ const CustomerPage = () => {
             variant="body2"
             sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
           >
-            Ckeck list of all customers
+            Check list of all customers
           </Typography>
         </Box>
 
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: { xs: "stretch", md: "center" },
+            justifyContent: "flex-end",
             gap: 2,
-            width: { xs: "100%", md: "auto" },
+            width: "100%",
           }}
+
         >
           {/* Search */}
           <SearchInput
@@ -567,7 +570,7 @@ const CustomerPage = () => {
             placeholder="Search Customers by id..."
             showClearButton
             sx={{
-              width: { xs: "100%", sm: "100%", md: 280, lg: 350 },
+              width: { xs: "100%", sm: "100%", md: 280 },
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
@@ -585,7 +588,7 @@ const CustomerPage = () => {
             placeholder="Search Customers by state"
             showClearButton
             sx={{
-              width: { xs: "100%", sm: "100%", md: 280, lg: 350 },
+              width: { xs: "100%", sm: "100%", md: 280 },
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
