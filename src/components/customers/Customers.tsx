@@ -557,7 +557,7 @@ const CustomerPage = () => {
             display: "flex",
             flexWrap: "wrap",
             gap: 2,
-            minWidth: 300,
+            minWidth: 240,
           }}
         >
           {/* Search */}
@@ -568,7 +568,7 @@ const CustomerPage = () => {
             sx={{
               // width: { xs: "100%", sm: "100%", md: 280 },
               flex: 1,
-              minWidth: 260,
+              minWidth: 240,
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
@@ -587,8 +587,8 @@ const CustomerPage = () => {
             showClearButton
             sx={{
               // width: { xs: "100%", sm: "100%", md: 280 },
-                flex: 1,
-      minWidth: 260,
+              flex: 1,
+              minWidth: 240,
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
