@@ -479,23 +479,19 @@ const CustomerPage = () => {
     p: 3,
   };
   const searchFilterContainerSx: SxProps = {
-    display: "grid",
-    gridTemplateColumns: {
-      xs: "1fr",
-      lg: "220px 1fr auto",
-    },
+    display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: 2,
-    py: 1.5,
+    p: 2,
     my: 2,
     border: `1px solid ${alpha(theme.currentPalette.primary, 0.3)}`,
     borderRadius: 2,
     backgroundColor: theme.currentPalette.background,
   };
-
   const newLoadButtonSx: SxProps = {
     py: 1.5,
-    px: 3,
+    px: 2,
     minWidth: { xs: "100%", lg: 210 },
     height: 56,
     fontWeight: "bold",
@@ -557,12 +553,12 @@ const CustomerPage = () => {
 
         <Box
           sx={{
+            flex: 1,
             display: "flex",
-            justifyContent: "flex-end",
+            flexWrap: "wrap",
             gap: 2,
-            width: "100%",
+            minWidth: 300,
           }}
-
         >
           {/* Search */}
           <SearchInput
@@ -570,7 +566,9 @@ const CustomerPage = () => {
             placeholder="Search Customers by id..."
             showClearButton
             sx={{
-              width: { xs: "100%", sm: "100%", md: 280 },
+              // width: { xs: "100%", sm: "100%", md: 280 },
+              flex: 1,
+              minWidth: 260,
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
@@ -588,7 +586,9 @@ const CustomerPage = () => {
             placeholder="Search Customers by state"
             showClearButton
             sx={{
-              width: { xs: "100%", sm: "100%", md: 280 },
+              // width: { xs: "100%", sm: "100%", md: 280 },
+                flex: 1,
+      minWidth: 260,
             }}
             inputSx={{
               "& .MuiOutlinedInput-root": {
