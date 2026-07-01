@@ -563,7 +563,7 @@ const CustomerPage = () => {
           {/* Search */}
           <SearchInput
             searchHook={searchHook}
-            placeholder="Search Customers by id..."
+            placeholder="Search Customers"
             showClearButton
             sx={{
               // width: { xs: "100%", sm: "100%", md: 280 },
