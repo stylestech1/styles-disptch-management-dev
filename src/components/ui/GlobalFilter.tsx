@@ -8,13 +8,14 @@ import { Dayjs } from 'dayjs';
 interface GlobalFilterProps {
   filterType: 'loads' | 'drivers' | 'trucks' | 'default';
   onFilterChange?: (from: Dayjs | null, to: Dayjs | null) => void;
+  filterScope?: string;
 }
 
 const GlobalFilter: React.FC<GlobalFilterProps> = ({ 
-  filterType, 
-  onFilterChange 
+  onFilterChange,
+  filterScope,
 }) => {
-  const { applyFilter, clearFilter, isFiltered } = useFilter();
+  const { applyFilter, clearFilter } = useFilter(filterScope);
 
   const handleApply = (from: Dayjs | null, to: Dayjs | null) => {
     applyFilter(from, to);
@@ -26,26 +27,12 @@ const GlobalFilter: React.FC<GlobalFilterProps> = ({
     onFilterChange?.(null, null);
   };
 
-  const getPlaceholder = () => {
-    switch (filterType) {
-      case 'loads':
-        return 'Filter by load date';
-      case 'drivers':
-        return 'Filter by driver join date';
-      case 'trucks':
-        return 'Filter by truck registration date';
-      default:
-        return 'Filter by date';
-    }
-  };
-
   return (
     <div>
       <DateRangeFilter
         onApply={handleApply}
         onClear={handleClear}
-        onFilterApplied={(applied) => {
-        }}
+        onFilterApplied={() => undefined}
       />
     </div>
   );

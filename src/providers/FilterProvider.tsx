@@ -2,25 +2,49 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Dayjs } from 'dayjs';
 
-interface FilterContextType {
+type FilterScope = string;
+const DEFAULT_SCOPE = "global";
+
+interface FilterState {
   fromDate: Dayjs | null;
   toDate: Dayjs | null;
   isFiltered: boolean;
-  setFromDate: (date: Dayjs | null) => void;
-  setToDate: (date: Dayjs | null) => void;
-  setIsFiltered: (filtered: boolean) => void;
-  applyFilter: (from: Dayjs | null, to: Dayjs | null) => void;
-  clearFilter: () => void;
+}
+
+interface FilterContextType {
+  filters: Record<FilterScope, FilterState>;
+  setFromDate: (date: Dayjs | null, scope?: FilterScope) => void;
+  setToDate: (date: Dayjs | null, scope?: FilterScope) => void;
+  setIsFiltered: (filtered: boolean, scope?: FilterScope) => void;
+  applyFilter: (from: Dayjs | null, to: Dayjs | null, scope?: FilterScope) => void;
+  clearFilter: (scope?: FilterScope) => void;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
-export const useFilter = () => {
+export const useFilter = (scope?: FilterScope) => {
   const context = useContext(FilterContext);
   if (context === undefined) {
     throw new Error('useFilter must be used within a FilterProvider');
   }
-  return context;
+
+  const resolvedScope = scope || DEFAULT_SCOPE;
+  const state = context.filters[resolvedScope] ?? {
+    fromDate: null,
+    toDate: null,
+    isFiltered: false,
+  };
+
+  return {
+    fromDate: state.fromDate,
+    toDate: state.toDate,
+    isFiltered: state.isFiltered,
+    setFromDate: (date: Dayjs | null) => context.setFromDate(date, resolvedScope),
+    setToDate: (date: Dayjs | null) => context.setToDate(date, resolvedScope),
+    setIsFiltered: (filtered: boolean) => context.setIsFiltered(filtered, resolvedScope),
+    applyFilter: (from: Dayjs | null, to: Dayjs | null) => context.applyFilter(from, to, resolvedScope),
+    clearFilter: () => context.clearFilter(resolvedScope),
+  };
 };
 
 interface FilterProviderProps {
@@ -28,28 +52,65 @@ interface FilterProviderProps {
 }
 
 export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
-  const [fromDate, setFromDate] = useState<Dayjs | null>(null);
-  const [toDate, setToDate] = useState<Dayjs | null>(null);
-  const [isFiltered, setIsFiltered] = useState(false);
+  const [filters, setFilters] = useState<Record<FilterScope, FilterState>>({
+    [DEFAULT_SCOPE]: { fromDate: null, toDate: null, isFiltered: false },
+  });
 
-  const applyFilter = (from: Dayjs | null, to: Dayjs | null) => {
-    setFromDate(from);
-    setToDate(to);
-    setIsFiltered(!!(from && to));
+  const setScopeValue = <K extends keyof FilterState>(
+    scope: FilterScope = DEFAULT_SCOPE,
+    key: K,
+    value: FilterState[K]
+  ) => {
+    setFilters((prev) => {
+      const current = prev[scope] ?? { fromDate: null, toDate: null, isFiltered: false };
+      return {
+        ...prev,
+        [scope]: {
+          ...current,
+          [key]: value,
+        },
+      };
+    });
   };
 
-  const clearFilter = () => {
-    setFromDate(null);
-    setToDate(null);
-    setIsFiltered(false);
+  const applyFilter = (from: Dayjs | null, to: Dayjs | null, scope: FilterScope = DEFAULT_SCOPE) => {
+    setFilters((prev) => ({
+      ...prev,
+      [scope]: {
+        fromDate: from,
+        toDate: to,
+        isFiltered: !!(from && to),
+      },
+    }));
+  };
+
+  const clearFilter = (scope: FilterScope = DEFAULT_SCOPE) => {
+    setFilters((prev) => ({
+      ...prev,
+      [scope]: {
+        fromDate: null,
+        toDate: null,
+        isFiltered: false,
+      },
+    }));
+  };
+
+  const setFromDate = (date: Dayjs | null, scope: FilterScope = DEFAULT_SCOPE) => {
+    setScopeValue(scope, "fromDate", date);
+  };
+
+  const setToDate = (date: Dayjs | null, scope: FilterScope = DEFAULT_SCOPE) => {
+    setScopeValue(scope, "toDate", date);
+  };
+
+  const setIsFiltered = (filtered: boolean, scope: FilterScope = DEFAULT_SCOPE) => {
+    setScopeValue(scope, "isFiltered", filtered);
   };
 
   return (
     <FilterContext.Provider
       value={{
-        fromDate,
-        toDate,
-        isFiltered,
+        filters,
         setFromDate,
         setToDate,
         setIsFiltered,

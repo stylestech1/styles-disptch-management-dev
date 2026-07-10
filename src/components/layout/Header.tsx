@@ -56,6 +56,12 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
     return "default";
   };
 
+  const getFilterScope = () => {
+    if (pathname.includes("driverSummary")) return "driver-summary";
+    if (pathname.includes("drivers")) return "driver-page";
+    return "global";
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -144,7 +150,7 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
 
           {shouldShowFilter && pathname !== "/admin/centermaintenance" && (
             <Box sx={{ display: { xs: "none", sm: "block" } }}>
-              <GlobalFilter filterType={getFilterType()} />
+              <GlobalFilter filterType={getFilterType()} filterScope={getFilterScope()} />
             </Box>
           )}
           {!isSuperAdmin && !isDriver && <ChatBubble />}

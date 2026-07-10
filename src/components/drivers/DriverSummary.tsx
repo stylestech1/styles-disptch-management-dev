@@ -50,7 +50,6 @@ import {
   LandPlot,
   Mail,
   Phone,
-  Trash2,
   Upload,
   ChevronDown, ChevronUp
 } from "lucide-react";
@@ -116,7 +115,7 @@ const DriverSummary = () => {
   const { error, setError } = useError();
   const theme = useAppSelector((state: RootState) => state.palette);
 
-  const { fromDate, toDate, isFiltered } = useFilter();
+  const { fromDate, toDate, isFiltered } = useFilter("driver-summary");
 
   const uploading = useRef(false);
   const earningsRef = useRef<any>(null);

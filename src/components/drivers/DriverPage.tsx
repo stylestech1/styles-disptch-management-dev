@@ -108,7 +108,7 @@ const DriversPage = () => {
     const [selectedTimeOff, setSelectedTimeOff] = useState<TTimeOffs | null>(
         null,
     );
-    const { fromDate, toDate, isFiltered } = useFilter();
+    const { fromDate, toDate, isFiltered } = useFilter("driver-page");
     const [statusFilter, setStatusFilter] =
         useState<TStatusFilter>("available&busy");
 
