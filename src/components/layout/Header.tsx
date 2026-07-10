@@ -61,7 +61,6 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
     if (pathname.includes("drivers")) return "driver-page";
     return "global";
   };
-
   return (
     <AppBar
       position="fixed"
