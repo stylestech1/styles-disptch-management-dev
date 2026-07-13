@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import Loading from "@/components/ui/Loading";
 import {
@@ -48,7 +47,7 @@ type SummaryMode = "total" | "perMile";
 const TruckSummary = () => {
   const { id } = useParams();
   const theme = useAppSelector((state: RootState) => state.palette);
-  const { fromDate, toDate, isFiltered } = useFilter();
+  const { fromDate, toDate, isFiltered } = useFilter("truck-summary");
   const [summaryMode, setSummaryMode] = useState<SummaryMode>("total");
   const token = useAppSelector((state: RootState) => state.auth.token);
   const [reportOpen, setReportOpen] = useState(false);
@@ -149,7 +148,7 @@ const TruckSummary = () => {
   //     toast.error("Failed to preview truck PDF");
   //   }
   // };
-  // ✅ RTK Query hooks
+
   const { data: profileData, isLoading: profileLoading } = useGetTruckByIdQuery(
     id as string,
     {

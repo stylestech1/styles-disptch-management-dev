@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import html2pdf from "html2pdf.js";
@@ -30,6 +31,7 @@ import { MdOutlineShield } from "react-icons/md";
 import { LuFuel } from "react-icons/lu";
 import Select from "@mui/material/Select";
 import { useRouter } from "next/navigation";
+import dayjs from "dayjs";
 import Erros from "@/components/ui/Erros";
 import { FaArrowTrendDown, FaArrowTrendUp } from "react-icons/fa6";
 import BarChartTruckDashboard from "@/components/truck/BarChartTruckDashboard";
@@ -54,12 +56,19 @@ const TruckDashboard = () => {
   const theme = useAppSelector((state: RootState) => state.palette);
   const [page, setPage] = useState(1);
   const [currentTable, setCurrentTable] = useState<TableType>("Profit");
-  const { fromDate, toDate, isFiltered } = useFilter();
+  const { fromDate, toDate, isFiltered, applyFilter } = useFilter("truck-dashboard");
   const [searchTerm, setSearchTerm] = useState("");
   const [summaryMode, setSummaryMode] = useState<SummaryMode>("total");
   const [reportOpen, setReportOpen] = useState(false);
   const [reportHtml, setReportHtml] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isFiltered && !fromDate && !toDate) {
+      const today = dayjs();
+      applyFilter(today.startOf("day"), today.endOf("day"));
+    }
+  }, [applyFilter, fromDate, toDate, isFiltered]);
 
   // API Queries
   const {
@@ -107,8 +116,6 @@ const TruckDashboard = () => {
           String(truck.truckId).toLowerCase().includes(searchTermLower))
     );
   };
-
-  // Get Truck Summary data based on filter state
   const TrucksSummaryData = useMemo(() => {
     if (isFiltered && filteredData) {
       return filteredData?.data?.trucksSummary || [];
@@ -116,7 +123,6 @@ const TruckDashboard = () => {
     return allTrucksData?.data?.trucksSummary || [];
   }, [isFiltered, filteredData, allTrucksData]);
 
-  // Get Total Summary data based on filter state
   const totalSummaryData = useMemo(() => {
     if (isFiltered && filteredData) {
       return filteredData?.data?.totalSummary;
@@ -124,7 +130,6 @@ const TruckDashboard = () => {
     return allTrucksData?.data?.totalSummary;
   }, [isFiltered, filteredData, allTrucksData]);
 
-  // Debounced search for better performance
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const handleDownloadAllTrucks = async () => {
     try {
@@ -273,7 +278,6 @@ const TruckDashboard = () => {
         },
       ];
 
-  // Stat Card Component
   const StatCard = ({
     title,
     value,
@@ -327,7 +331,6 @@ const TruckDashboard = () => {
     );
   };
 
-  // Table Profitability renderer
   const renderProfitabilityRow = (truckItem: TTruckWithSummary) => {
     const tableRowSx: SxProps = {
       bgcolor: theme.currentPalette.background,
@@ -411,7 +414,6 @@ const TruckDashboard = () => {
     );
   };
 
-  // Table Revenue renderer
   const renderRevenueRow = (truckItem: TTruckWithSummary) => {
     const tableRowSx: SxProps = {
       color: theme.currentPalette.primary,
@@ -481,7 +483,6 @@ const TruckDashboard = () => {
     );
   };
 
-  // Table cost renderer
   const renderCostRow = (truckItem: TTruckWithSummary) => {
     const tableRowSx: SxProps = {
       color: theme.currentPalette.primary,
@@ -630,7 +631,6 @@ const TruckDashboard = () => {
     }
   }, [error, setError]);
 
-  // Error state
   if (trucksError && !allTrucksData) {
     return (
       <Box p={3}>
@@ -639,7 +639,6 @@ const TruckDashboard = () => {
     );
   }
 
-  // Container styles
   const containerSx: SxProps = {
     p: 3,
   };
@@ -1032,7 +1031,6 @@ const TruckDashboard = () => {
 
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setReportOpen(false)}>Close</Button>
-
           <Button
             variant="contained"
             onClick={handleDownloadReportPdf}

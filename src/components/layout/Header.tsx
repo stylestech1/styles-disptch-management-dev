@@ -59,6 +59,8 @@ export default function Navbar({ title, subtitle, onMenuClick }: NavbarProps) {
   const getFilterScope = () => {
     if (pathname.includes("driverSummary")) return "driver-summary";
     if (pathname.includes("drivers")) return "driver-page";
+    if (pathname.includes("truckdashboard")) return "truck-dashboard";
+    if (pathname.includes("truckSummary")) return "truck-summary";
     return "global";
   };
   return (
