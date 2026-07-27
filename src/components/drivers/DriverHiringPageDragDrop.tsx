@@ -48,7 +48,6 @@ import {
     Briefcase,
     UserPlus,
     CircleEllipsis,
-    Pen,
     Trash2,
     UserRoundCheck,
     UserRoundX,
@@ -58,6 +57,7 @@ import {
     ShieldCheck,
     Ban,
     GripVertical,
+    SquarePen,
 } from "lucide-react";
 
 import { IoMdEye } from "react-icons/io";
@@ -613,9 +613,12 @@ const HiringDriversPage = () => {
                         </Box>
                     </Box>
 
-                    {/* <IconButton
+                    <IconButton
                         size="small"
-                        onClick={(event) => openActionMenu(event, driver)}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            handleEditClick(driver);
+                        }}
                         sx={{
                             color: theme.currentPalette.primary,
                             "&:hover": {
@@ -623,8 +626,8 @@ const HiringDriversPage = () => {
                             },
                         }}
                     >
-                        <CircleEllipsis size={19} />
-                    </IconButton> */}
+                        <SquarePen size={19} />
+                    </IconButton>
                 </Box>
 
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8, mb: 1.4 }}>
@@ -1095,7 +1098,7 @@ const HiringDriversPage = () => {
                     sx={{ fontSize: "14px" }}
                 >
                     <ListItemIcon sx={{ minWidth: 32 }}>
-                        <Pen size={18} color={theme.currentPalette.primary} />
+                        <SquarePen size={18} color={theme.currentPalette.primary} />
                     </ListItemIcon>
 
                     <ListItemText

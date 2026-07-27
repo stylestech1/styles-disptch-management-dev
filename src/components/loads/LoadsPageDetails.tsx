@@ -11,7 +11,7 @@ import Erros from "@/components/ui/Erros";
 import Loading from "@/components/ui/Loading";
 import Pagination from "@/components/ui/Pagination";
 import StatsCard from "@/components/ui/StatsCard";
-import SearchInput from "@/components/ui/SearchInput";
+// import SearchInput from "@/components/ui/SearchInput";
 import CreateEditLoadModal from "@/components/loads/CreateEditLoadModal";
 
 // Hooks
@@ -39,7 +39,7 @@ import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
 
 // Icons
-import { IoAdd, IoCheckmark, IoNavigate, IoLocationSharp } from "react-icons/io5";
+import {IoNavigate } from "react-icons/io5";
 
 // MUI
 import {
@@ -68,7 +68,6 @@ import { Boxes, Clock, Goal, LandPlot, MapPin, NotepadText, X } from "lucide-rea
 type LoadStatusFilter = "all" | "pending" | "in_transit" | "delivered";
 const CONTROL_H = 42;
 
-// ---------- helpers ----------
 const toTitle = (v: string) =>
   v
     .replaceAll("_", " ")
@@ -94,7 +93,6 @@ const formatLocationShort = (value?: string) => {
     if (city) return city;
   }
 
-  // If already "City, ST"
   if (parts.length === 2) {
     const city = parts[0];
     const state = parts[1].split(/\s+/)[0];
@@ -134,14 +132,11 @@ const LocationLine = ({
         arrow: { sx: { color: "#0f172a" } },
       }}
     >
-      {/* خلي العرض كله ثابت */}
       <div className="flex items-start gap-2 max-w-[180px]">
-        {/* ✅ أيقونة ثابتة بدون mt */}
         <span className="w-[18px] flex justify-center shrink-0 leading-[20px]">
           {icon}
         </span>
 
-        {/* ✅ أهم حاجة: min-w-0 عشان يلف */}
         <span
           className="min-w-0 text-sm font-medium whitespace-normal break-words leading-[20px]"
           style={{ color: theme.currentPalette.primary }}
