@@ -202,6 +202,17 @@ export type tDriverHiring = {
   state: string;
   experienceYears: number;
   readyDate: string;
+  reminder?: {
+    date?: string;
+    time?: string;
+    reason?: string;
+    isDone?: boolean;
+  };
+  reminderDate?: string;
+  reminderTime?: string;
+  reminderReason?: string;
+  reminderDone?: boolean;
+  isDone?: boolean;
   driverId?: number;
   notes: string;
   violations: string;

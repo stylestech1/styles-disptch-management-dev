@@ -75,9 +75,15 @@ type DriverHiringFormData = {
     documents?: FileList | File[] | null;
     experienceYears: string;
     readyDate: string;
+    reminder: {
+        date: string;
+        time: string;
+        reason: string;
+        isDone: boolean;
+    };
 };
 
-type ApplicantStatus = "Pending" | "Qualified" | "Disqualified" | "Rejected";
+type ApplicantStatus = "New" | "Pending" | "Qualified" | "Disqualified" | "Rejected";
 
 const KANBAN_COLUMNS: {
     key: ApplicantStatus;
@@ -85,7 +91,8 @@ const KANBAN_COLUMNS: {
     icon: React.ElementType;
     description: string;
 }[] = [
-        { key: "Pending", title: "Pending", icon: Clock, description: "New applicants waiting for review" },
+        { key: "New", title: "New", icon: Plus, description: "Fresh applicants waiting for review" },
+        { key: "Pending", title: "Pending", icon: Clock, description: "Applicants waiting for review" },
         { key: "Qualified", title: "Qualified", icon: ShieldCheck, description: "Applicants approved for next step" },
         { key: "Disqualified", title: "Disqualified", icon: UserRoundX, description: "Applicants not matching requirements" },
         { key: "Rejected", title: "Rejected", icon: Ban, description: "Rejected applicants" },
@@ -94,12 +101,13 @@ const KANBAN_COLUMNS: {
 const normalizeStatus = (status?: string): ApplicantStatus => {
     const value = String(status || "").toLowerCase();
 
+    if (value === "new") return "New";
     if (value === "pending") return "Pending";
     if (value === "qualified") return "Qualified";
     if (value === "disqualified") return "Disqualified";
     if (value === "rejected") return "Rejected";
 
-    return "Pending";
+    return "New";
 };
 
 
@@ -129,6 +137,7 @@ const HiringDriversPage = () => {
     );
 
     const [localApplicants, setLocalApplicants] = useState<tDriverHiring[]>([]);
+    const [dismissedReminderIds, setDismissedReminderIds] = useState<Record<string, boolean>>({});
 
     const [deleteToast, setDeleteToast] = useState({
         open: false,
@@ -214,6 +223,9 @@ const HiringDriversPage = () => {
 
         return {
             total,
+            new: localApplicants.filter(
+                (driver) => normalizeStatus(driver.status) === "New",
+            ).length,
             pending: localApplicants.filter(
                 (driver) => normalizeStatus(driver.status) === "Pending",
             ).length,
@@ -243,7 +255,7 @@ const HiringDriversPage = () => {
         formDataBody.append("email", data.email || "");
         formDataBody.append("phone", data.phone || "");
         formDataBody.append("state", data.state || "");
-        formDataBody.append("status", data.status || "pending");
+        formDataBody.append("status", data.status || "new");
         formDataBody.append("notes", data.notes || "");
         formDataBody.append("violations", data.violations || "");
         formDataBody.append(
@@ -251,6 +263,20 @@ const HiringDriversPage = () => {
             String(Number(data.experienceYears || 0)),
         );
         formDataBody.append("readyDate", data.readyDate || "");
+
+        const reminderPayload = {
+            date: data.reminder?.date || "",
+            time: data.reminder?.time || "",
+            reason: data.reminder?.reason || "",
+            isDone: Boolean(data.reminder?.isDone || false),
+        };
+
+        // Send both nested reminder object and flat fields for backend compatibility
+        formDataBody.append("reminder", JSON.stringify(reminderPayload));
+        formDataBody.append("reminderDate", reminderPayload.date);
+        formDataBody.append("reminderTime", reminderPayload.time);
+        formDataBody.append("reminderReason", reminderPayload.reason);
+        formDataBody.append("isDone", String(reminderPayload.isDone));
 
         if (data.documents?.length) {
             Array.from(data.documents).forEach((file) => {
@@ -270,7 +296,13 @@ const HiringDriversPage = () => {
     const handleOpenCreate = () => {
         setEditMode(false);
         setFormData({
-            status: "pending",
+            status: "New",
+            reminder: {
+                date: "",
+                time: "",
+                reason: "",
+                isDone: false,
+            },
         });
         setOriginalData({});
         setOpen(true);
@@ -291,8 +323,14 @@ const HiringDriversPage = () => {
             email: driver.email,
             state: driver.state,
             phone: driver.phone,
-            status: driver.status || "Pending",
+            status: driver.status || "New",
             readyDate: driver.readyDate ? String(driver.readyDate).split("T")[0] : "",
+            reminder: {
+                date: driver.reminder?.date || driver.reminderDate || "",
+                time: driver.reminder?.time || driver.reminderTime || "",
+                reason: driver.reminder?.reason || driver.reminderReason || "",
+                isDone: Boolean(driver.reminder?.isDone ?? driver.isDone ?? false),
+            },
             createdBy: driver.createdBy,
             experienceYears: driver.experienceYears,
             notes: driver.notes,
@@ -309,11 +347,31 @@ const HiringDriversPage = () => {
         try {
             const formDataBody = buildDriverFormData({
                 ...data,
-                status: data.status || "pending",
+                status: data.status || "new",
             });
 
-            await createDriverApplicant(formDataBody as any).unwrap();
+            const response = await createDriverApplicant(formDataBody as any).unwrap();
+            const createdApplicant = {
+                _id: (response as any)?.data?._id || `temp-${Date.now()}`,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                email: data.email,
+                phone: data.phone,
+                state: data.state,
+                status: data.status || "New",
+                experienceYears: Number(data.experienceYears || 0),
+                readyDate: data.readyDate,
+                reminder: {
+                    date: data.reminder?.date || "",
+                    time: data.reminder?.time || "",
+                    reason: data.reminder?.reason || "",
+                    isDone: Boolean(data.reminder?.isDone || false),
+                },
+                notes: data.notes,
+                violations: data.violations,
+            } as tDriverHiring;
 
+            setLocalApplicants((prev) => [createdApplicant, ...prev]);
             toast.success("Driver applicant created successfully!");
             setOpen(false);
             refetchDrivers();
@@ -332,6 +390,32 @@ const HiringDriversPage = () => {
                 id: formData._id,
                 body: formDataBody,
             }).unwrap();
+
+            setLocalApplicants((prev) =>
+                prev.map((driver) =>
+                    driver._id === formData._id
+                        ? {
+                            ...driver,
+                            firstName: data.firstName,
+                            lastName: data.lastName,
+                            email: data.email,
+                            phone: data.phone,
+                            state: data.state,
+                            status: data.status || "New",
+                            experienceYears: Number(data.experienceYears || 0),
+                            readyDate: data.readyDate,
+                            reminder: {
+                                date: data.reminder?.date || "",
+                                time: data.reminder?.time || "",
+                                reason: data.reminder?.reason || "",
+                                isDone: Boolean(data.reminder?.isDone || false),
+                            },
+                            notes: data.notes,
+                            violations: data.violations,
+                        }
+                        : driver,
+                ),
+            );
 
             toast.success("Driver applicant updated successfully!");
             setOpen(false);
@@ -533,6 +617,30 @@ const HiringDriversPage = () => {
     );
 
     const DriverCard = ({ driver }: { driver: tDriverHiring }) => {
+        const reminder = driver.reminder || {
+            date: driver.reminderDate || "",
+            time: driver.reminderTime || "",
+            reason: driver.reminderReason || "",
+            isDone: Boolean(driver?.isDone ?? driver?.isDone ?? false),
+        };
+        const reminderDate = reminder.date;
+        const reminderTime = reminder.time;
+        const reminderReason = reminder.reason;
+        const hasReminder = Boolean(reminderDate || reminderTime || reminderReason);
+        const reminderDateTime = reminderDate && reminderTime
+            ? new Date(`${reminderDate}T${reminderTime}`).getTime()
+            : null;
+        const now = Date.now();
+        const isReminderUpcoming = Boolean(
+            reminderDateTime &&
+            reminderDateTime >= now &&
+            reminderDateTime - now <= 24 * 60 * 60 * 1000 &&
+            !dismissedReminderIds[driver._id] &&
+            !reminder.isDone &&
+            !driver.isDone &&
+            !driver.reminderDone,
+        );
+
         return (
             <Box
                 draggable
@@ -692,6 +800,78 @@ const HiringDriversPage = () => {
                         </Typography>
                     </Box> */}
                 </Box>
+
+                {hasReminder && isReminderUpcoming && (
+                    <Box
+                        sx={{
+                            mt: 1.2,
+                            p: 1.1,
+                            borderRadius: "10px",
+                            bgcolor: alpha("#dc2626", 0.1),
+                            border: "1px solid rgba(220, 38, 38, 0.2)",
+                            color: "#b91c1c",
+                        }}
+                    >
+                        <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.5 }}>
+                            Reminder: {reminderReason || "Please review this applicant"}
+                        </Typography>
+                        <Typography sx={{ fontSize: 11, mb: 0.7 }}>
+                            {reminderDate} {reminderTime}
+                        </Typography>
+                        <Button
+                            size="small"
+                            variant="contained"
+                            onClick={async (event) => {
+                                event.stopPropagation();
+                                setDismissedReminderIds((prev) => ({ ...prev, [driver._id]: true }));
+                                setLocalApplicants((prev) =>
+                                    prev.map((item) =>
+                                        item._id === driver._id
+                                            ? {
+                                                ...item,
+                                                reminder: item.reminder
+                                                    ? { ...item.reminder, isDone: false }
+                                                    : { date: "", time: "", reason: "", isDone: false },
+                                                isDone: false,
+                                            }
+                                            : item,
+                                    ),
+                                );
+                                try {
+                                    const formDataBody = new FormData();
+                                    const doneReminder = {
+                                        date: reminder.date || "",
+                                        time: reminder.time || "",
+                                        reason: reminder.reason || "",
+                                        isDone: false,
+                                    };
+                                    formDataBody.append("reminder", JSON.stringify(doneReminder));
+                                    formDataBody.append("reminderDate", doneReminder.date);
+                                    formDataBody.append("reminderTime", doneReminder.time);
+                                    formDataBody.append("reminderReason", doneReminder.reason);
+                                    formDataBody.append("isDone", "false");
+                                    await updateDriverApplicant({ id: driver._id, body: formDataBody }).unwrap();
+                                } catch (error) {
+                                    toast.error("Failed to mark reminder as done");
+                                }
+                            }}
+                            sx={{
+                                minHeight: 26,
+                                px: 1.2,
+                                py: 0.2,
+                                bgcolor: "#dc2626",
+                                color: "#fff",
+                                borderRadius: "999px",
+                                textTransform: "capitalize",
+                                fontSize: 11,
+                                boxShadow: "none",
+                                "&:hover": { bgcolor: "#b91c1c", boxShadow: "none" },
+                            }}
+                        >
+                            Done
+                        </Button>
+                    </Box>
+                )}
 
                 <Box
                     sx={{
@@ -897,6 +1077,12 @@ const HiringDriversPage = () => {
                         title="Total Applicants"
                         value={statsData.total}
                         icon={UsersRound}
+                    />
+
+                    <StatsCard
+                        title="New"
+                        value={statsData.new}
+                        icon={Plus}
                     />
 
                     <StatsCard

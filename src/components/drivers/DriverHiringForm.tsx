@@ -28,6 +28,12 @@ type DriverHiringFormData = {
     phone: string;
     experienceYears: string;
     readyDate: string;
+    reminder: {
+        date: string;
+        time: string;
+        reason: string;
+        isDone: boolean;
+    };
     notes: string;
     violations: string;
     status: string;
@@ -90,11 +96,22 @@ export const DriverHirringForm = ({
             phone: "",
             experienceYears: "",
             readyDate: "",
+            reminder: {
+                date: "",
+                time: "",
+                reason: "",
+                isDone: false,
+            },
             notes: "",
             violations: "",
-            status: "Pending",
+            status: "New",
+            
         }
     });
+
+    const reminderDateValue = watch("reminder.date");
+    const reminderTimeValue = watch("reminder.time");
+    const reminderReasonValue = watch("reminder.reason");
 
     useEffect(() => {
         if (open) {
@@ -108,9 +125,15 @@ export const DriverHirringForm = ({
                 readyDate: formData.readyDate
                     ? String(formData.readyDate).split("T")[0]
                     : "",
+                reminder: {
+                    date: formData.reminder?.date || formData.reminderDate || "",
+                    time: formData.reminder?.time || formData.reminderTime || "",
+                    reason: formData.reminder?.reason || formData.reminderReason || "",
+                    isDone: Boolean(formData.reminder?.isDone ?? formData.isDone ?? false),
+                },
                 notes: formData.notes || "",
                 violations: formData.violations || "",
-                status: formData.status || "Pending",
+                status: formData.status || "New",
             });
         }
     }, [open, formData, reset]);
@@ -330,16 +353,103 @@ export const DriverHirringForm = ({
                         )}
                     />
 
+                    {/* Reminder Date */}
+                    <Controller
+                        name="reminder.date"
+                        control={control}
+                        rules={{
+                            validate: (value) => {
+                                if (!value) return true;
+                                if (!reminderTimeValue?.trim()) {
+                                    return "Reminder time is required when reminder date is set";
+                                }
+                                if (!reminderReasonValue?.trim()) {
+                                    return "Reminder reason is required when reminder date is set";
+                                }
+                                return true;
+                            },
+                        }}
+                        render={({ field, fieldState }) => (
+                            <TextField
+                                {...field}
+                                value={field.value || ""}
+                                fullWidth
+                                type="date"
+                                label="Reminder Date"
+                                error={!!fieldState.error}
+                                helperText={fieldState.error?.message}
+                                InputLabelProps={{ shrink: true }}
+                                sx={fieldSx}
+                            />
+                        )}
+                    />
+
+                    {/* Reminder Time */}
+                    <Controller
+                        name="reminder.time"
+                        control={control}
+                        rules={{
+                            validate: (value) => {
+                                if (!reminderDateValue) return true;
+                                if (!value?.trim()) {
+                                    return "Reminder time is required when reminder date is set";
+                                }
+                                return true;
+                            },
+                        }}
+                        render={({ field, fieldState }) => (
+                            <TextField
+                                {...field}
+                                value={field.value || ""}
+                                fullWidth
+                                type="time"
+                                label="Reminder Time"
+                                error={!!fieldState.error}
+                                helperText={fieldState.error?.message}
+                                InputLabelProps={{ shrink: true }}
+                                sx={fieldSx}
+                            />
+                        )}
+                    />
+
+                    {/* Reminder Reason */}
+                    <Controller
+                        name="reminder.reason"
+                        control={control}
+                        rules={{
+                            validate: (value) => {
+                                if (!reminderDateValue) return true;
+                                if (!value?.trim()) {
+                                    return "Reminder reason is required when reminder date is set";
+                                }
+                                return true;
+                            },
+                        }}
+                        render={({ field, fieldState }) => (
+                            <TextField
+                                {...field}
+                                value={field.value || ""}
+                                fullWidth
+                                label="Reminder Reason"
+                                placeholder="Enter the reason"
+                                error={!!fieldState.error}
+                                helperText={fieldState.error?.message}
+                                InputLabelProps={{ shrink: true }}
+                                sx={fieldSx}
+                            />
+                        )}
+                    />
+
                     {/* Status */}
                     <Controller
                         name="status"
                         control={control}
-                        defaultValue="Pending"
+                        defaultValue="New"
                         rules={{ required: "Status is required" }}
                         render={({ field, fieldState }) => (
                             <TextField
                                 {...field}
-                                value={field.value || "Pending"}
+                                value={field.value || "New"}
                                 select
                                 fullWidth
                                 required
@@ -349,6 +459,7 @@ export const DriverHirringForm = ({
                                 InputLabelProps={{ shrink: true }}
                                 sx={fieldSx}
                             >
+                                <MenuItem value="New">New</MenuItem>
                                 <MenuItem value="Pending">Pending</MenuItem>
                                 <MenuItem value="Qualified">Qualified</MenuItem>
                                 <MenuItem value="Disqualified">Disqualified</MenuItem>

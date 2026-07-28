@@ -10,7 +10,7 @@ const HeaderSourceTruckDashboard = () => {
     const token = useAppSelector((state: RootState) => state.auth.token)
     const theme = useAppSelector((state: RootState) => state.palette)
 
-  const { data, isLoading } = useGetAllTrucksQuery({
+  const { data } = useGetAllTrucksQuery(undefined, {
     skip: !token
   });
 

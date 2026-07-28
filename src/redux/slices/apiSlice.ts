@@ -682,7 +682,12 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     getAllTrucks: builder.query({
-      query: () => `/api/v1/trucks`,
+      query: (arg?: { sort?: string }) => {
+        const sort = arg?.sort;
+        const params = new URLSearchParams();
+        if (sort) params.append("sort", sort);
+        return `/api/v1/trucks${params.toString() ? `?${params.toString()}` : ""}`;
+      },
       providesTags: ["Trucks"],
     }),
 
@@ -697,13 +702,20 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["Trucks"],
     }),
 
-    getTruckSummary: builder.query<TTrucksSummaryResponse, void>({
-      query: () => {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    getTruckSummary: builder.query<
+      TTrucksSummaryResponse,
+      { from?: string; to?: string; sort?: string } | void
+    >({
+      query: (args) => {
+        const params = new URLSearchParams();
+        const today = new Date().toISOString().split("T")[0];
 
-        return `/api/v1/summary/truck?from=${today}&to=${today}`;
+        params.append("from", args?.from ?? today);
+        params.append("to", args?.to ?? today);
+        params.append("sort", args?.sort ?? "revenue");
+
+        return `/api/v1/summary/truck?${params.toString()}`;
       },
-
       providesTags: (result) =>
         result
           ? [
@@ -714,7 +726,6 @@ export const apiSlice = api.injectEndpoints({
             { type: "TruckSummary", id: "LIST" },
           ]
           : [{ type: "TruckSummary", id: "LIST" }],
-
       keepUnusedDataFor: 60 * 60,
     }),
 
@@ -745,16 +756,29 @@ export const apiSlice = api.injectEndpoints({
       keepUnusedDataFor: 60 * 60,
     }),
 
-    getAllTruckSummaryWithFilter: builder.query<TTruckSummaryResponse, { from?: string; to?: string }>({
-      query: ({ from, to }) => {
-        const params = new URLSearchParams();
-        if (from) params.append("from", from);
-        if (to) params.append("to", to);
-        return `/api/v1/summary/truck?${params.toString()}`;
-      },
-      providesTags: ["TruckSummary"],
-      keepUnusedDataFor: 60 * 60,
-    }),
+    // getAllTruckSummaryWithFilter: builder.query<TTruckSummaryResponse, { from?: string; to?: string }>({
+    //   query: ({ from, to }) => {
+    //     const params = new URLSearchParams();
+    //     if (from) params.append("from", from);
+    //     if (to) params.append("to", to);
+    //     params.append("sort", "revenue");
+    //     return `/api/v1/summary/truck?${params.toString()}`;
+    //   },
+    //   providesTags: ["TruckSummary"],
+    //   keepUnusedDataFor: 60 * 60,
+    // }),
+
+    // getTruckGraphSummary: builder.query<TTrucksSummaryResponse, { from?: string; to?: string }>({
+    //   query: ({ from, to }) => {
+    //     const params = new URLSearchParams();
+    //     if (from) params.append("from", from);
+    //     if (to) params.append("to", to);
+    //     params.append("sort", "revenue");
+    //     return `/api/v1/summary/truck?${params.toString()}`;
+    //   },
+    //   providesTags: ["TruckSummary"],
+    //   keepUnusedDataFor: 60 * 60,
+    // }),
 
     getTruckByTruckId: builder.query({
       query: (keyword) =>
@@ -1211,13 +1235,14 @@ export const {
   useGetTrucksWithPaginationQuery,
   useGetAllTrucksQuery,
   useGetTruckSummaryQuery,
+  // useGetTruckGraphSummaryQuery,
   useGetTruckWithSearchQuery,
   useGetSpecificTruckSummaryQuery,
   useLazyGetSpecificTruckSummaryQuery,
   useGetTruckBytruckNumberQuery,
   useLazyGetTruckBytruckNumberQuery,
   useGetTruckSummaryWithFilterQuery,
-  useGetAllTruckSummaryWithFilterQuery,
+  // useGetAllTruckSummaryWithFilterQuery,
   useGetTruckByIdQuery,
   useGetTruckByTruckIdQuery,
   useLazyGetTruckByIdQuery,

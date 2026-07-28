@@ -3,7 +3,8 @@
 "use client";
 import html2pdf from "html2pdf.js";
 import {
-  useGetAllTruckSummaryWithFilterQuery,
+  // useGetAllTruckSummaryWithFilterQuery,
+  // useGetTruckGraphSummaryQuery,
   useGetTruckSummaryQuery,
 } from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
@@ -63,6 +64,16 @@ const TruckDashboard = () => {
   const [reportHtml, setReportHtml] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
 
+  const queryParams = useMemo(() => {
+    const today = dayjs().format("YYYY-MM-DD");
+
+    return {
+      from: isFiltered ? fromDate?.format("YYYY-MM-DD") : today,
+      to: isFiltered ? toDate?.format("YYYY-MM-DD") : today,
+      sort: "revenue",
+    };
+  }, [fromDate, toDate, isFiltered]);
+
   useEffect(() => {
     if (!isFiltered && !fromDate && !toDate) {
       const today = dayjs();
@@ -71,43 +82,34 @@ const TruckDashboard = () => {
   }, [applyFilter, fromDate, toDate, isFiltered]);
 
   // API Queries
+
   const {
-    data: allTrucksData,
-    isLoading: trucksLoading,
-    error: trucksError,
-    isFetching: trucksFetching,
+    data: truckSummaryData,
+    isLoading,
+    error,
+    isFetching,
     refetch: refetchTruckSummary,
-  } = useGetTruckSummaryQuery(undefined, {
-    skip: !token,
+  } = useGetTruckSummaryQuery(queryParams, {
+    skip: !token || (isFiltered && (!fromDate || !toDate)),
     refetchOnFocus: false,
     refetchOnReconnect: false,
     refetchOnMountOrArgChange: false,
   });
-  const {
-    data: filteredData,
-    isLoading: filterLoading,
-    error: filterError,
-  } = useGetAllTruckSummaryWithFilterQuery(
-    {
-      from: fromDate ? fromDate.format("YYYY-MM-DD") : undefined,
-      to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
-    },
-    {
-      skip: !isFiltered || !fromDate || !toDate,
-      refetchOnFocus: false,
-    }
-  );
+  const TrucksSummaryData = useMemo<TTruckWithSummary[]>(() => {
+    return truckSummaryData?.data?.trucksSummary || [];
+  }, [truckSummaryData]);
+
 
   // Search function
   const searchTrucks = (
-    trucks: TTruckWithSummary[] | TTruckSummary[],
+    trucks: TTruckWithSummary[],
     term: string
   ): TTruckWithSummary[] => {
-    if (!term.trim()) return trucks as TTruckWithSummary[];
+    if (!term.trim()) return trucks;
 
     const searchTermLower = term.toLowerCase().trim();
 
-    return (trucks as TTruckWithSummary[]).filter(
+    return trucks.filter(
       (truck) =>
         truck.truckNumber.toLowerCase().includes(searchTermLower) ||
         (truck.source &&
@@ -116,19 +118,33 @@ const TruckDashboard = () => {
           String(truck.truckId).toLowerCase().includes(searchTermLower))
     );
   };
-  const TrucksSummaryData = useMemo(() => {
-    if (isFiltered && filteredData) {
-      return filteredData?.data?.trucksSummary || [];
-    }
-    return allTrucksData?.data?.trucksSummary || [];
-  }, [isFiltered, filteredData, allTrucksData]);
+
 
   const totalSummaryData = useMemo(() => {
-    if (isFiltered && filteredData) {
-      return filteredData?.data?.totalSummary;
-    }
-    return allTrucksData?.data?.totalSummary;
-  }, [isFiltered, filteredData, allTrucksData]);
+    return truckSummaryData?.data?.totalSummary;
+  }, [truckSummaryData]);
+
+
+  const sortedTruckSummaryData = useMemo<TTruckWithSummary[]>(() => {
+    if (!TrucksSummaryData?.length) return [];
+
+    return [...TrucksSummaryData].sort((a, b) => {
+      const aValue =
+        summaryMode === "total"
+          ? a.summary?.totalRevenue ?? 0
+          : a.summary?.avgRevenuePerMile ?? 0;
+      const bValue =
+        summaryMode === "total"
+          ? b.summary?.totalRevenue ?? 0
+          : b.summary?.avgRevenuePerMile ?? 0;
+
+      return bValue - aValue;
+    });
+  }, [TrucksSummaryData, summaryMode]);
+
+  const graphTruckSummaryData = useMemo<TTruckWithSummary[]>(() => {
+    return sortedTruckSummaryData;
+  }, [sortedTruckSummaryData]);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const handleDownloadAllTrucks = async () => {
@@ -206,17 +222,9 @@ const TruckDashboard = () => {
     };
   }, [searchTerm]);
 
-  const finalDisplayTruckData = useMemo(() => {
-    return searchTrucks(TrucksSummaryData, debouncedSearchTerm);
-  }, [TrucksSummaryData, debouncedSearchTerm]);
-
-  const isLoading = useMemo(() => {
-    return trucksLoading || (isFiltered && filterLoading);
-  }, [trucksLoading, isFiltered, filterLoading]);
-
-  const error = useMemo(() => {
-    return trucksError || filterError;
-  }, [trucksError, filterError]);
+  const finalDisplayTruckData = useMemo<TTruckWithSummary[]>(() => {
+    return searchTrucks(sortedTruckSummaryData, debouncedSearchTerm);
+  }, [sortedTruckSummaryData, debouncedSearchTerm]);
 
   // Handle search
   const handleSearchChange = (value: string) => {
@@ -619,7 +627,7 @@ const TruckDashboard = () => {
     if (error) {
       const errorMessage = getErrorMessage(error);
       setError(errorMessage);
-      toast.error(errorMessage || "Failed to load data ❌", {
+      toast.error(errorMessage || "Failed to load data ", {
         style: {
           background: "#dc2626",
           color: "#fff",
@@ -631,7 +639,7 @@ const TruckDashboard = () => {
     }
   }, [error, setError]);
 
-  if (trucksError && !allTrucksData) {
+  if (error && !truckSummaryData) {
     return (
       <Box p={3}>
         <Erros message="Failed to load truck data. Please try again later." />
@@ -759,7 +767,7 @@ const TruckDashboard = () => {
 
           <Box sx={{ my: 3 }}>
             <BarChartTruckDashboard
-              data={finalDisplayTruckData}
+              data={graphTruckSummaryData}
               summaryMode={summaryMode}
             />
           </Box>
