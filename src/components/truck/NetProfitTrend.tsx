@@ -10,6 +10,7 @@ import {
   Legend,
   Filler,
   ScriptableContext,
+  ChartOptions,
 } from "chart.js";
 import { Alert, alpha, Box, Typography } from "@mui/material";
 import { RootState, useAppSelector } from "@/redux/store";
@@ -24,109 +25,176 @@ ChartJS.register(
   Filler
 );
 
-interface NetProfitTrendProps {
-  netProfitHistory?: {
-    current: number | string;
-    previous: number[];
-  };
-  period?: {
-    from: string;
-    to: string;
-  };
+type ProfitValue = number | string;
+
+interface NetProfitHistory {
+  current: ProfitValue;
+  previous: ProfitValue[];
 }
+
+interface Period {
+  from: string;
+  to: string;
+}
+
+interface NetProfitTrendProps {
+  netProfitHistory?: NetProfitHistory;
+  previousMonthNetProfitHistory?: NetProfitHistory;
+  period?: Period;
+  previousPeriod?: Period;
+}
+
+const parseProfitValue = (value: ProfitValue): number => {
+  if (typeof value === "number") return value;
+
+  const parsedValue = Number.parseFloat(value);
+  return Number.isNaN(parsedValue) ? 0 : parsedValue;
+};
+
+const normalizeProfitHistory = (history?: NetProfitHistory): number[] => {
+  if (!history) return [];
+
+  return [
+    ...history.previous.map(parseProfitValue),
+    parseProfitValue(history.current),
+  ];
+};
+
+const formatPeriodLabel = (period?: Period): string => {
+  if (!period?.from || !period?.to) return "";
+
+  const fromDate = new Date(`${period.from}T00:00:00`);
+  const toDate = new Date(`${period.to}T00:00:00`);
+
+  if (
+    Number.isNaN(fromDate.getTime()) ||
+    Number.isNaN(toDate.getTime())
+  ) {
+    return `${period.from} - ${period.to}`;
+  }
+
+  const monthName = fromDate.toLocaleDateString("en-US", {
+    month: "short",
+  });
+
+  return `${monthName} ${fromDate.getDate()}-${toDate.getDate()}`;
+};
+
+const createWeeklyLabels = (length: number): string[] => {
+  return Array.from({ length }, (_, index) => `Day ${index + 1}`);
+};
 
 const NetProfitTrend: React.FC<NetProfitTrendProps> = ({
   netProfitHistory,
+  previousMonthNetProfitHistory,
   period,
+  previousPeriod,
 }) => {
   const theme = useAppSelector((state: RootState) => state.palette);
 
-  const processedNetProfitHistory = netProfitHistory
-    ? {
-        current:
-          typeof netProfitHistory.current === "string"
-            ? parseFloat(netProfitHistory.current)
-            : netProfitHistory.current,
-        previous: netProfitHistory.previous,
-      }
-    : undefined;
+  const currentMonthProfitData = React.useMemo(
+    () => normalizeProfitHistory(netProfitHistory),
+    [netProfitHistory]
+  );
 
-  const profitData = processedNetProfitHistory
-    ? [...processedNetProfitHistory.previous, processedNetProfitHistory.current]
-    : [2500, 3200, -800, 4100, 6000, 3800, 4500, 5200];
+  const previousMonthProfitData = React.useMemo(
+    () => normalizeProfitHistory(previousMonthNetProfitHistory),
+    [previousMonthNetProfitHistory]
+  );
 
-  const getDateDiffInDays = (from: string, to: string) => {
-    const f = new Date(from);
-    const t = new Date(to);
-    const diff = t.getTime() - f.getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-  };
-  const detectLabelType = (days: number) => {
-    if (days <= 7) return "week";
-    if (days <= 31) return "week";
-    if (days <= 365) return "month";
-    return "year";
-  };
-  const generateDynamicLabels = (
-    length: number,
-    days: number,
-    type: string
-  ) => {
-    let unitCount = 1;
+  const chartLength = Math.max(
+    currentMonthProfitData.length,
+    previousMonthProfitData.length
+  );
 
-    if (type === "week") {
-      unitCount = Math.round(days / 7);
-    } else if (type === "month") {
-      unitCount = Math.round(days / 30);
-    } else if (type === "year") {
-      unitCount = Math.round(days / 365);
-    }
+  const labels = React.useMemo(
+    () => createWeeklyLabels(chartLength),
+    [chartLength]
+  );
 
-    return Array(length).fill(`${unitCount} ${type}`);
-  };
+  const alignedCurrentMonthData = React.useMemo(
+    () =>
+      Array.from(
+        { length: chartLength },
+        (_, index) => currentMonthProfitData[index] ?? null
+      ),
+    [chartLength, currentMonthProfitData]
+  );
 
-  const labels = React.useMemo(() => {
-    if (!period?.from || !period?.to) {
-      const defaultDays = 7;
-      return generateDynamicLabels(profitData.length, defaultDays, "week");
-    }
+  const alignedPreviousMonthData = React.useMemo(
+    () =>
+      Array.from(
+        { length: chartLength },
+        (_, index) => previousMonthProfitData[index] ?? null
+      ),
+    [chartLength, previousMonthProfitData]
+  );
 
-    const diffDays = getDateDiffInDays(period.from, period.to);
-    const type = detectLabelType(diffDays);
-
-    return generateDynamicLabels(profitData.length, diffDays, type);
-  }, [period, profitData]);
+  const currentPeriodLabel = formatPeriodLabel(period);
+  const previousPeriodLabel = formatPeriodLabel(previousPeriod);
 
   const data = {
     labels,
     datasets: [
       {
-        label: "Profit",
-        data: profitData,
+        label: currentPeriodLabel || "Current month",
+        data: alignedCurrentMonthData,
         fill: true,
         borderColor: "#22c55e",
-        backgroundColor: (ctx: ScriptableContext<"line">) => {
-          const canvas = ctx.chart.ctx;
+        backgroundColor: (context: ScriptableContext<"line">) => {
+          const canvas = context.chart.ctx;
           const gradient = canvas.createLinearGradient(0, 0, 0, 400);
+
           gradient.addColorStop(0, "rgba(34,197,94,0.25)");
           gradient.addColorStop(1, "rgba(34,197,94,0.05)");
+
           return gradient;
         },
         borderWidth: 3,
-        pointBackgroundColor: profitData.map((v) =>
-          v < 0 ? "#dc2626" : "#22c55e"
+        pointBackgroundColor: alignedCurrentMonthData.map((value) =>
+          value !== null && value < 0 ? "#dc2626" : "#22c55e"
         ),
-        pointBorderColor: profitData.map((v) =>
-          v < 0 ? "#dc2626" : "#22c55e"
+        pointBorderColor: alignedCurrentMonthData.map((value) =>
+          value !== null && value < 0 ? "#dc2626" : "#22c55e"
         ),
-        pointRadius: profitData.map((v) => (v < 0 ? 8 : 6)),
+        pointRadius: alignedCurrentMonthData.map((value) =>
+          value !== null && value < 0 ? 8 : 6
+        ),
         tension: 0.4,
+        spanGaps: false,
+      },
+      {
+        label: previousPeriodLabel || "Previous month",
+        data: alignedPreviousMonthData,
+        fill: true,
+        borderColor: "#2563eb",
+        backgroundColor: (context: ScriptableContext<"line">) => {
+          const canvas = context.chart.ctx;
+
+          const gradient = canvas.createLinearGradient(0, 0, 0, 400);
+
+          gradient.addColorStop(0, "rgba(37,99,235,0.25)");
+          gradient.addColorStop(1, "rgba(37,99,235,0.05)");
+
+          return gradient;
+        },
+        pointBackgroundColor: "#2563eb",
+        pointBorderColor: "#2563eb",
+        pointRadius: 5,
+        borderWidth: 3,
+        tension: 0.4,
+        spanGaps: false,
       },
     ],
   };
 
-  const options = {
+  const options: ChartOptions<"line"> = {
     responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
     scales: {
       y: {
         beginAtZero: false,
@@ -134,38 +202,40 @@ const NetProfitTrend: React.FC<NetProfitTrendProps> = ({
           color: "rgba(0,0,0,0.05)",
         },
         ticks: {
-          callback: (value: string | number) => {
-            const numValue =
-              typeof value === "string" ? parseFloat(value) : value;
-            return numValue >= 0
-              ? `$${numValue / 1000}k`
-              : `-$${Math.abs(numValue) / 1000}k`;
+          callback: (value) => {
+            const numericValue = Number(value);
+            const formattedValue = Math.abs(numericValue) / 1000;
+
+            if (numericValue === 0) return "$0";
+
+            return numericValue < 0
+              ? `-$${formattedValue}k`
+              : `$${formattedValue}k`;
           },
         },
       },
       x: {
-        grid: { display: false },
+        grid: {
+          display: false,
+        },
       },
     },
-
     plugins: {
       legend: {
         display: false,
       },
-      annotation: {
-        annotations: {
-          zeroLine: {
-            type: "line",
-            yMin: 0,
-            yMax: 0,
-            borderColor: "#1d4ed8",
-            borderWidth: 2,
-            label: {
-              display: true,
-              content: "Break Even",
-              position: "end",
-              color: "#1d4ed8",
-            },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const value = context.parsed.y;
+
+            if (value === null) {
+              return `${context.dataset.label}: No data`;
+            }
+
+            return `${context.dataset.label}: $${value.toLocaleString(
+              "en-US"
+            )}`;
           },
         },
       },
@@ -181,64 +251,66 @@ const NetProfitTrend: React.FC<NetProfitTrendProps> = ({
       }}
       className="border p-5 h-full"
     >
-      <Box sx={{ mb: 5 }}>
+      <Box sx={{ mb: 4 }}>
         <Typography
           variant="h5"
-          sx={{ color: theme.currentPalette.primary, fontWeight: 400 }}
+          sx={{
+            color: theme.currentPalette.primary,
+            fontWeight: 400,
+          }}
         >
           Net Profit Trend
         </Typography>
+
         <Typography sx={{ color: theme.currentPalette.text }}>
-          Click on any point to filter load details
+          Compare each week with the same week from the previous month
         </Typography>
       </Box>
-      <Line data={data} options={options} />
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 my-5">
+
+      <Box sx={{ height: 360 }}>
+        <Line data={data} options={options} />
+      </Box>
+
+      <div className="flex flex-wrap items-center justify-center gap-6 my-5">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 bg-green-600 rounded-full"></span>
-          <span style={{ color: theme.currentPalette.text }}>Profit</span>
+          <span className="w-3 h-3 bg-green-600 rounded-full" />
+          <span style={{ color: theme.currentPalette.text }}>
+            Current month
+            {currentPeriodLabel ? ` (${currentPeriodLabel})` : ""}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 bg-red-600 rounded-full"></span>
+          <span className="w-3 h-3 bg-blue-600 rounded-full" />
+          <span style={{ color: theme.currentPalette.text }}>
+            Previous month
+            {previousPeriodLabel ? ` (${previousPeriodLabel})` : ""}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 bg-red-600 rounded-full" />
           <span style={{ color: theme.currentPalette.text }}>Loss</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 border-2 border-blue-600 rounded-full"></span>
-          <span style={{ color: theme.currentPalette.text }}>Current Week</span>
         </div>
       </div>
 
-      {/* Alert */}
       <Alert severity="info" sx={{ mt: 2 }}>
-        {period?.from && period?.to
-          ? (() => {
-              const fromDate = new Date(period.from);
-              const toDate = new Date(period.to);
+        {period?.from && period?.to ? (
+          <>
+            Current week: <strong>{period.from}</strong> to{" "}
+            <strong>{period.to}</strong>
 
-              if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-                return (
-                  <>
-                    Selected Period: {period.from} to {period.to}
-                  </>
-                );
-              }
-
-              const diffTime = toDate.getTime() - fromDate.getTime();
-              const days = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-              return (
-                <>
-                  Period: Day {period.from} to Day {period.to} →{" "}
-                  <strong>
-                    {days} day{days > 1 ? "s" : ""}
-                  </strong>
-                </>
-              );
-            })()
-          : "No period data"}
+            {previousPeriod?.from && previousPeriod?.to && (
+              <>
+                {" "}
+                — Previous-month week: <strong>{previousPeriod.from}</strong>{" "}
+                to <strong>{previousPeriod.to}</strong>
+              </>
+            )}
+          </>
+        ) : (
+          "No period data"
+        )}
       </Alert>
     </Box>
   );

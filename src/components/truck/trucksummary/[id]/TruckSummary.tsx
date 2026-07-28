@@ -38,6 +38,7 @@ import {
   LandPlot,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import dayjs from "dayjs";
 import NetProfitTrend from "@/components/truck/NetProfitTrend";
 import ProfitMarginChart from "@/components/truck/ProfitMarginChart";
 import CostBreakdownChart from "@/components/truck/CostBreakdownChart";
@@ -256,8 +257,65 @@ const TruckSummary = () => {
     return specificTruckSummaryData?.data?.period;
   }, [isFiltered, truckSummaryFilterData, specificTruckSummaryData]);
 
+  // Use the same day range in the previous month.
+  // Example: 24 Jul - 30 Jul becomes 24 Jun - 30 Jun.
+  // If the previous month is shorter, the end date is capped at its last day.
+  const previousMonthPeriod = useMemo(() => {
+    if (!currentPeriod?.from || !currentPeriod?.to) return undefined;
+
+    const currentFrom = dayjs(currentPeriod.from);
+    const currentTo = dayjs(currentPeriod.to);
+
+    if (!currentFrom.isValid() || !currentTo.isValid()) return undefined;
+
+    const previousMonthReference = currentFrom.subtract(1, "month");
+    const previousMonthLastDay = previousMonthReference.endOf("month").date();
+
+    const previousFromDay = Math.min(
+      currentFrom.date(),
+      previousMonthLastDay
+    );
+    const previousToDay = Math.min(currentTo.date(), previousMonthLastDay);
+
+    return {
+      from: previousMonthReference
+        .date(previousFromDay)
+        .format("YYYY-MM-DD"),
+      to: previousMonthReference
+        .date(previousToDay)
+        .format("YYYY-MM-DD"),
+    };
+  }, [currentPeriod]);
+
+  const {
+    data: previousMonthSummaryData,
+    isLoading: previousMonthSummaryLoading,
+  } = useGetTruckSummaryWithFilterQuery(
+    {
+      id: id as string,
+      from: previousMonthPeriod?.from,
+      to: previousMonthPeriod?.to,
+    },
+    {
+      skip:
+        !id ||
+        !previousMonthPeriod?.from ||
+        !previousMonthPeriod?.to,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
+
+  const previousMonthNetProfitData = useMemo(
+    () => previousMonthSummaryData?.data?.netProfitHistory,
+    [previousMonthSummaryData]
+  );
+
   const loading =
-    profileLoading || summaryFilterLoading || specificTruckSummaryLoading;
+    profileLoading ||
+    summaryFilterLoading ||
+    specificTruckSummaryLoading ||
+    previousMonthSummaryLoading;
   if (loading) return <Loading />;
 
   // profile-cards
@@ -526,7 +584,9 @@ const TruckSummary = () => {
             <div className="col-span-2">
               <NetProfitTrend
                 netProfitHistory={NetProfitData}
+                previousMonthNetProfitHistory={previousMonthNetProfitData}
                 period={currentPeriod}
+                previousPeriod={previousMonthPeriod}
               />
             </div>
             <div className="flex flex-col gap-5">
