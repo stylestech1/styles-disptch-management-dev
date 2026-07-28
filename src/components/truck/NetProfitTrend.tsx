@@ -54,10 +54,12 @@ const parseProfitValue = (value: ProfitValue): number => {
 const normalizeProfitHistory = (history?: NetProfitHistory): number[] => {
   if (!history) return [];
 
-  return [
+  const values = [
     ...history.previous.map(parseProfitValue),
     parseProfitValue(history.current),
   ];
+
+  return values.slice(-7);
 };
 
 const formatPeriodLabel = (period?: Period): string => {
