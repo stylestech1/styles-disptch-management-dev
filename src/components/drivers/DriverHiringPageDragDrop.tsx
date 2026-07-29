@@ -271,7 +271,6 @@ const HiringDriversPage = () => {
             isDone: Boolean(data.reminder?.isDone || false),
         };
 
-        // Send both nested reminder object and flat fields for backend compatibility
         formDataBody.append("reminder", JSON.stringify(reminderPayload));
         formDataBody.append("reminderDate", reminderPayload.date);
         formDataBody.append("reminderTime", reminderPayload.time);
@@ -616,31 +615,65 @@ const HiringDriversPage = () => {
         </Box>
     );
 
+    const formatReminderDateTime = (date?: string, time?: string) => {
+        if (!date || !time) return "-";
+
+        const dateOnly = new Date(date).toISOString().split("T")[0];
+
+        const reminderDateTime = new Date(
+            `${dateOnly}T${time}:00`
+        );
+
+        return reminderDateTime.toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+        });
+    };
+
     const DriverCard = ({ driver }: { driver: tDriverHiring }) => {
         const reminder = driver.reminder || {
             date: driver.reminderDate || "",
             time: driver.reminderTime || "",
             reason: driver.reminderReason || "",
-            isDone: Boolean(driver?.isDone ?? driver?.isDone ?? false),
+            isDone: Boolean(driver.isDone ?? false),
         };
+
         const reminderDate = reminder.date;
         const reminderTime = reminder.time;
         const reminderReason = reminder.reason;
-        const hasReminder = Boolean(reminderDate || reminderTime || reminderReason);
-        const reminderDateTime = reminderDate && reminderTime
-            ? new Date(`${reminderDate}T${reminderTime}`).getTime()
-            : null;
-        const now = Date.now();
-        const isReminderUpcoming = Boolean(
-            reminderDateTime &&
-            reminderDateTime >= now &&
-            reminderDateTime - now <= 24 * 60 * 60 * 1000 &&
-            !dismissedReminderIds[driver._id] &&
-            !reminder.isDone &&
-            !driver.isDone &&
-            !driver.reminderDone,
+
+        const hasReminder = Boolean(
+            reminderDate &&
+            reminderTime &&
+            reminderReason
         );
 
+        let reminderDateTime: number | null = null;
+
+        if (reminderDate && reminderTime) {
+            const dateOnly = new Date(reminderDate)
+                .toISOString()
+                .split("T")[0];
+
+            reminderDateTime = new Date(
+                `${dateOnly}T${reminderTime}:00`
+            ).getTime();
+        }
+
+        const now = Date.now();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+
+        const isReminderUpcoming = Boolean(
+            reminderDateTime &&
+            now >= reminderDateTime - twentyFourHours &&
+            now <= reminderDateTime &&
+            !reminder.isDone &&
+            !dismissedReminderIds[driver._id]
+        );
         return (
             <Box
                 draggable
@@ -816,7 +849,8 @@ const HiringDriversPage = () => {
                             Reminder: {reminderReason || "Please review this applicant"}
                         </Typography>
                         <Typography sx={{ fontSize: 11, mb: 0.7 }}>
-                            {reminderDate} {reminderTime}
+                            {/* {reminderDate} {reminderTime} */}
+                            {formatReminderDateTime(reminderDate, reminderTime)}
                         </Typography>
                         <Button
                             size="small"
@@ -830,9 +864,9 @@ const HiringDriversPage = () => {
                                             ? {
                                                 ...item,
                                                 reminder: item.reminder
-                                                    ? { ...item.reminder, isDone: false }
-                                                    : { date: "", time: "", reason: "", isDone: false },
-                                                isDone: false,
+                                                    ? { ...item.reminder, isDone: true }
+                                                    : { date: "", time: "", reason: "", isDone: true },
+                                                isDone: true,
                                             }
                                             : item,
                                     ),
@@ -843,13 +877,13 @@ const HiringDriversPage = () => {
                                         date: reminder.date || "",
                                         time: reminder.time || "",
                                         reason: reminder.reason || "",
-                                        isDone: false,
+                                        isDone: true,
                                     };
                                     formDataBody.append("reminder", JSON.stringify(doneReminder));
                                     formDataBody.append("reminderDate", doneReminder.date);
                                     formDataBody.append("reminderTime", doneReminder.time);
                                     formDataBody.append("reminderReason", doneReminder.reason);
-                                    formDataBody.append("isDone", "false");
+                                    formDataBody.append("isDone", "true");
                                     await updateDriverApplicant({ id: driver._id, body: formDataBody }).unwrap();
                                 } catch (error) {
                                     toast.error("Failed to mark reminder as done");
