@@ -152,7 +152,7 @@ export default function LinkDriverPopup({ onClose }: { onClose: () => void }) {
         phone: driverPhone,
         email: driverEmail,
         licenseNumber,
-        pricePerMile: parseFloat(pricePerMile) || 0,
+        pricePerMile: pricePerMile ? Number(pricePerMile).toFixed(2) : "0.00",
         hireDate: hireDate ? hireDate.toISOString() : undefined,
         status: "available",
       }).unwrap();

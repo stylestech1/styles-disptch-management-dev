@@ -184,7 +184,7 @@ export type TDriver = {
   status: TStatusDriver;
   hireDate: string;
   createdBy: string;
-  pricePerMile: number;
+  pricePerMile: number | string;
   currency: string;
   assignedTruck?: string;
   updatedBy?: string;
