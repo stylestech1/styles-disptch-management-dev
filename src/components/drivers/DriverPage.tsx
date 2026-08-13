@@ -453,7 +453,6 @@ const DriversPage = () => {
         setOpen(true);
     };
 
-    // ✅ Handle Form Change
     const handleFormChange = <K extends keyof TDriver>(
         field: K,
         value: TDriver[K],
@@ -468,6 +467,7 @@ const DriversPage = () => {
         const changedFields: Record<string, unknown> = {};
 
         Object.entries(updated).forEach(([key, value]) => {
+            if (key === "user") return;
             const k = key as keyof TDriver;
             if (value !== original[k] && value !== undefined) {
                 changedFields[key] = value;
@@ -483,7 +483,7 @@ const DriversPage = () => {
         if (currentError) {
             const errorMessage = getErrorMessage(currentError);
             setError(errorMessage);
-            toast.error(errorMessage || "Failed to load data ❌", {
+            toast.error(errorMessage || "Failed to load data", {
                 style: {
                     background: "#dc2626",
                     color: "#fff",
@@ -508,8 +508,11 @@ const DriversPage = () => {
         }
 
         try {
+            const { user: _user, id: _id, driverId: _driverId, ...driverPayload } =
+                formData as Partial<TDriver>;
+
             await createDriver({
-                ...formData,
+                ...driverPayload,
                 createdBy: user.id,
             }).unwrap();
             toast.success("✅ Driver created successfully!");
@@ -538,6 +541,7 @@ const DriversPage = () => {
         try {
             const formDataBody = new FormData();
             Object.entries(changedFields).forEach(([key, value]) => {
+                if (key === "user" || key === "id" || key === "driverId") return;
                 if (value !== undefined && value !== null) {
                     formDataBody.append(key, String(value));
                 }

@@ -39,7 +39,6 @@ interface DriverFormData {
   pricePerMile: string;
   hireDate: string;
   status: string;
-  user: string;
 }
 
 export const DriverForm = ({
@@ -93,7 +92,6 @@ export const DriverForm = ({
       pricePerMile: "",
       hireDate: "",
       status: "",
-      user: "",
     },
     mode: "onSubmit",
   });
@@ -140,6 +138,7 @@ export const DriverForm = ({
   useEffect(() => {
     if (formData) {
       Object.keys(formData).forEach((key) => {
+        if (key === "user") return;
         const fieldName = key as keyof DriverFormData;
         const value = formData[key as keyof TDriver];
         setValue(fieldName, value as never);
@@ -172,21 +171,10 @@ export const DriverForm = ({
           );
 
           setSearchedUser(foundUser || null);
-
-          if (foundUser) {
-            setValue("user", foundUser.id);
-            handleFieldChange("user", foundUser.id);
-          } else {
-            setValue("user", "");
-            handleFieldChange("user", "");
-          }
-
           setIsSearching(false);
         }, 500);
       } else {
         setSearchedUser(null);
-        setValue("user", "");
-        handleFieldChange("user", "");
       }
     };
 
@@ -196,6 +184,7 @@ export const DriverForm = ({
   // Handle form submission
   const onSubmitForm = (data: DriverFormData) => {
     Object.keys(data).forEach((key) => {
+      if (key === "user") return;
       const field = key as keyof TDriver;
       const value = data[key as keyof DriverFormData];
       onChange(field, value as TDriver[keyof TDriver]);
