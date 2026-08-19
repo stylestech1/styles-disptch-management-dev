@@ -101,7 +101,7 @@ export function ViewTruckDialog({
     selectedTruck: any;
     theme: any;
 }) {
-    const truckId = selectedTruck?.truckId ?? selectedTruck?.id ?? "—";
+    const truckId = selectedTruck?.truckNumber ?? "—";
     const status = selectedTruck?.status ?? "N/A";
 
     const driverName =
