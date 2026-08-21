@@ -15,6 +15,7 @@ import {
   MenuItem,
   OutlinedInput,
   Select,
+  TextField,
   Typography,
   alpha,
 } from "@mui/material";
@@ -28,7 +29,12 @@ interface UserSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: TDispatcher | null;
-  onUpdateRole: (userId: string, newRole: TUserRole) => Promise<void>;
+  onUpdateRole: (userId: string, updates: {
+    name: string;
+    email: string;
+    phone: string;
+    role: TUserRole;
+  }) => Promise<void>;
   onActivateUser: (userId: string) => Promise<void>;
   onDeactivateUser: (userId: string) => Promise<void>;
   isLoading?: boolean;
@@ -48,9 +54,15 @@ const UserSettingsModal = ({
   const theme = useAppSelector((state: RootState) => state.palette);
 
   const [tempUser, setTempUser] = useState<{
+    name: string;
+    email: string;
+    phone: string;
     role: TUserRole;
     status: "active" | "inactive";
   }>({
+    name: "",
+    email: "",
+    phone: "",
     role: "employee",
     status: "active",
   });
@@ -58,6 +70,9 @@ const UserSettingsModal = ({
   useEffect(() => {
     if (user) {
       setTempUser({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
         role: user.role as TUserRole,
         status: user.active ? "active" : "inactive",
       });
@@ -78,8 +93,18 @@ const UserSettingsModal = ({
     e.preventDefault();
 
     try {
-      if (user.role !== tempUser.role) {
-        await onUpdateRole(user.id, tempUser.role);
+      if (
+        user.name !== tempUser.name ||
+        user.email !== tempUser.email ||
+        user.phone !== tempUser.phone ||
+        user.role !== tempUser.role
+      ) {
+        await onUpdateRole(user.id, {
+          name: tempUser.name,
+          email: tempUser.email,
+          phone: tempUser.phone,
+          role: tempUser.role,
+        });
       }
 
       if (user.active !== (tempUser.status === "active")) {
@@ -178,7 +203,7 @@ const UserSettingsModal = ({
 
         <Box sx={{ p: 3, bgcolor: "#fff" }}>
           {/* User card */}
-          <Box
+          {/* <Box
             sx={{
               border: `1px solid ${cardBorder}`,
               borderRadius: 3,
@@ -206,38 +231,60 @@ const UserSettingsModal = ({
             <Divider sx={{ my: 2.2, borderColor: cardBorder }} />
 
             <Box sx={{ display: "grid", gap: 1.4 }}>
-              {/* Email */}
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                  <Mail size={20} color={primary} />
-                  <Typography sx={{ color: primary, fontSize: 14 }}>
-                    Email
-                  </Typography>
-                </Box>
-
-                <Typography sx={{ color: alpha(text, 0.62), fontSize: 14 }}>
-                  {user.email}
-                </Typography>
-              </Box>
-
-              {/* Phone */}
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-                  <Phone size={20} color={primary} />
-                  <Typography sx={{ color: primary, fontSize: 14 }}>
-                    Phone
-                  </Typography>
-                </Box>
-
-                <Typography sx={{ color: alpha(text, 0.62), fontSize: 14, }}>
-                  {user.phone}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+              <Typography sx={{ color: alpha(text, 0.62), fontSize: 14 }}>
+                Update the user contact information below.
+              </Typography>
+            </Boxa>
+          </Box> */}
 
           {/* Form */}
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2.6, display: "grid", gap: 2.2 }}>
+            <TextField
+              label="Name"
+              value={tempUser.name}
+              onChange={(e) => setTempUser((p) => ({ ...p, name: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <UserRoundPen size={22} color={primary} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              label="Email"
+              type="email"
+              value={tempUser.email}
+              onChange={(e) => setTempUser((p) => ({ ...p, email: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Mail size={22} color={primary} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              label="Phone"
+              value={tempUser.phone}
+              onChange={(e) => setTempUser((p) => ({ ...p, phone: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Phone size={22} color={primary} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
             {/* Role */}
             <FormControl fullWidth variant="outlined">
               <InputLabel

@@ -53,9 +53,9 @@ const Users = () => {
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
 
-  const [fromDate, setFromDate] = useState<Dayjs | null>(null);
-  const [toDate, setToDate] = useState<Dayjs | null>(null);
-  const [isFiltered, setIsFiltered] = useState(false);
+  const [fromDate, ] = useState<Dayjs | null>(null);
+  const [toDate, ] = useState<Dayjs | null>(null);
+  const [isFiltered, ] = useState(false);
 
   const router = useRouter();
   const token = useAppSelector((state: RootState) => state.auth.token);
@@ -301,12 +301,12 @@ const Users = () => {
 
   const handleUpdateRole = async (
     userId: string,
-    newRole: TUserRole
+    updates: { name: string; email: string; phone: string; role: TUserRole }
   ) => {
     if (!token) return router.replace("/");
     try {
-      await updateUserRole({ id: userId, role: newRole }).unwrap();
-      toast.success(`Role updated to ${newRole} successfully!`);
+      await updateUserRole({ id: userId, ...updates }).unwrap();
+      toast.success("User updated successfully!");
       await refetchLoads();
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
