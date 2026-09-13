@@ -5,6 +5,7 @@ export const loadColumns: Column[] = [
   { key: "driver", header: "Driver", align: "center" },
   { key: "route", header: "Route", align: "center" },
   { key: "distance", header: "Distance", align: "center" },
+  { key: "dispatcher", header: "Dispatcher", align: "center" },
   { key: "pricePerMile", header: "Price/Mile", align: "center" },
   { key: "total", header: "Total", align: "center" },
   { key: "status", header: "Status", align: "center" },

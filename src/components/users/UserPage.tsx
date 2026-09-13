@@ -53,9 +53,9 @@ const Users = () => {
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
 
-  const [fromDate, ] = useState<Dayjs | null>(null);
-  const [toDate, ] = useState<Dayjs | null>(null);
-  const [isFiltered, ] = useState(false);
+  const [fromDate,] = useState<Dayjs | null>(null);
+  const [toDate,] = useState<Dayjs | null>(null);
+  const [isFiltered,] = useState(false);
 
   const router = useRouter();
   const token = useAppSelector((state: RootState) => state.auth.token);
@@ -216,10 +216,17 @@ const Users = () => {
     data: roleData,
     error: roleError,
     isLoading: roleLoading,
-  } = useGetUserByRoleQuery(roleFilter, {
-    skip: roleFilter === "all" || isSearching || isFiltered,
-  });
-
+  } = useGetUserByRoleQuery(
+    {
+      role: roleFilter,
+      page,
+      limit: 10,
+    },
+    {
+      skip: roleFilter === "all" || isSearching || isFiltered,
+    }
+  );
+  
   const users = useMemo(() => {
     if (isSearching && Array.isArray(userByIdData?.data)) {
       return userByIdData.data.flat();

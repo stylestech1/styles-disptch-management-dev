@@ -29,6 +29,7 @@ import {
   useGetLoadsQuery,
   useGetNotesQuery,
   useGetLoadsWithFilterQuery,
+  useGetActiveDispatchersQuery,
   useLazyGetLoadByIdQuery,
 } from "@/redux/slices/apiSlice";
 
@@ -39,7 +40,7 @@ import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
 
 // Icons
-import {IoNavigate } from "react-icons/io5";
+import { IoNavigate } from "react-icons/io5";
 
 // MUI
 import {
@@ -243,12 +244,18 @@ const LoadsPageDetails = () => {
   const { fromDate, toDate, isFiltered } = useFilter();
 
   const [statusFilter, setStatusFilter] = useState<LoadStatusFilter>("all");
+  const [createdByFilter, setCreatedByFilter] = useState("");
 
   // Modal states
   const [showCreateEditModal, setShowCreateEditModal] = useState(false);
   const [selectedLoadForNotes, setSelectedLoadForNotes] = useState<TLoads | null>(null);
   const [editingLoad, setEditingLoad] = useState<TLoads | null>(null);
 
+
+  const onChangeCreatedBy = (event: SelectChangeEvent) => {
+    setPage(1);
+    setCreatedByFilter(event.target.value);
+  };
   // Loading & Error states
   const { setLoading } = useLoading();
   const { error, setError } = useError();
@@ -288,13 +295,21 @@ const LoadsPageDetails = () => {
     error: loadsError,
     refetch: refetchLoads,
   } = useGetLoadsQuery(
-    { page, limit: 10 },
+    {
+      page, limit: 10,
+      sort: "status",
+    },
     {
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
     }
   );
+
+  const { data: activeDispatchersData } = useGetActiveDispatchersQuery({
+    page: 1,
+    limit: 100,
+  });
 
   useGetNotesQuery(selectedLoadForNotes?.id || "", { skip: !selectedLoadForNotes?.id });
 
@@ -339,8 +354,31 @@ const LoadsPageDetails = () => {
       );
     }
 
+    if (createdByFilter) {
+      data = data.filter(
+        (item) =>
+          String(item.createdBy || "").trim().toLowerCase() ===
+          createdByFilter.trim().toLowerCase()
+      );
+    }
+
     return data;
-  }, [baseLoads, statusFilter]);
+  }, [baseLoads, createdByFilter, statusFilter]);
+
+  const createdByOptions: string[] = [
+    ...new Set<string>(
+      (activeDispatchersData?.data || [])
+        .map((dispatcher: any) =>
+          String(
+            dispatcher.name ||
+            dispatcher.email ||
+            dispatcher.jobId ||
+            ""
+          )
+        )
+        .filter(Boolean)
+    ),
+  ];
 
   const pagination = activeKeyword
     ? searchData?.paginationResult || null
@@ -477,13 +515,21 @@ const LoadsPageDetails = () => {
           </div>
         </td>
         {/* distance */}
-        {/* <td className="p-4 text-center">
-          {loadItem.distanceMiles != null ? Math.floor(loadItem.distanceMiles) + " miles" : "-"}
-        </td> */}
         <td className="p-4 text-center" style={{ color: theme.currentPalette.primary }} >
           {loadItem.distanceMiles != null
             ? `${Math.trunc(Number(loadItem.distanceMiles))} miles`
             : "-"}
+        </td>
+        {/* Dispatcher */}
+        <td className="p-4 text-center">
+          <div>
+            <div className="font-medium text-[14px] text-sm mb-1">
+              created by: {loadItem.createdBy || "-"}
+            </div>
+            <div className="text-xs text-slate-500">
+              updated by: {loadItem.updatedBy || "-"}
+            </div>
+          </div>
         </td>
 
         {/* price per mile  */}
@@ -654,24 +700,94 @@ const LoadsPageDetails = () => {
             gap: 1.2,
           }}
         >
+          <FormControl size="small" sx={{ width: 160, flexShrink: 0 }}>
+            <Select
+              value={createdByFilter}
+              onChange={onChangeCreatedBy}
+              displayEmpty
+              fullWidth
+              sx={{
+                height: CONTROL_H,
+                borderRadius: 2,
+                backgroundColor: "#fff",
+                color: theme.currentPalette.primary,
 
-          <Box sx={{ flex: "1 1 220px", minWidth: 260, maxWidth: 340 }}>
-            {/* <SearchInput
-              searchHook={searchHook}
-              placeholder="Search Loads by ID, Driver"
-              showClearButton
-              inputSx={{
-                "& .MuiOutlinedInput-root": {
-                  width: "100%",
+                "& .MuiSelect-select": {
                   height: CONTROL_H,
-                  borderRadius: 2,
-                  backgroundColor: "#fff",
-                  "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.28) },
-                  "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.55) },
-                  "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+                  display: "flex",
+                  alignItems: "center",
+                },
+
+                "& fieldset": {
+                  borderColor: alpha(theme.currentPalette.primary, 0.4),
+                },
+
+                "&:hover fieldset": {
+                  borderColor: alpha(theme.currentPalette.primary, 0.6),
+                },
+
+                "&.Mui-focused fieldset": {
+                  borderColor: theme.currentPalette.primary,
                 },
               }}
-            /> */}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    mt: 1,
+                    borderRadius: 2,
+                    backgroundColor: "#fff",
+                    border: `1px solid ${alpha(
+                      theme.currentPalette.primary,
+                      0.25
+                    )}`,
+                  },
+                },
+              }}>
+                
+              <MenuItem value="">
+                All Dispatchers
+              </MenuItem>
+
+              {createdByOptions.map((item) => (
+                <MenuItem
+                  key={item}
+                  value={item}
+                  sx={{
+                    color: theme.currentPalette.primary,
+                    justifyContent: "flex-start",
+
+                    "&.Mui-selected": {
+                      backgroundColor: alpha(
+                        theme.currentPalette.primary,
+                        0.06
+                      ),
+                    },
+                  }}
+                >
+                  {item}
+                </MenuItem>
+              ))}
+
+            </Select>
+          </FormControl>
+          <Box sx={{ flex: "1 1 220px", minWidth: 260, maxWidth: 340 }}>
+            {/* <SearchInput
+                searchHook={searchHook}
+                placeholder="Search Loads by ID, Driver"
+                showClearButton
+                inputSx={{
+                  "& .MuiOutlinedInput-root": {
+                    width: "100%",
+                    height: CONTROL_H,
+                    borderRadius: 2,
+                    backgroundColor: "#fff",
+                    "& fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.28) },
+                    "&:hover fieldset": { borderColor: alpha(theme.currentPalette.primary, 0.55) },
+                    "&.Mui-focused fieldset": { borderColor: theme.currentPalette.primary },
+                  },
+                }}
+              /> */}
+
 
             <TextField
               size="small"
@@ -733,6 +849,7 @@ const LoadsPageDetails = () => {
               }}
             />
           </Box>
+
           <FormControl size="small" sx={{ width: 140, flexShrink: 0 }}>
             <Select
               value={statusFilter}
