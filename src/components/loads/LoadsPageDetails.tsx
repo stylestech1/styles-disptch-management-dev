@@ -68,6 +68,17 @@ import { Boxes, Clock, Goal, LandPlot, MapPin, NotepadText, X } from "lucide-rea
 
 type LoadStatusFilter = "all" | "pending" | "in_transit" | "delivered";
 const CONTROL_H = 42;
+type Dispatcher = {
+  id: string | number;
+  name?: string;
+  email?: string;
+  jobId?: string;
+};
+
+type DispatcherOption = {
+  id: string;
+  name: string;
+};
 
 const toTitle = (v: string) =>
   v
@@ -288,6 +299,12 @@ const LoadsPageDetails = () => {
   });
 
   const { isSearching } = searchHook;
+  const [dispatcherFilter, setDispatcherFilter] = useState("");
+
+  const onChangeDispatcher = (event: SelectChangeEvent) => {
+    setPage(1);
+    setDispatcherFilter(event.target.value);
+  };
 
   const {
     data: loadsData,
@@ -296,8 +313,10 @@ const LoadsPageDetails = () => {
     refetch: refetchLoads,
   } = useGetLoadsQuery(
     {
-      page, limit: 10,
+      page,
+      limit: 10,
       sort: "status",
+      createdBy: dispatcherFilter || undefined,
     },
     {
       refetchOnFocus: false,
@@ -310,6 +329,15 @@ const LoadsPageDetails = () => {
     page: 1,
     limit: 100,
   });
+  const dispatcherOptions: DispatcherOption[] =
+    (activeDispatchersData?.data || []).map((dispatcher: Dispatcher) => ({
+      id: String(dispatcher.id),
+      name:
+        dispatcher.name ||
+        dispatcher.email ||
+        dispatcher.jobId ||
+        "-",
+    }));
 
   useGetNotesQuery(selectedLoadForNotes?.id || "", { skip: !selectedLoadForNotes?.id });
 
@@ -319,6 +347,7 @@ const LoadsPageDetails = () => {
       to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
       page,
       limit: 10,
+      createdBy: dispatcherFilter || undefined,
     },
     {
       skip: !isFiltered || !fromDate || !toDate,
@@ -354,16 +383,8 @@ const LoadsPageDetails = () => {
       );
     }
 
-    if (createdByFilter) {
-      data = data.filter(
-        (item) =>
-          String(item.createdBy || "").trim().toLowerCase() ===
-          createdByFilter.trim().toLowerCase()
-      );
-    }
-
     return data;
-  }, [baseLoads, createdByFilter, statusFilter]);
+  }, [baseLoads, statusFilter]);
 
   const createdByOptions: string[] = [
     ...new Set<string>(
@@ -702,75 +723,28 @@ const LoadsPageDetails = () => {
         >
           <FormControl size="small" sx={{ width: 160, flexShrink: 0 }}>
             <Select
-              value={createdByFilter}
-              onChange={onChangeCreatedBy}
+              value={dispatcherFilter}
+              onChange={onChangeDispatcher}
               displayEmpty
               fullWidth
-              sx={{
-                height: CONTROL_H,
-                borderRadius: 2,
-                backgroundColor: "#fff",
-                color: theme.currentPalette.primary,
-
-                "& .MuiSelect-select": {
-                  height: CONTROL_H,
-                  display: "flex",
-                  alignItems: "center",
-                },
-
-                "& fieldset": {
-                  borderColor: alpha(theme.currentPalette.primary, 0.4),
-                },
-
-                "&:hover fieldset": {
-                  borderColor: alpha(theme.currentPalette.primary, 0.6),
-                },
-
-                "&.Mui-focused fieldset": {
-                  borderColor: theme.currentPalette.primary,
-                },
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    mt: 1,
-                    borderRadius: 2,
-                    backgroundColor: "#fff",
-                    border: `1px solid ${alpha(
-                      theme.currentPalette.primary,
-                      0.25
-                    )}`,
-                  },
-                },
-              }}>
-                
+            >
               <MenuItem value="">
                 All Dispatchers
               </MenuItem>
 
-              {createdByOptions.map((item) => (
+              {dispatcherOptions.map((dispatcher: DispatcherOption) => (
                 <MenuItem
-                  key={item}
-                  value={item}
-                  sx={{
-                    color: theme.currentPalette.primary,
-                    justifyContent: "flex-start",
-
-                    "&.Mui-selected": {
-                      backgroundColor: alpha(
-                        theme.currentPalette.primary,
-                        0.06
-                      ),
-                    },
-                  }}
+                  key={dispatcher.id}
+                  value={dispatcher.id}
                 >
-                  {item}
+                  {dispatcher.name}
                 </MenuItem>
               ))}
-
             </Select>
           </FormControl>
+
           <Box sx={{ flex: "1 1 220px", minWidth: 260, maxWidth: 340 }}>
+            
             {/* <SearchInput
                 searchHook={searchHook}
                 placeholder="Search Loads by ID, Driver"
