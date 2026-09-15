@@ -1,5 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useGetLoadByMongoIdQuery } from "@/redux/slices/apiSlice";
+import {
+  useGetLoadByMongoIdQuery,
+  useGetActiveDispatchersQuery,
+  useUpdateLoadsMutation,
+} from "@/redux/slices/apiSlice";
 import {
   Box,
   Typography,
@@ -22,6 +27,10 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import { useEffect, useState } from "react";
@@ -98,6 +107,19 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
   const [showCreateEditModal, setShowCreateEditModal] = useState(false);
   const [showUpdateStatusModal, setShowUpdateStatusModal] = useState(false);
 
+  const [selectedDispatcherId, setSelectedDispatcherId] = useState("");
+
+  const {
+    data: dispatchersData,
+    isLoading: dispatchersLoading,
+  } = useGetActiveDispatchersQuery({
+    page: 1,
+    limit: 100,
+  });
+
+  const [updateLoads, { isLoading: updatingReservedBy }] =
+    useUpdateLoadsMutation();
+
   // Refetching for coming from notify
   useEffect(() => {
     refetchLoads()
@@ -147,6 +169,26 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
   });
   if (!load) return <Erros message="No load details found for this ID." />;
   const allNotes = [...notes, ...(load.comments || [])];
+  const handleUpdateReservedBy = async () => {
+    if (!selectedDispatcherId || !load?.id) return;
+
+    try {
+      const formData = new FormData();
+
+      formData.append("reservedBy", selectedDispatcherId);
+
+      await updateLoads({
+        id: load.id,
+        formData,
+      }).unwrap();
+
+      setSelectedDispatcherId("");
+
+      refetchLoads();
+    } catch (error) {
+      console.error("Failed to update reservedBy:", error);
+    }
+  };
 
   const InfoCard = ({ title, icon, children }: InfoCardProps) => (
     <Card
@@ -458,9 +500,52 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
               mb: 3,
               display: "flex",
               justifyContent: "flex-end",
-              borderRadius: 2,
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "wrap",
             }}
           >
+            {/* Dispatcher Dropdown */}
+            <FormControl sx={{ width: "300px" }}>
+              <InputLabel>Dispatcher</InputLabel>
+
+              <Select
+                value={selectedDispatcherId}
+                label="Dispatcher"
+                onChange={(e) => setSelectedDispatcherId(e.target.value)}
+                disabled={dispatchersLoading}
+              >
+                {dispatchersData?.data?.map((dispatcher: any) => (
+                  <MenuItem
+                    key={dispatcher.id}
+                    value={dispatcher.id}
+                  >
+                    {dispatcher.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Save Reserved By */}
+            <Button
+              onClick={handleUpdateReservedBy}
+              disabled={!selectedDispatcherId || updatingReservedBy}
+              variant="contained"
+              sx={{
+                py: 1.5,
+                px: 4,
+                fontWeight: "bold",
+                fontSize: "1rem",
+                borderRadius: 2,
+                textTransform: "none",
+                background: `linear-gradient(135deg, ${theme.currentPalette.primary}, ${theme.currentPalette.secondary})`,
+                color: "#fff",
+              }}
+            >
+              {updatingReservedBy ? "Saving..." : "Reserved by"}
+            </Button>
+
+            {/* Normal Update Load */}
             <Button
               onClick={() => openEditLoadPopup(load)}
               variant="contained"
@@ -472,15 +557,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                 fontSize: "1rem",
                 borderRadius: 2,
                 textTransform: "none",
-                width: { xs: "100%", lg: "auto" },
                 background: `linear-gradient(135deg, ${theme.currentPalette.primary}, ${theme.currentPalette.secondary})`,
                 color: "#fff",
-                "&:hover": {
-                  background: `linear-gradient(135deg, ${theme.currentPalette.secondary}, ${theme.currentPalette.primary})`,
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                },
-                transition: "all 0.3s ease",
               }}
             >
               Update Load

@@ -33,7 +33,7 @@ export const apiSlice = api.injectEndpoints({
   endpoints: (builder) => ({
     // ! ========== Loads Methods ==========
     getLoads: builder.query({
-      query: ({ page = 1, limit = 10, sort, createdBy }) => {
+      query: ({ page = 1, limit = 10, sort, reservedBy }) => {
         const params = new URLSearchParams({
           page: String(page),
           limit: String(limit),
@@ -43,8 +43,8 @@ export const apiSlice = api.injectEndpoints({
           params.append("sort", sort);
         }
 
-        if (createdBy) {
-          params.append("createdBy", createdBy);
+        if (reservedBy) {
+          params.append("reservedBy", reservedBy);
         }
 
         return `/api/v1/loads?${params.toString()}`;
@@ -433,11 +433,11 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     getLoadsWithFilter: builder.query({
-      query: ({ from, to, page, limit, createdBy }) => {
+      query: ({ from, to, page, limit, reservedBy }) => {
         const params = [`page=${page}`, `limit=${limit}`];
         if (from) params.push(`from=${from}`);
         if (to) params.push(`to=${to}`);
-        if (createdBy) params.push(`createdBy=${createdBy}`);
+        if (reservedBy) params.push(`reservedBy=${reservedBy}`);
         const queryString = params.join("&");
         return `/api/v1/loads?${queryString}`;
       },

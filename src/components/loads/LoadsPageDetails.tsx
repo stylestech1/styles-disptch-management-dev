@@ -69,7 +69,8 @@ import { Boxes, Clock, Goal, LandPlot, MapPin, NotepadText, X } from "lucide-rea
 type LoadStatusFilter = "all" | "pending" | "in_transit" | "delivered";
 const CONTROL_H = 42;
 type Dispatcher = {
-  id: string | number;
+  id?: string | number;
+  _id?: string;
   name?: string;
   email?: string;
   jobId?: string;
@@ -316,7 +317,7 @@ const LoadsPageDetails = () => {
       page,
       limit: 10,
       sort: "status",
-      createdBy: dispatcherFilter || undefined,
+      reservedBy: dispatcherFilter || undefined,
     },
     {
       refetchOnFocus: false,
@@ -331,7 +332,7 @@ const LoadsPageDetails = () => {
   });
   const dispatcherOptions: DispatcherOption[] =
     (activeDispatchersData?.data || []).map((dispatcher: Dispatcher) => ({
-      id: String(dispatcher.id),
+      id: String(dispatcher.id ?? dispatcher._id ?? ""),
       name:
         dispatcher.name ||
         dispatcher.email ||
@@ -347,7 +348,7 @@ const LoadsPageDetails = () => {
       to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
       page,
       limit: 10,
-      createdBy: dispatcherFilter || undefined,
+      reservedBy: dispatcherFilter || undefined,
     },
     {
       skip: !isFiltered || !fromDate || !toDate,
