@@ -131,6 +131,7 @@ export type TLoads = {
   id?: string;
   loadId: string;
   origin: string;
+  reservedBy:string;
   DHO: string;
   destination: string;
   distanceMiles: number;
