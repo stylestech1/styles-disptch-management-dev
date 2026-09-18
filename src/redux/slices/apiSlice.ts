@@ -422,25 +422,36 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     // ! ========== Loads Using Id ==========
+    // ! ========== Loads Using Id ==========
+
     getLoadById: builder.query({
-      query: (loadId) => `/api/v1/loads?keyword=${encodeURIComponent(loadId)}`,
-      providesTags: (result, error, loadId) => [{ type: "Loads", id: loadId }],
+      query: (loadId) =>
+        `/api/v1/loads?keyword=${encodeURIComponent(loadId)}`,
+      providesTags: (result, error, loadId) => [
+        { type: "Loads", id: loadId },
+      ],
     }),
 
     getLoadByMongoId: builder.query({
       query: (_id) => `/api/v1/loads?_id=${_id}`,
-      providesTags: (result, error, _id) => [{ type: "Loads", id: _id }],
+      providesTags: (result, error, _id) => [
+        { type: "Loads", id: _id },
+      ],
     }),
 
     getLoadsWithFilter: builder.query({
       query: ({ from, to, page, limit, reservedBy }) => {
         const params = [`page=${page}`, `limit=${limit}`];
+
         if (from) params.push(`from=${from}`);
         if (to) params.push(`to=${to}`);
         if (reservedBy) params.push(`reservedBy=${reservedBy}`);
+
         const queryString = params.join("&");
+
         return `/api/v1/loads?${queryString}`;
       },
+
       providesTags: ["Loads"],
     }),
 
@@ -450,6 +461,7 @@ export const apiSlice = api.injectEndpoints({
         method: "POST",
         body: formData,
       }),
+
       invalidatesTags: ["Loads"],
     }),
 
@@ -459,18 +471,42 @@ export const apiSlice = api.injectEndpoints({
         method: "PATCH",
         body: formData,
       }),
+
       invalidatesTags: ["Loads"],
     }),
-
     updateLoadsStatus: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/api/v1/loads/status/${id}`,
         method: "PATCH",
         body,
       }),
+
       invalidatesTags: ["Loads"],
     }),
 
+    updateDetentionLayoverStatus: builder.mutation<
+      any,
+      {
+        loadId: string;
+        recordId: string;
+        status: "requested" | "paid" | "refused";
+      }
+    >({
+      query: ({
+        loadId,
+        recordId,
+        status,
+      }) => ({
+        url: `/api/v1/loads/${loadId}/detention-layovers/${recordId}/status`,
+        method: "PATCH",
+
+        body: {
+          status,
+        },
+      }),
+
+      invalidatesTags: ["Loads"],
+    }),
     // ! ========== Documents ==========
     uploadDocuments: builder.mutation({
       query: ({ formData }) => ({
@@ -1220,12 +1256,13 @@ export const {
   useGetLoadByIdQuery,
   useGetLoadByMongoIdQuery,
   useLazyGetLoadByIdQuery,
+
   useCreateLoadsMutation,
   useUpdateLoadsMutation,
   useUpdateLoadsStatusMutation,
-  useGetLoadsWithFilterQuery,
+  useUpdateDetentionLayoverStatusMutation,
 
-  // TODO: ----- Documents -----
+  useGetLoadsWithFilterQuery,
   useUploadDocumentsMutation,
 
   // TODO: ----- Drivers -----

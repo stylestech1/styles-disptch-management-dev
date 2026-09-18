@@ -33,6 +33,11 @@ const StatusBadge = ({ status, size = "md" }: StatusBadgeProps) => {
       icon: <IoClose className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />,
       text: "Cancelled"
     },
+    truck_order_not_used: {
+      color: "bg-gray-100 text-gray-800 border-gray-300",
+      icon: <IoClose className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />,
+      text: "TONU"
+    }
   };
 
   const sizeClasses = {
