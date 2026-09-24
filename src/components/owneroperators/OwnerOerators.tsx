@@ -194,7 +194,7 @@ export function OwnerOperators() {
             </Box>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", justifyContent: "space-between", p: 2.5, mb: 3, border: `1px solid ${alpha(theme.currentPalette.primary, .3)}`, borderRadius: 2, bgcolor: theme.currentPalette.background }}>
                 <Box><Typography variant="h6" sx={{ color: theme.currentPalette.primary }}>Owner Operators Board</Typography><Typography variant="body2" sx={{ color: theme.currentPalette.primary, mt: .5 }}>Drag operator cards between columns to update their status</Typography></Box>
-                <TextField {...inputProps} value={search} placeholder="Search by name, phone, location..." onChange={(event) => setSearch(event.target.value)} sx={{ ...inputProps.sx, flex: "1 1 300px", maxWidth: 420 }} />
+                {/* <TextField {...inputProps} value={search} placeholder="Search by name, phone, location..." onChange={(event) => setSearch(event.target.value)} sx={{ ...inputProps.sx, flex: "1 1 300px", maxWidth: 420 }} /> */}
                 <Button variant="contained" startIcon={<Plus size={20} />} onClick={openCreate} sx={{ minHeight: 42, borderRadius: 2, bgcolor: theme.currentPalette.primary }}>Add Owner Operator</Button>
             </Box>
             {isLoading ? <Typography sx={{ p: 4, textAlign: "center" }}>Loading owner operators...</Typography> : <Box sx={{ display: "flex", gap: 1.5, overflowX: "auto", pb: 2 }}>
