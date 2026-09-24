@@ -131,7 +131,7 @@ export type TLoads = {
   id?: string;
   loadId: string;
   origin: string;
-  reservedBy:string;
+  reservedBy: string;
   DHO: string;
   destination: string;
   distanceMiles: number;
@@ -222,6 +222,31 @@ export type tDriverHiring = {
   updatedBy?: string;
   hireDate?: string;
   document?: AttachmentHiringDriver;
+};
+
+export type OwnerOperatorStatus = "New" | "Pending" | "Qualified" | "Disqualified" | "Rejected";
+
+export type TOwnerOperator = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  currentLocation: string;
+  cdlExperienceYears: number;
+  truckYear: number;
+  truckMake: string;
+  truckModel: string;
+  preferredOperatingArea: string;
+  status: OwnerOperatorStatus | string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastUpdatedBy?: {
+    _id: string;
+    name: string;
+    jobId: number;
+  };
 };
 export type TTruck = {
   id: string;

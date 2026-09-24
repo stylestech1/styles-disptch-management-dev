@@ -92,6 +92,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <UserPlus />,
     },
     {
+      label: "Owner Operators",
+      subtitle: "Review, approve, and manage owner operator applications",
+      icon: <UserPlus />,
+    },
+    {
       label: "Users",
       subtitle: "Manage your dispatch team members and their access",
       icon: <Users />,
@@ -180,6 +185,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
     {
       label: "Hiring Drivers",
       subtitle: "Review, approve, and manage driver recruitment requests",
+      icon: <UserPlus />,
+    },
+    {
+      label: "Owner Operators",
+      subtitle: "Review, approve, and manage owner operator applications",
       icon: <UserPlus />,
     },
     {

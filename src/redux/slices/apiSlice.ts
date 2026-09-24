@@ -10,6 +10,7 @@ import {
   TTrucksSummaryResponse,
   TTruckSummaryResponse,
   TTruckWithSummary,
+  TOwnerOperator,
 } from "@/types/globalTypes";
 import { api } from "../api/baseApi";
 import {
@@ -385,6 +386,52 @@ export const apiSlice = api.injectEndpoints({
         method: "DELETE",
       }),
       invalidatesTags: ["Hiring Drivers"],
+    }),
+
+    // ! ========== Owner Operators =============
+    getOwnerOperators: builder.query<
+      { data: TOwnerOperator[]; paginationResult?: PaginationResult },
+      { page?: number; limit?: number }
+    >({
+      query: ({ page, limit }) => {
+        const params = new URLSearchParams();
+        if (page) params.set("page", String(page));
+        if (limit) params.set("limit", String(limit));
+        const queryString = params.toString();
+        return `/api/v1/owner-operators${queryString ? `?${queryString}` : ""}`;
+      },
+      providesTags: ["Owner Operators"],
+    }),
+    createOwnerOperator: builder.mutation<any, Partial<TOwnerOperator>>({
+      query: (body) => ({
+        url: "/api/v1/owner-operators",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Owner Operators"],
+    }),
+    updateOwnerOperator: builder.mutation<any, { id: string; body: Partial<TOwnerOperator> }>({
+      query: ({ id, body }) => ({
+        url: `/api/v1/owner-operators/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Owner Operators"],
+    }),
+    updateOwnerOperatorStatus: builder.mutation<any, { id: string; status: string }>({
+      query: ({ id, status }) => ({
+        url: `/api/v1/owner-operators/status/${id}`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: ["Owner Operators"],
+    }),
+    deleteOwnerOperator: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `/api/v1/owner-operators/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Owner Operators"],
     }),
 
     // ! ========== Repairs ==========
@@ -1406,6 +1453,12 @@ export const {
   useGetDriverApplicantsWithFilterQuery,
   useLazyGetDriverApplicantByIdQuery,
   useGetDriverApplicantByIdQuery,
+  // TODO: ----- Owner Operators -----
+  useGetOwnerOperatorsQuery,
+  useCreateOwnerOperatorMutation,
+  useUpdateOwnerOperatorMutation,
+  useUpdateOwnerOperatorStatusMutation,
+  useDeleteOwnerOperatorMutation,
   // repairs
   useGetRepairsQuery,
   useCreateRepairMutation,

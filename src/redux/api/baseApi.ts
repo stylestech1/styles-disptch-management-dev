@@ -33,7 +33,8 @@ export const api = createApi({
     "Conversations",
     "centermaintenance",
     "companies",
-    "Settings"
+    "Settings",
+    "Owner Operators"
   ],
   refetchOnFocus: false,
   refetchOnReconnect: false,
