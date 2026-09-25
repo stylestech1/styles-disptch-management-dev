@@ -468,9 +468,6 @@ export const apiSlice = api.injectEndpoints({
       ],
     }),
 
-    // ! ========== Loads Using Id ==========
-    // ! ========== Loads Using Id ==========
-
     getLoadById: builder.query({
       query: (loadId) =>
         `/api/v1/loads?keyword=${encodeURIComponent(loadId)}`,
@@ -764,6 +761,28 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     // ! ========== Trucks ==========
+
+    getTruckPreview: builder.query({
+      query: ({
+        truckId,
+        distanceMiles,
+        pricePerMile,
+        totalPrice,
+        from,
+        to,
+      }) => ({
+        url: `/api/v1/summary/truck/${truckId}/preview`,
+        method: "GET",
+        params: {
+          distanceMiles,
+          pricePerMile,
+          totalPrice,
+          from,
+          to,
+        },
+      }),
+    }),
+
     getTrucks: builder.query({
       query: () => `/api/v1/trucks?status=available`,
       providesTags: ["Trucks"],
@@ -1342,6 +1361,7 @@ export const {
   useGetTrucksWithPaginationQuery,
   useGetAllTrucksQuery,
   useGetTruckSummaryQuery,
+  useLazyGetTruckPreviewQuery,
   // useGetTruckGraphSummaryQuery,
   useGetTruckWithSearchQuery,
   useGetSpecificTruckSummaryQuery,

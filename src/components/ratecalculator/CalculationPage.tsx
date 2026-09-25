@@ -33,6 +33,7 @@ import {
   useTheme,
   useMediaQuery,
   Popover,
+  MenuItem,
 } from "@mui/material";
 import { DirectionsCar, Check, Route as RouteIcon } from "@mui/icons-material";
 import LocationAutocomplete, {
@@ -61,6 +62,8 @@ import {
 import {
   useAddMessageMutation,
   useCreateOrGetConversationMutation,
+  useGetTrucksQuery,
+  useLazyGetTruckPreviewQuery,
 } from "@/redux/slices/apiSlice";
 import { UserChat } from "../chat/UserChats";
 import { socketService } from "@/services/socketService";
@@ -325,6 +328,7 @@ const MetricBox = ({
   );
 };
 
+
 const CalculationPage = () => {
   const theme = useAppSelector((state: RootState) => state.palette);
 
@@ -413,6 +417,106 @@ const CalculationPage = () => {
     setOrigin(null);
     setDestinations([null]);
   }, []);
+
+  const { data: trucksData, isLoading: isLoadingTrucks } =
+    useGetTrucksQuery(undefined);
+
+  const [
+    getTruckPreview,
+    { isLoading: isSavingPreview },
+  ] = useLazyGetTruckPreviewQuery();
+
+  const [selectedTruckId, setSelectedTruckId] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [truckPreview, setTruckPreview] = useState<any>(null);
+
+  const handleSaveTruckPreview = async () => {
+    if (!selectedTruckId) {
+      toast.error("Please select a truck");
+      return;
+    }
+
+    if (
+      !hasNum(dh) ||
+      !hasNum(loadMiles) ||
+      !hasNum(rate)
+    ) {
+      toast.error(
+        "Please fill Dead Head Miles, Load Miles and Rate",
+      );
+      return;
+    }
+
+    if (!fromDate || !toDate) {
+      toast.error("Please select From and To dates");
+      return;
+    }
+
+    if (new Date(toDate) < new Date(fromDate)) {
+      toast.error("To date cannot be before From date");
+      return;
+    }
+
+    if (calc === "") {
+      toast.error("Price Per Mile is required");
+      return;
+    }
+
+    try {
+      const response = await getTruckPreview({
+        truckId: selectedTruckId,
+
+        distanceMiles:
+          Number(dh) + Number(loadMiles),
+
+        pricePerMile: Number(calc),
+
+        totalPrice: Number(rate),
+
+        from: fromDate,
+        to: toDate,
+      }).unwrap();
+
+      setTruckPreview(
+        response?.data || response,
+      );
+
+      toast.success(
+        "Truck preview loaded successfully",
+      );
+    } catch (error) {
+      console.error(
+        "Truck preview error:",
+        error,
+      );
+
+      setTruckPreview(null);
+
+      toast.error(
+        "Failed to load truck preview",
+      );
+    }
+  };
+  const availableTrucks = useMemo(() => {
+    if (Array.isArray(trucksData)) {
+      return trucksData;
+    }
+
+    if (Array.isArray(trucksData?.data)) {
+      return trucksData.data;
+    }
+
+    if (Array.isArray(trucksData?.data?.trucks)) {
+      return trucksData.data.trucks;
+    }
+
+    if (Array.isArray(trucksData?.trucks)) {
+      return trucksData.trucks;
+    }
+
+    return [];
+  }, [trucksData]);
 
   const validDestinationsCount = useMemo(
     () => destinations.filter((dest) => dest !== null).length,
@@ -664,10 +768,15 @@ const CalculationPage = () => {
                   borderColor: borderBlue,
                   bgcolor: "#fff",
                   p: 2.25,
-                  "& .MuiInputLabel-root": { fontSize: 13 },
-                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                  "& .MuiInputLabel-root": {
+                    fontSize: 13,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
                 }}
               >
+
                 <Typography
                   sx={{
                     fontSize: 18,
@@ -679,11 +788,16 @@ const CalculationPage = () => {
                 </Typography>
 
                 <Typography
-                  sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}
+                  sx={{
+                    mt: 0.5,
+                    fontSize: 12,
+                    color: "text.secondary",
+                  }}
                 >
-                  Price Per Mile = Rate / ( Dead Head Miles + Load Miles)
+                  Price Per Mile = Rate / ( Dead Head Miles + Load Miles )
                 </Typography>
 
+                {/* PRICE PER MILE */}
                 <Stack sx={{ mt: 2 }}>
                   <Box
                     component="button"
@@ -705,36 +819,53 @@ const CalculationPage = () => {
                   >
                     <Typography
                       component="span"
-                      sx={{ fontSize: 14, fontWeight: 700 }}
+                      sx={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                      }}
                     >
                       Price Per Mile
                     </Typography>
+
                     <Typography
                       component="span"
-                      sx={{ fontSize: 16, fontWeight: 800 }}
+                      sx={{
+                        fontSize: 16,
+                        fontWeight: 800,
+                      }}
                     >
-                      {calc !== "" ? `$${Number(calc).toFixed(2)}` : "$0.00"}
+                      {calc !== ""
+                        ? `$${Number(calc).toFixed(2)}`
+                        : "$0.00"}
                     </Typography>
                   </Box>
                 </Stack>
 
+
                 <Grid container spacing={1.5} sx={{ mt: 2 }}>
+                  {/* DEAD HEAD */}
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
+                      required
                       label="Dead Head Miles"
                       placeholder="0.00"
                       value={dh}
-                      required
+                      type="number"
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
-                      onChange={(e) =>
-                        setDh(e.target.value ? Number(e.target.value) : "")
-                      }
-                      type="number"
+                      onChange={(e) => {
+                        setDh(
+                          e.target.value
+                            ? Number(e.target.value)
+                            : "",
+                        );
+
+                        setTruckPreview(null);
+                      }}
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -747,24 +878,29 @@ const CalculationPage = () => {
                     />
                   </Grid>
 
+                  {/* LOAD MILES */}
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
-                      label="Load Miles"
-                      placeholder="e.g. 50"
-                      value={loadMiles}
                       required
+                      label="Load Miles"
+                      placeholder="0.00"
+                      value={loadMiles}
+                      type="number"
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setLoadMiles(
-                          e.target.value ? Number(e.target.value) : "",
-                        )
-                      }
-                      type="number"
+                          e.target.value
+                            ? Number(e.target.value)
+                            : "",
+                        );
+
+                        setTruckPreview(null);
+                      }}
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -777,22 +913,29 @@ const CalculationPage = () => {
                     />
                   </Grid>
 
+                  {/* RATE */}
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
-                      label="Rate"
-                      placeholder="e.g. 50"
                       required
+                      label="Rate"
+                      placeholder="0.00"
+                      value={rate}
+                      type="number"
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
                         },
                       }}
-                      value={rate}
-                      onChange={(e) =>
-                        setRate(e.target.value ? Number(e.target.value) : "")
-                      }
-                      type="number"
+                      onChange={(e) => {
+                        setRate(
+                          e.target.value
+                            ? Number(e.target.value)
+                            : "",
+                        );
+
+                        setTruckPreview(null);
+                      }}
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -804,22 +947,619 @@ const CalculationPage = () => {
                       }}
                     />
                   </Grid>
-
-                  {calc !== "" && (
-                    <Fade in={true}>
-                      <Alert
-                        severity="success"
-                        sx={{ mt: 2, width: "100%" }}
-                        icon={<Check />}
-                      >
-                        <Typography variant="body2">
-                          Calculation: ${rate} / ({loadMiles} + {dh} miles) ={" "}
-                          <strong>${Number(calc).toFixed(2)} per mile</strong>
-                        </Typography>
-                      </Alert>
-                    </Fade>
-                  )}
                 </Grid>
+
+                {/* CALCULATION RESULT */}
+                {calc !== "" && (
+                  <Fade in>
+                    <Alert
+                      severity="success"
+                      sx={{
+                        mt: 2,
+                        width: "100%",
+                      }}
+                      icon={<Check />}
+                    >
+                      <Typography variant="body2">
+                        Calculation: ${rate} / ({loadMiles} + {dh} miles) ={" "}
+                        <strong>
+                          ${Number(calc).toFixed(2)} per mile
+                        </strong>
+                      </Typography>
+                    </Alert>
+                  </Fade>
+                )}
+
+                <Divider sx={{ my: 3 }} />
+
+                <Box>
+                  <Typography
+                    sx={{
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: theme.currentPalette.primary,
+                    }}
+                  >
+                    Available Trucks
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      mt: 0.5,
+                      fontSize: 12,
+                      color: "text.secondary",
+                    }}
+                  >
+                    Select an available truck to calculate the truck preview
+                  </Typography>
+
+                  <Stack spacing={2} sx={{ mt: 2 }}>
+                    {/* TRUCK DROPDOWN */}
+                    <TextField
+                      select
+                      fullWidth
+                      required
+                      label="Available Truck"
+                      value={selectedTruckId}
+                      disabled={isLoadingTrucks}
+                      onChange={(e) => {
+                        setSelectedTruckId(e.target.value);
+                        setTruckPreview(null);
+                      }}
+                      sx={{
+                        "& .MuiFormLabel-asterisk": {
+                          color: "red",
+                        },
+                      }}
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Truck size={18} />
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    >
+                      {isLoadingTrucks && (
+                        <MenuItem disabled>
+                          Loading trucks...
+                        </MenuItem>
+                      )}
+
+                      {!isLoadingTrucks && availableTrucks.length === 0 && (
+                        <MenuItem disabled>
+                          No available trucks
+                        </MenuItem>
+                      )}
+
+                      {availableTrucks.map((truck: any) => {
+                        const id = truck.id || truck._id;
+
+                        return (
+                          <MenuItem key={id} value={id}>
+                            Truck ({truck.truckNumber})
+                          </MenuItem>
+                        );
+                      })}
+                    </TextField>
+
+                    {/* FROM + TO */}
+                    <Grid container spacing={1.5}>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          required
+                          type="date"
+                          label="From"
+                          value={fromDate}
+                          onChange={(e) => {
+                            setFromDate(e.target.value);
+                            setTruckPreview(null);
+                          }}
+                          InputLabelProps={{
+                            shrink: true,
+                          }}
+                          sx={{
+                            "& .MuiFormLabel-asterisk": {
+                              color: "red",
+                            },
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          required
+                          type="date"
+                          label="To"
+                          value={toDate}
+                          onChange={(e) => {
+                            setToDate(e.target.value);
+                            setTruckPreview(null);
+                          }}
+                          inputProps={{
+                            min: fromDate || undefined,
+                          }}
+                          InputLabelProps={{
+                            shrink: true,
+                          }}
+                          sx={{
+                            "& .MuiFormLabel-asterisk": {
+                              color: "red",
+                            },
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+
+                    {/* SAVE */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        onClick={handleSaveTruckPreview}
+                        disabled={
+                          isSavingPreview ||
+                          !selectedTruckId ||
+                          !hasNum(dh) ||
+                          !hasNum(loadMiles) ||
+                          !hasNum(rate) ||
+                          calc === "" ||
+                          !fromDate ||
+                          !toDate
+                        }
+                        sx={{
+                          minWidth: 130,
+                          minHeight: 42,
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 700,
+                          bgcolor: theme.currentPalette.primary,
+                          "&:hover": {
+                            bgcolor: alpha(
+                              theme.currentPalette.primary,
+                              0.9,
+                            ),
+                          },
+                        }}
+                      >
+                        {isSavingPreview ? (
+                          <>
+                            <CircularProgress
+                              size={18}
+                              color="inherit"
+                              sx={{ mr: 1 }}
+                            />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save"
+                        )}
+                      </Button>
+                    </Box>
+
+                    {truckPreview && (
+                      <>
+                        <Divider sx={{ my: 1 }} />
+
+                        <Box
+                          sx={{
+                            p: { xs: 1.5, sm: 2 },
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: alpha(theme.currentPalette.primary, 0.25),
+                            bgcolor: alpha(theme.currentPalette.primary, 0.03),
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: 18,
+                              fontWeight: 800,
+                              color: theme.currentPalette.primary,
+                              mb: 2,
+                            }}
+                          >
+                            Truck Preview
+                          </Typography>
+
+                          {/* TRUCK + PERIOD */}
+                          <Grid container spacing={1.5}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                              <Box
+                                sx={{
+                                  p: 2,
+                                  bgcolor: "#fff",
+                                  border: "1px solid",
+                                  borderColor: "divider",
+                                  borderRadius: 2,
+                                  height: "100%",
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontSize: 12,
+                                    color: "text.secondary",
+                                    mb: 0.8,
+                                  }}
+                                >
+                                  Truck
+                                </Typography>
+
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Box
+                                    sx={{
+                                      width: 36,
+                                      height: 36,
+                                      borderRadius: 1.5,
+                                      display: "grid",
+                                      placeItems: "center",
+                                      bgcolor: alpha(theme.currentPalette.primary, 0.08),
+                                      color: theme.currentPalette.primary,
+                                    }}
+                                  >
+                                    <Truck size={18} />
+                                  </Box>
+
+                                  <Box>
+                                    <Typography
+                                      sx={{
+                                        fontSize: 15,
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      Truck #{truckPreview.truck?.truckNumber || "-"}
+                                    </Typography>
+
+                                    <Typography
+                                      sx={{
+                                        fontSize: 12,
+                                        color: "text.secondary",
+                                      }}
+                                    >
+                                      {truckPreview.truck?.model || "-"}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                              </Box>
+                            </Grid>
+
+                            <Grid size={{ xs: 12, md: 6 }}>
+                              <Box
+                                sx={{
+                                  p: 2,
+                                  bgcolor: "#fff",
+                                  border: "1px solid",
+                                  borderColor: "divider",
+                                  borderRadius: 2,
+                                  height: "100%",
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontSize: 12,
+                                    color: "text.secondary",
+                                    mb: 0.8,
+                                  }}
+                                >
+                                  Period
+                                </Typography>
+
+                                <Typography
+                                  sx={{
+                                    fontSize: 15,
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  {truckPreview.period?.from
+                                    ? new Date(
+                                      `${truckPreview.period.from}T00:00:00`,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })
+                                    : "-"}
+                                </Typography>
+
+                                <Typography
+                                  sx={{
+                                    fontSize: 12,
+                                    color: "text.secondary",
+                                    my: 0.3,
+                                  }}
+                                >
+                                  to
+                                </Typography>
+
+                                <Typography
+                                  sx={{
+                                    fontSize: 15,
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  {truckPreview.period?.to
+                                    ? new Date(
+                                      `${truckPreview.period.to}T00:00:00`,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })
+                                    : "-"}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          </Grid>
+
+                          {/* CURRENT */}
+                          <Box sx={{ mt: 2 }}>
+                            <Typography
+                              sx={{
+                                fontSize: 14,
+                                fontWeight: 800,
+                                mb: 1,
+                                color: "#374151",
+                              }}
+                            >
+                              Current Performance
+                            </Typography>
+
+                            <Grid container spacing={1}>
+                              {[
+                                {
+                                  label: "Loads",
+                                  value: truckPreview.current?.totalLoads ?? 0,
+                                },
+                                {
+                                  label: "Miles",
+                                  value: `${Number(
+                                    truckPreview.current?.totalMiles ?? 0,
+                                  ).toLocaleString()} mi`,
+                                },
+                                {
+                                  label: "Revenue",
+                                  value: `$${Number(
+                                    truckPreview.current?.totalRevenue ?? 0,
+                                  ).toLocaleString()}`,
+                                },
+                                {
+                                  label: "Avg / Mile",
+                                  value: `$${Number(
+                                    truckPreview.current?.averagePerMile ?? 0,
+                                  ).toFixed(2)}`,
+                                },
+                              ].map((item) => (
+                                <Grid
+                                  key={item.label}
+                                  size={{ xs: 6, sm: 3 }}
+                                >
+                                  <Box
+                                    sx={{
+                                      p: 1.5,
+                                      bgcolor: "#fff",
+                                      border: "1px solid",
+                                      borderColor: "divider",
+                                      borderRadius: 2,
+                                      height: "100%",
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        fontSize: 11,
+                                        color: "text.secondary",
+                                      }}
+                                    >
+                                      {item.label}
+                                    </Typography>
+
+                                    <Typography
+                                      sx={{
+                                        mt: 0.4,
+                                        fontSize: 15,
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      {item.value}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+
+                          {/* PROSPECTIVE LOAD */}
+                          <Box sx={{ mt: 2 }}>
+                            <Typography
+                              sx={{
+                                fontSize: 14,
+                                fontWeight: 800,
+                                mb: 1,
+                                color: "#374151",
+                              }}
+                            >
+                              Prospective Load
+                            </Typography>
+
+                            <Grid container spacing={1}>
+                              {[
+                                {
+                                  label: "Distance",
+                                  value: `${Number(
+                                    truckPreview.prospectiveLoad?.distanceMiles ?? 0,
+                                  ).toLocaleString()} mi`,
+                                },
+                                {
+                                  label: "Total Price",
+                                  value: `$${Number(
+                                    truckPreview.prospectiveLoad?.totalPrice ?? 0,
+                                  ).toLocaleString()}`,
+                                },
+                                {
+                                  label: "Price / Mile",
+                                  value: `$${Number(
+                                    truckPreview.prospectiveLoad?.pricePerMile ?? 0,
+                                  ).toFixed(2)}`,
+                                },
+                                {
+                                  label: "Rate / Mile",
+                                  value: `$${Number(
+                                    truckPreview.prospectiveLoad?.ratePerMile ?? 0,
+                                  ).toFixed(2)}`,
+                                },
+                              ].map((item) => (
+                                <Grid
+                                  key={item.label}
+                                  size={{ xs: 6, sm: 3 }}
+                                >
+                                  <Box
+                                    sx={{
+                                      p: 1.5,
+                                      bgcolor: "#fff",
+                                      border: "1px solid",
+                                      borderColor: alpha(
+                                        theme.currentPalette.primary,
+                                        0.2,
+                                      ),
+                                      borderRadius: 2,
+                                      height: "100%",
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        fontSize: 11,
+                                        color: "text.secondary",
+                                      }}
+                                    >
+                                      {item.label}
+                                    </Typography>
+
+                                    <Typography
+                                      sx={{
+                                        mt: 0.4,
+                                        fontSize: 15,
+                                        fontWeight: 800,
+                                        color: theme.currentPalette.primary,
+                                      }}
+                                    >
+                                      {item.value}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+
+                          {/* PROJECTED */}
+                          <Box sx={{ mt: 2 }}>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              sx={{ mb: 1 }}
+                            >
+                              <Typography
+                                sx={{
+                                  fontSize: 14,
+                                  fontWeight: 800,
+                                  color: "#374151",
+                                }}
+                              >
+                                Projected Performance
+                              </Typography>
+
+                              <Chip
+                                size="small"
+                                label={`Change ${Number(truckPreview.projected?.change ?? 0) >= 0
+                                  ? "+"
+                                  : ""
+                                  }$${Number(
+                                    truckPreview.projected?.change ?? 0,
+                                  ).toFixed(2)} / mile`}
+                                sx={{
+                                  fontWeight: 700,
+                                  bgcolor: alpha(
+                                    theme.currentPalette.primary,
+                                    0.08,
+                                  ),
+                                  color: theme.currentPalette.primary,
+                                }}
+                              />
+                            </Stack>
+
+                            <Grid container spacing={1}>
+                              {[
+                                {
+                                  label: "Loads",
+                                  value: truckPreview.projected?.totalLoads ?? 0,
+                                },
+                                {
+                                  label: "Miles",
+                                  value: `${Number(
+                                    truckPreview.projected?.totalMiles ?? 0,
+                                  ).toLocaleString()} mi`,
+                                },
+                                {
+                                  label: "Revenue",
+                                  value: `$${Number(
+                                    truckPreview.projected?.totalRevenue ?? 0,
+                                  ).toLocaleString()}`,
+                                },
+                                {
+                                  label: "Avg / Mile",
+                                  value: `$${Number(
+                                    truckPreview.projected?.averagePerMile ?? 0,
+                                  ).toFixed(2)}`,
+                                },
+                              ].map((item) => (
+                                <Grid
+                                  key={item.label}
+                                  size={{ xs: 6, sm: 3 }}
+                                >
+                                  <Box
+                                    sx={{
+                                      p: 1.5,
+                                      bgcolor: "#fff",
+                                      border: "1px solid",
+                                      borderColor: "divider",
+                                      borderRadius: 2,
+                                      height: "100%",
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        fontSize: 11,
+                                        color: "text.secondary",
+                                      }}
+                                    >
+                                      {item.label}
+                                    </Typography>
+
+                                    <Typography
+                                      sx={{
+                                        mt: 0.4,
+                                        fontSize: 15,
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      {item.value}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+                        </Box>
+                      </>
+                    )}
+
+                  </Stack>
+                </Box>
               </Paper>
 
               <Paper
@@ -1035,12 +1775,10 @@ const CalculationPage = () => {
                 border: "1px solid",
                 borderColor: borderBlue,
                 bgcolor: "#fff",
-
                 width: "100%",
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
-
                 minWidth: 0,
                 overflow: "hidden",
               }}
