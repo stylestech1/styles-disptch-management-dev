@@ -427,8 +427,8 @@ const CalculationPage = () => {
   ] = useLazyGetTruckPreviewQuery();
 
   const [selectedTruckId, setSelectedTruckId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  // const [fromDate, setFromDate] = useState("");
+  // const [toDate, setToDate] = useState("");
   const [truckPreview, setTruckPreview] = useState<any>(null);
 
   const handleSaveTruckPreview = async () => {
@@ -448,15 +448,15 @@ const CalculationPage = () => {
       return;
     }
 
-    if (!fromDate || !toDate) {
-      toast.error("Please select From and To dates");
-      return;
-    }
+    // if (!fromDate || !toDate) {
+    //   toast.error("Please select From and To dates");
+    //   return;
+    // }
 
-    if (new Date(toDate) < new Date(fromDate)) {
-      toast.error("To date cannot be before From date");
-      return;
-    }
+    // if (new Date(toDate) < new Date(fromDate)) {
+    //   toast.error("To date cannot be before From date");
+    //   return;
+    // }
 
     if (calc === "") {
       toast.error("Price Per Mile is required");
@@ -474,8 +474,8 @@ const CalculationPage = () => {
 
         totalPrice: Number(rate),
 
-        from: fromDate,
-        to: toDate,
+        // from: fromDate,
+        // to: toDate,
       }).unwrap();
 
       setTruckPreview(
@@ -1045,7 +1045,7 @@ const CalculationPage = () => {
                     </TextField>
 
                     {/* FROM + TO */}
-                    <Grid container spacing={1.5}>
+                    {/* <Grid container spacing={1.5}>
                       <Grid size={{ xs: 12, md: 6 }}>
                         <TextField
                           fullWidth
@@ -1092,7 +1092,7 @@ const CalculationPage = () => {
                           }}
                         />
                       </Grid>
-                    </Grid>
+                    </Grid> */}
 
                     {/* SAVE */}
                     <Box
@@ -1110,9 +1110,9 @@ const CalculationPage = () => {
                           !hasNum(dh) ||
                           !hasNum(loadMiles) ||
                           !hasNum(rate) ||
-                          calc === "" ||
-                          !fromDate ||
-                          !toDate
+                          calc === ""
+                          // !fromDate ||
+                          // !toDate
                         }
                         sx={{
                           minWidth: 130,
