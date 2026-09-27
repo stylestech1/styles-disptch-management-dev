@@ -352,7 +352,41 @@ const CalculationPage = () => {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const { isSocketReady } = useChatSocket();
 
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
+    return `${year}-${month}-${day}`;
+  };
+
+  const getFridayToThursdayPeriod = () => {
+    const today = new Date();
+
+    // JS:
+    // Sunday = 0
+    // Monday = 1
+    // ...
+    // Friday = 5
+    // Saturday = 6
+
+    const currentDay = today.getDay();
+
+    // Number of days since the most recent Friday
+    const daysSinceFriday = (currentDay - 5 + 7) % 7;
+
+    const friday = new Date(today);
+    friday.setHours(0, 0, 0, 0);
+    friday.setDate(today.getDate() - daysSinceFriday);
+
+    const thursday = new Date(friday);
+    thursday.setDate(friday.getDate() + 6);
+
+    return {
+      from: formatDate(friday),
+      to: formatDate(thursday),
+    };
+  };
   const toggleUser = (userId: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(userId)
@@ -437,26 +471,12 @@ const CalculationPage = () => {
       return;
     }
 
-    if (
-      !hasNum(dh) ||
-      !hasNum(loadMiles) ||
-      !hasNum(rate)
-    ) {
+    if (!hasNum(dh) || !hasNum(loadMiles) || !hasNum(rate)) {
       toast.error(
-        "Please fill Dead Head Miles, Load Miles and Rate",
+        "Please fill Dead Head Miles, Load Miles and Rate"
       );
       return;
     }
-
-    // if (!fromDate || !toDate) {
-    //   toast.error("Please select From and To dates");
-    //   return;
-    // }
-
-    // if (new Date(toDate) < new Date(fromDate)) {
-    //   toast.error("To date cannot be before From date");
-    //   return;
-    // }
 
     if (calc === "") {
       toast.error("Price Per Mile is required");
@@ -464,40 +484,33 @@ const CalculationPage = () => {
     }
 
     try {
+      const { from, to } = getFridayToThursdayPeriod();
+
       const response = await getTruckPreview({
         truckId: selectedTruckId,
 
-        distanceMiles:
-          Number(dh) + Number(loadMiles),
+        distanceMiles: Number(dh) + Number(loadMiles),
 
         pricePerMile: Number(calc),
 
         totalPrice: Number(rate),
 
-        // from: fromDate,
-        // to: toDate,
+        from,
+        to,
       }).unwrap();
 
-      setTruckPreview(
-        response?.data || response,
-      );
+      setTruckPreview(response?.data || response);
 
-      toast.success(
-        "Truck preview loaded successfully",
-      );
+      toast.success("Truck preview loaded successfully");
     } catch (error) {
-      console.error(
-        "Truck preview error:",
-        error,
-      );
+      console.error("Truck preview error:", error);
 
       setTruckPreview(null);
 
-      toast.error(
-        "Failed to load truck preview",
-      );
+      toast.error("Failed to load truck preview");
     }
   };
+
   const availableTrucks = useMemo(() => {
     if (Array.isArray(trucksData)) {
       return trucksData;
@@ -1046,53 +1059,53 @@ const CalculationPage = () => {
 
                     {/* FROM + TO */}
                     {/* <Grid container spacing={1.5}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          fullWidth
-                          required
-                          type="date"
-                          label="From"
-                          value={fromDate}
-                          onChange={(e) => {
-                            setFromDate(e.target.value);
-                            setTruckPreview(null);
-                          }}
-                          InputLabelProps={{
-                            shrink: true,
-                          }}
-                          sx={{
-                            "& .MuiFormLabel-asterisk": {
-                              color: "red",
-                            },
-                          }}
-                        />
-                      </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            fullWidth
+                            required
+                            type="date"
+                            label="From"
+                            value={fromDate}
+                            onChange={(e) => {
+                              setFromDate(e.target.value);
+                              setTruckPreview(null);
+                            }}
+                            InputLabelProps={{
+                              shrink: true,
+                            }}
+                            sx={{
+                              "& .MuiFormLabel-asterisk": {
+                                color: "red",
+                              },
+                            }}
+                          />
+                        </Grid>
 
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          fullWidth
-                          required
-                          type="date"
-                          label="To"
-                          value={toDate}
-                          onChange={(e) => {
-                            setToDate(e.target.value);
-                            setTruckPreview(null);
-                          }}
-                          inputProps={{
-                            min: fromDate || undefined,
-                          }}
-                          InputLabelProps={{
-                            shrink: true,
-                          }}
-                          sx={{
-                            "& .MuiFormLabel-asterisk": {
-                              color: "red",
-                            },
-                          }}
-                        />
-                      </Grid>
-                    </Grid> */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            fullWidth
+                            required
+                            type="date"
+                            label="To"
+                            value={toDate}
+                            onChange={(e) => {
+                              setToDate(e.target.value);
+                              setTruckPreview(null);
+                            }}
+                            inputProps={{
+                              min: fromDate || undefined,
+                            }}
+                            InputLabelProps={{
+                              shrink: true,
+                            }}
+                            sx={{
+                              "& .MuiFormLabel-asterisk": {
+                                color: "red",
+                              },
+                            }}
+                          />
+                        </Grid>
+                      </Grid> */}
 
                     {/* SAVE */}
                     <Box
