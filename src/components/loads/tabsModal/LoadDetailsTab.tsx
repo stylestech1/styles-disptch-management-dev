@@ -331,9 +331,9 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         leftValue: pickupAtFrom,
         onLeftChange: onpickupAtFromChange,
 
-        rightKey: "pickupAtFrom" as const,
+        rightKey: "pickupAtTo" as const,
         rightLabel: "Pickup To",
-        rightValue: pickupAtFrom,
+        rightValue: pickupAtTo,
         onRightChange: onpickupAtToChange,
       },
       // {
