@@ -46,9 +46,9 @@ import {
   setPrice,
   setFees,
   setLoadIDInp,
-  setPickupAt,
+  setpickupAtFrom,
   setCompletedAt,
-  setArrivalAtShipper,
+  setpickupAtTo,
   setArrivalAtReceiver,
   setLeftShipper,
   setLeftReceiver,
@@ -114,9 +114,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     price,
     fees,
     loadIDInp,
-    pickupAt,
+    pickupAtFrom,
     completedAt,
-    arrivalAtShipper,
+    pickupAtTo,
     arrivalAtReceiver,
     leftShipper,
     leftReceiver,
@@ -151,10 +151,10 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
 
   const submitIntentRef = React.useRef(false);
 
-  const pickupAtDayjs = pickupAt ? dayjs(pickupAt) : null;
+  const pickupAtFromDayjs = pickupAtFrom ? dayjs(pickupAtFrom) : null;
   const completedAtDayjs = completedAt ? dayjs(completedAt) : null;
-  const arrivalAtShipperDayjs = arrivalAtShipper
-    ? dayjs(arrivalAtShipper)
+  const pickupAtToDayjs = pickupAtTo
+    ? dayjs(pickupAtTo)
     : null;
   const arrivalAtReceiverDayjs = arrivalAtReceiver
     ? dayjs(arrivalAtReceiver)
@@ -169,7 +169,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
   };
 
   const isTimelineValid = () => {
-    return pickupAt !== null && completedAt !== null;
+    return pickupAtFrom !== null && completedAt !== null;
   };
 
   const isFinancialValid = () => {
@@ -241,7 +241,7 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     isEditMode,
     origin,
     destinations,
-    pickupAt,
+    pickupAtFrom,
     completedAt,
     price,
     loadIDInp,
@@ -407,9 +407,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     dispatch(setPrice(loadItem.totalPrice?.toString() || ""));
     dispatch(setFees(loadItem.feesNumber?.toString() || ""));
 
-    dispatch(setPickupAt(loadItem.pickupAt || null));
+    dispatch(setpickupAtFrom(loadItem.pickupAtFrom || null));
     dispatch(setCompletedAt(loadItem.completedAt || null));
-    dispatch(setArrivalAtShipper(loadItem.arrivalAtShipper || null));
+    dispatch(setpickupAtTo(loadItem.pickupAtTo || null));
     dispatch(setArrivalAtReceiver(loadItem.arrivalAtReceiver || null));
     dispatch(setLeftShipper(loadItem.leftShipper || null));
     dispatch(setLeftReceiver(loadItem.leftReceiver || null));
@@ -608,9 +608,9 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
     }
 
     const commonFields: Record<string, any> = {
-      pickupAt,
+      pickupAtFrom,
       completedAt,
-      arrivalAtShipper,
+      pickupAtTo,
       arrivalAtReceiver,
       leftShipper,
       leftReceiver,
@@ -1417,21 +1417,21 @@ const CreateEditLoadModal: React.FC<CreateEditLoadModalProps> = ({
 
                 {stepKey === "timeline" && (
                   <LoadDetailsTab
-                    pickupAt={pickupAtDayjs}
+                    pickupAtFrom={pickupAtFromDayjs}
                     completedAt={completedAtDayjs}
-                    arrivalAtShipper={arrivalAtShipperDayjs}
+                    pickupAtTo={pickupAtToDayjs}
                     arrivalAtReceiver={arrivalAtReceiverDayjs}
                     leftShipper={leftShipperDayjs}
                     leftReceiver={leftReceiverDayjs}
-                    onPickupAtChange={(value) =>
-                      dispatch(setPickupAt(value ? value.toISOString() : null))
+                    onpickupAtFromChange={(value) =>
+                      dispatch(setpickupAtFrom(value ? value.toISOString() : null))
                     }
                     onCompletedAtChange={(value) =>
                       dispatch(setCompletedAt(value ? value.toISOString() : null))
                     }
-                    onArrivalAtShipperChange={(value) =>
+                    onpickupAtToChange={(value) =>
                       dispatch(
-                        setArrivalAtShipper(value ? value.toISOString() : null),
+                        setpickupAtTo(value ? value.toISOString() : null),
                       )
                     }
                     onArrivalAtReceiverChange={(value) =>

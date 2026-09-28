@@ -606,7 +606,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                   <InfoItem
                     icon={<Schedule fontSize="small" />}
                     primary="Pickup Time"
-                    secondary={new Date(load.pickupAt).toLocaleString()}
+                    secondary={new Date(load.pickupAtFrom).toLocaleString()}
                   />
                   <Divider
                     sx={{ borderColor: alpha(theme.currentPalette.text, 0.2) }}
@@ -1130,7 +1130,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                     <Alert
                       variant="outlined"
                       severity={
-                        load.pickupAt && new Date(load.pickupAt) <= new Date()
+                        load.pickupAtFrom && new Date(load.pickupAtFrom) <= new Date()
                           ? "success"
                           : "info"
                       }
@@ -1145,8 +1145,8 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                         </Typography>
                         <Typography variant="body2">
                           <strong>Scheduled:</strong>{" "}
-                          {load.pickupAt
-                            ? new Date(load.pickupAt).toLocaleString()
+                          {load.pickupAtFrom
+                            ? new Date(load.pickupAtFrom).toLocaleString()
                             : "Not scheduled"}
                         </Typography>
                         {load.origin && (
@@ -1158,7 +1158,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                     </Alert>
 
                     {/* Arrival at Shipper */}
-                    {load.arrivalAtShipper && (
+                    {load.pickupAtTo && (
                       <Alert
                         variant="outlined"
                         severity="success"
@@ -1173,7 +1173,7 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                           </Typography>
                           <Typography variant="body2">
                             <strong>Time:</strong>{" "}
-                            {new Date(load.arrivalAtShipper).toLocaleString()}
+                            {new Date(load.pickupAtTo).toLocaleString()}
                           </Typography>
                         </Stack>
                       </Alert>
@@ -1320,11 +1320,11 @@ const LoadInfo = ({ loadId }: LoadInfoProps) => {
                     )}
 
                     {/* No Appointments Message */}
-                    {!load.pickupAt &&
+                    {!load.pickupAtFrom &&
                       !load.completedAt &&
                       !load.deliveredAt &&
                       !load.cancelledAt &&
-                      !load.arrivalAtShipper &&
+                      !load.pickupAtTo &&
                       !load.leftShipper &&
                       !load.arrivalAtReceiver &&
                       !load.leftReceiver && (

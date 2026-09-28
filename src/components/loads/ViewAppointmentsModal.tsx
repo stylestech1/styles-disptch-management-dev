@@ -44,8 +44,8 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                   </h4>
                 </div>
                 <p className="text-blue-700">
-                  {selectedLoad.pickupAt
-                    ? new Date(selectedLoad.pickupAt).toLocaleString()
+                  {selectedLoad.pickupAtFrom
+                    ? new Date(selectedLoad.pickupAtFrom).toLocaleString()
                     : 'Not scheduled'}
                 </p>
               </div>
@@ -80,8 +80,8 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                   </h4>
                 </div>
                 <p className="text-amber-700">
-                  {selectedLoad.arrivalAtShipper
-                    ? new Date(selectedLoad.arrivalAtShipper).toLocaleString()
+                  {selectedLoad.pickupAtTo
+                    ? new Date(selectedLoad.pickupAtTo).toLocaleString()
                     : 'Not recorded'}
                 </p>
               </div>

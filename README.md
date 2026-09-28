@@ -44,7 +44,7 @@
 * **Loads (Shipments) Management**
 
   * Full CRUD operations for loads.
-  * Fields include: `origin`, `destination`, `driverId`, `truckId`, `pickupAt`, `deliveredAt`, `cancelledAt`, `distanceMiles`, `totalPrice`, `pricePerMile`, `feesNumber`, and more.
+  * Fields include: `origin`, `destination`, `driverId`, `truckId`, `pickupAtFrom`, `deliveredAt`, `cancelledAt`, `distanceMiles`, `totalPrice`, `pricePerMile`, `feesNumber`, and more.
   * Price per mile is automatically calculated.
   * Integrated with maps for address geolocation using **Nominatim**.
 

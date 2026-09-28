@@ -116,9 +116,9 @@ export type TLoadsForm = {
   price: string;
   fees: string;
   loadIDInp: string;
-  pickupAt: string;
+  pickupAtFrom: string;
   completedAt: string;
-  arrivalAtShipper: string;
+  pickupAtTo: string;
   arrivalAtReceiver: string;
   leftShipper: string;
   leftReceiver: string;
@@ -152,9 +152,9 @@ export type TLoads = {
   truckTemp: number;
   comments: TComments[];
   feesNumber: string;
-  pickupAt: string;
+  pickupAtFrom: string;
   completedAt: string;
-  arrivalAtShipper?: string;
+  pickupAtTo?: string;
   arrivalAtReceiver?: string;
   leftShipper?: string;
   leftReceiver?: string;
@@ -482,9 +482,9 @@ export interface LoadsFormState {
   price: string;
   fees: string;
   loadIDInp: string;
-  pickupAt: string | null;
+  pickupAtFrom: string | null;
   completedAt: string | null;
-  arrivalAtShipper: string | null;
+  pickupAtTo: string | null;
   arrivalAtReceiver: string | null;
   leftShipper: string | null;
   leftReceiver: string | null;
@@ -548,16 +548,16 @@ export interface CreateEditLoadModalProps {
   editingLoad?: TLoads | null;
 }
 export interface LoadDetailsTabProps {
-  pickupAt: Dayjs | null;
+  pickupAtFrom: Dayjs | null;
   completedAt: Dayjs | null;
-  arrivalAtShipper: Dayjs | null;
+  pickupAtTo: Dayjs | null;
   arrivalAtReceiver: Dayjs | null;
   leftShipper: Dayjs | null;
   leftReceiver: Dayjs | null;
   isEditing: boolean;
-  onPickupAtChange: (value: Dayjs | null) => void;
+  onpickupAtFromChange: (value: Dayjs | null) => void;
   onCompletedAtChange: (value: Dayjs | null) => void;
-  onArrivalAtShipperChange: (value: Dayjs | null) => void;
+  onpickupAtToChange: (value: Dayjs | null) => void;
   onArrivalAtReceiverChange: (value: Dayjs | null) => void;
   onLeftShipperChange: (value: Dayjs | null) => void;
   onLeftReceiverChange: (value: Dayjs | null) => void;

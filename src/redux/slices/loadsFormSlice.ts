@@ -12,9 +12,9 @@ const initialState: LoadsFormState = {
   price: "",
   fees: "",
   loadIDInp: "",
-  pickupAt: null,
+  pickupAtFrom: null,
   completedAt: null,
-  arrivalAtShipper: null,
+  pickupAtTo: null,
   arrivalAtReceiver: null,
   leftShipper: null,
   leftReceiver: null,
@@ -84,16 +84,16 @@ const loadsFormSlice = createSlice({
       state.loadIDInp = action.payload;
     },
 
-    setPickupAt: (state, action: PayloadAction<string | null>) => {
-      state.pickupAt = action.payload;
+    setpickupAtFrom: (state, action: PayloadAction<string | null>) => {
+      state.pickupAtFrom = action.payload;
     },
 
     setCompletedAt: (state, action: PayloadAction<string | null>) => {
       state.completedAt = action.payload;
     },
 
-    setArrivalAtShipper: (state, action: PayloadAction<string | null>) => {
-      state.arrivalAtShipper = action.payload;
+    setpickupAtTo: (state, action: PayloadAction<string | null>) => {
+      state.pickupAtTo = action.payload;
     },
 
     setArrivalAtReceiver: (state, action: PayloadAction<string | null>) => {
@@ -149,9 +149,9 @@ const loadsFormSlice = createSlice({
       state.price = "";
       state.fees = "";
       state.loadIDInp = "";
-      state.pickupAt = null;
+      state.pickupAtFrom = null;
       state.completedAt = null;
-      state.arrivalAtShipper = null;
+      state.pickupAtTo = null;
       state.arrivalAtReceiver = null;
       state.leftShipper = null;
       state.leftReceiver = null;
@@ -199,9 +199,9 @@ export const {
   setPrice,
   setFees,
   setLoadIDInp,
-  setPickupAt,
+  setpickupAtFrom,
   setCompletedAt,
-  setArrivalAtShipper,
+  setpickupAtTo,
   setArrivalAtReceiver,
   setLeftShipper,
   setLeftReceiver,

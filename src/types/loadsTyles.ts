@@ -8,9 +8,9 @@ export interface LoadFormState {
   price: string;
   fees: string;
   loadIDInp: string;
-  pickupAt: string | null;
+  pickupAtFrom: string | null;
   completedAt: string | null;
-  arrivalAtShipper: string | null;
+  pickupAtTo: string | null;
   arrivalAtReceiver: string | null;
   leftShipper: string | null;
   leftReceiver: string | null;
@@ -59,9 +59,9 @@ export interface FormStateGroups {
     price: string;
     fees: string;
     loadIDInp: string;
-    pickupAt: string | null;
+    pickupAtFrom: string | null;
     completedAt: string | null;
-    arrivalAtShipper: string | null;
+    pickupAtTo: string | null;
     arrivalAtReceiver: string | null;
     leftShipper: string | null;
     leftReceiver: string | null;
@@ -88,9 +88,9 @@ export interface DispatchFunctions {
   setPrice: (value: string) => void;
   setFees: (value: string) => void;
   setLoadIDInp: (value: string) => void;
-  setPickupAt: (value: string | null) => void;
+  setpickupAtFrom: (value: string | null) => void;
   setCompletedAt: (value: string | null) => void;
-  setArrivalAtShipper: (value: string | null) => void;
+  setpickupAtTo: (value: string | null) => void;
   setArrivalAtReceiver: (value: string | null) => void;
   setLeftShipper: (value: string | null) => void;
   setLeftReceiver: (value: string | null) => void;

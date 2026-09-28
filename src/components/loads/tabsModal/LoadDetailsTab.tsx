@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -20,11 +21,11 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
-type SectionKey = "pickup" | "transit" | "delivery";
+type SectionKey = "pickup" |  "delivery";
 
 type FieldKey =
-  | "pickupAt"
-  | "arrivalAtShipper"
+  | "pickupAtFrom"
+  | "pickupAtTo"
   | "leftShipper"
   | "arrivalAtReceiver"
   | "completedAt"
@@ -167,16 +168,16 @@ const FieldLabel = ({
 );
 
 const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
-  pickupAt,
+  pickupAtFrom,
   completedAt,
-  arrivalAtShipper,
+  pickupAtTo,
   arrivalAtReceiver,
   leftShipper,
   leftReceiver,
   isEditing,
-  onPickupAtChange,
+  onpickupAtFromChange,
   onCompletedAtChange,
-  onArrivalAtShipperChange,
+  onpickupAtToChange,
   onArrivalAtReceiverChange,
   onLeftShipperChange,
   onLeftReceiverChange,
@@ -185,7 +186,7 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
 
   const [open, setOpen] = useState<Record<SectionKey, boolean>>({
     pickup: true,
-    transit: false,
+    // transit: false,
     delivery: false,
   });
 
@@ -201,8 +202,8 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   const isFilled = (v: any) => Boolean(v);
 
   const requiredMap: Record<FieldKey, boolean> = {
-    pickupAt: true,
-    arrivalAtShipper: false,
+    pickupAtFrom: true,
+    pickupAtTo: false,
     leftShipper: false,
     arrivalAtReceiver: false,
     completedAt: true,
@@ -217,13 +218,13 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
   };
 
   useEffect(() => {
-    const pickupDone = isFilled(pickupAt) && isFilled(arrivalAtShipper);
+    const pickupDone = isFilled(pickupAtFrom) && isFilled(pickupAtTo);
     const transitDone = isFilled(leftShipper) && isFilled(arrivalAtReceiver);
 
     if (pickupDone) {
       setOpen((p) => ({
         pickup: p.pickup,
-        transit: true,
+        // transit: true,
         delivery: p.delivery,
       }));
     }
@@ -231,11 +232,11 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
     if (transitDone) {
       setOpen((p) => ({
         pickup: p.pickup,
-        transit: p.transit,
-        delivery: true,
+        // transit: p.transit,
+        delivery: p.delivery,
       }));
     }
-  }, [pickupAt, arrivalAtShipper, leftShipper, arrivalAtReceiver]);
+  }, [pickupAtFrom, pickupAtTo, leftShipper, arrivalAtReceiver]);
 
   const pickerSx = {
     width: "100%",
@@ -325,32 +326,32 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
         subtitle: open.pickup ? "Click to collapse" : "Click to expand",
         icon: MapPin,
 
-        leftKey: "pickupAt" as const,
-        leftLabel: "Pickup",
-        leftValue: pickupAt,
-        onLeftChange: onPickupAtChange,
+        leftKey: "pickupAtFrom" as const,
+        leftLabel: "Pickup From",
+        leftValue: pickupAtFrom,
+        onLeftChange: onpickupAtFromChange,
 
-        rightKey: "arrivalAtShipper" as const,
-        rightLabel: "Arrived At Shipper",
-        rightValue: arrivalAtShipper,
-        onRightChange: onArrivalAtShipperChange,
+        rightKey: "pickupAtFrom" as const,
+        rightLabel: "Pickup To",
+        rightValue: pickupAtFrom,
+        onRightChange: onpickupAtToChange,
       },
-      {
-        key: "transit" as const,
-        title: "Transit",
-        subtitle: open.transit ? "Click to collapse" : "Click to expand",
-        icon: Navigation,
+      // {
+      //   key: "transit" as const,
+      //   title: "Transit",
+      //   subtitle: open.transit ? "Click to collapse" : "Click to expand",
+      //   icon: Navigation,
 
-        leftKey: "leftShipper" as const,
-        leftLabel: "Left Shipper",
-        leftValue: leftShipper,
-        onLeftChange: onLeftShipperChange,
+      //   leftKey: "leftShipper" as const,
+      //   leftLabel: "Left Shipper",
+      //   leftValue: leftShipper,
+      //   onLeftChange: onLeftShipperChange,
 
-        rightKey: "arrivalAtReceiver" as const,
-        rightLabel: "Arrival At Receiver",
-        rightValue: arrivalAtReceiver,
-        onRightChange: onArrivalAtReceiverChange,
-      },
+      //   rightKey: "arrivalAtReceiver" as const,
+      //   rightLabel: "Arrival At Receiver",
+      //   rightValue: arrivalAtReceiver,
+      //   onRightChange: onArrivalAtReceiverChange,
+      // },
       {
         key: "delivery" as const,
         title: "Delivery",
@@ -370,16 +371,16 @@ const LoadDetailsTab: React.FC<LoadDetailsTabProps> = ({
     ],
     [
       open.pickup,
-      open.transit,
-      open.delivery,
-      pickupAt,
-      arrivalAtShipper,
+      //open.transit,
+      open.delivery, 
+      pickupAtFrom,
+      pickupAtTo,
       leftShipper,
       arrivalAtReceiver,
       completedAt,
       leftReceiver,
-      onPickupAtChange,
-      onArrivalAtShipperChange,
+      onpickupAtFromChange,
+      onpickupAtToChange,
       onLeftShipperChange,
       onArrivalAtReceiverChange,
       onCompletedAtChange,
