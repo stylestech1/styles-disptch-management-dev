@@ -792,11 +792,24 @@ export const apiSlice = api.injectEndpoints({
       query: (id) => `/api/v1/repairs/${id}`,
       providesTags: ["Repairs"],
     }),
+
     getTrucksWithPagination: builder.query({
       query: ({ page = 1, limit = 10 }) =>
         `/api/v1/trucks?page=${page}&limit=${limit}`,
       providesTags: ["Trucks"],
       keepUnusedDataFor: 60 * 60 * 24,
+    }),
+    getAllTrucksUnUsed: builder.query<
+      any,
+      { unusedTrucks?: boolean }
+    >({
+      query: ({ unusedTrucks }) => ({
+        url: "/trucks",
+        method: "GET",
+        params: {
+          unusedTrucks,
+        },
+      }),
     }),
 
     getAllTrucks: builder.query({
@@ -938,6 +951,76 @@ export const apiSlice = api.injectEndpoints({
         { type: "TruckSummary", id: "LIST" },
         { type: "TruckSummary", id },
       ],
+    }),
+    getTruckDispatchers: builder.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        keyword?: string;
+        status?: string;
+        unusedTrucks?: boolean;
+      }
+    >({
+      query: ({
+        page = 1,
+        limit = 10,
+        keyword,
+        status,
+        unusedTrucks,
+      }) => ({
+        url: "/api/v1/truck-dispatchers",
+        method: "GET",
+
+        params: {
+          page,
+          limit,
+
+          ...(keyword && {
+            keyword,
+          }),
+
+          ...(status && {
+            status,
+          }),
+
+          ...(unusedTrucks !==
+            undefined && {
+            unusedTrucks,
+          }),
+        },
+      }),
+    }),
+
+    // getTruckDispatchers: builder.query<unknown, void>({
+    //   query: () => "/api/v1/truck-dispatchers?limit=100&page=1",
+    //   providesTags: ["TruckDispatchers"],
+    // }),
+    getTruckDispatcherById: builder.query({
+      query: (id: string) => `/api/v1/truck-dispatchers/${id}`,
+      providesTags: ["TruckDispatchers"],
+    }),
+    createTruckDispatcher: builder.mutation({
+      query: (body: { truckId: string; dispatcherId: string; notes?: string }) => ({
+        url: "/api/v1/truck-dispatchers",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
+    }),
+    updateTruckDispatcher: builder.mutation({
+      query: ({ id, ...body }: {
+        id: string;
+        truckId: string;
+        dispatcherId: string;
+        status: "active" | "inactive";
+        notes?: string;
+      }) => ({
+        url: `/api/v1/truck-dispatchers/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
     }),
 
     // ! ========== Trucks Maintenance ==========
@@ -1360,6 +1443,7 @@ export const {
   useGetTrucksQuery,
   useGetTrucksWithPaginationQuery,
   useGetAllTrucksQuery,
+  useGetAllTrucksUnUsedQuery,
   useGetTruckSummaryQuery,
   useLazyGetTruckPreviewQuery,
   // useGetTruckGraphSummaryQuery,
@@ -1377,6 +1461,10 @@ export const {
   useCreateTruckMutation,
   useUpdateTruckMutation,
   useDeleteTruckMutation,
+  useGetTruckDispatchersQuery,
+  useGetTruckDispatcherByIdQuery,
+  useCreateTruckDispatcherMutation,
+  useUpdateTruckDispatcherMutation,
 
   // TODO: ----- Trucks Maintenance -----
   useGetAllMaintenancesQuery,

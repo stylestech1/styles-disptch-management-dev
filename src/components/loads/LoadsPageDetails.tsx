@@ -546,7 +546,7 @@ const LoadsPageDetails = () => {
         <td className="p-4 text-center">
           <div>
             <div className="font-medium text-[14px] text-sm mb-1">
-              reserved By : {loadItem.reservedBy || "-"}
+              Updated By : {loadItem.updatedBy || "-"}
             </div>
           </div>
         </td>
@@ -742,7 +742,7 @@ const LoadsPageDetails = () => {
           </FormControl>
 
           <Box sx={{ flex: "1 1 220px", minWidth: 260, maxWidth: 340 }}>
-            
+
             {/* <SearchInput
                 searchHook={searchHook}
                 placeholder="Search Loads by ID, Driver"

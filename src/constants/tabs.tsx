@@ -59,6 +59,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <Truck />,
     },
     {
+      label: "Assign Driver",
+      subtitle: "Assign dispatchers to trucks and manage their assignments",
+      icon: <Truck />,
+    },
+    {
       label: "Maintenance",
       icon: <Wrench />,
       children: [
@@ -149,6 +154,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
     {
       label: "Customers",
       subtitle: "Handle your customers with love",
+      icon: <UserStar />,
+    },
+    {
+      label: "Assign drivers",
+      subtitle: "Assign drivers to loads and manage their trucks",
       icon: <UserStar />,
     },
     {

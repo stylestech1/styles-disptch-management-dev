@@ -23,6 +23,7 @@ export const api = createApi({
     "Dispatchers",
     "Users",
     "TruckSummary",
+    "TruckDispatchers",
     "DriverSummary",
     "Palette",
     "Customers",
