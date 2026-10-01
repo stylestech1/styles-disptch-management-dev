@@ -61,7 +61,7 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
     {
       label: "Assign Driver",
       subtitle: "Assign dispatchers to trucks and manage their assignments",
-      icon: <Truck />,
+      icon: <UserPlus  />,
     },
     {
       label: "Maintenance",
