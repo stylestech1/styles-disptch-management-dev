@@ -217,11 +217,7 @@ const Users = () => {
     error: roleError,
     isLoading: roleLoading,
   } = useGetUserByRoleQuery(
-    {
-      role: roleFilter,
-      page,
-      limit: 10,
-    },
+    roleFilter,
     {
       skip: roleFilter === "all" || isSearching || isFiltered,
     }

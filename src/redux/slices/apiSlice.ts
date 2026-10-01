@@ -1126,8 +1126,8 @@ export const apiSlice = api.injectEndpoints({
       query: (jobId) => `/api/v1/adminDashboard?jobId=${jobId}`,
       providesTags: (result, error, jobId) => [{ type: "Dispatchers", id: jobId }],
     }),
-    getUserByRole: builder.query({
-      query: (role) => `/api/v1/adminDashboard?role=${role}`,
+    getUserByRole: builder.query<any, string>({
+      query: (role) => `/api/v1/adminDashboard?role=${encodeURIComponent(role)}`,
       providesTags: (result, error, role) => [{ type: "Dispatchers", id: role }],
     }),
 
