@@ -465,21 +465,23 @@ const CalculationPage = () => {
   // const [toDate, setToDate] = useState("");
   const [truckPreview, setTruckPreview] = useState<any>(null);
 
-  const handleSaveTruckPreview = async () => {
-    if (!selectedTruckId) {
-      toast.error("Please select a truck");
+  const handleGetTruckPreview = async (truckId: string) => {
+    if (!truckId) {
+      setTruckPreview(null);
       return;
     }
 
     if (!hasNum(dh) || !hasNum(loadMiles) || !hasNum(rate)) {
       toast.error(
-        "Please fill Dead Head Miles, Load Miles and Rate"
+        "Please fill Dead Head Miles, Load Miles and Rate first"
       );
+      setTruckPreview(null);
       return;
     }
 
     if (calc === "") {
       toast.error("Price Per Mile is required");
+      setTruckPreview(null);
       return;
     }
 
@@ -487,21 +489,15 @@ const CalculationPage = () => {
       const { from, to } = getFridayToThursdayPeriod();
 
       const response = await getTruckPreview({
-        truckId: selectedTruckId,
-
+        truckId,
         distanceMiles: Number(dh) + Number(loadMiles),
-
         pricePerMile: Number(calc),
-
         totalPrice: Number(rate),
-
         from,
         to,
       }).unwrap();
 
       setTruckPreview(response?.data || response);
-
-      toast.success("Truck preview loaded successfully");
     } catch (error) {
       console.error("Truck preview error:", error);
 
@@ -510,7 +506,6 @@ const CalculationPage = () => {
       toast.error("Failed to load truck preview");
     }
   };
-
   const availableTrucks = useMemo(() => {
     if (Array.isArray(trucksData)) {
       return trucksData;
@@ -1001,14 +996,17 @@ const CalculationPage = () => {
                   borderColor: borderBlue,
                   bgcolor: "#fff",
                   p: 2.25,
+
                   "& .MuiInputLabel-root": {
                     fontSize: 13,
                   },
+
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
                   },
                 }}
               >
+                {/* ================= HEADER ================= */}
                 <Typography
                   sx={{
                     fontSize: 18,
@@ -1029,59 +1027,9 @@ const CalculationPage = () => {
                   Price Per Mile = Rate / ( Dead Head Miles + Load Miles )
                 </Typography>
 
-                {/* PRICE PER MILE */}
-                <Stack sx={{ mt: 2 }}>
-                  <Box
-                    component="button"
-                    type="button"
-                    sx={{
-                      width: "100%",
-                      height: 56,
-                      px: 2,
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      bgcolor: alpha(
-                        theme.currentPalette.primary,
-                        0.06,
-                      ),
-                      border: "1px solid",
-                      borderColor: alpha(
-                        theme.currentPalette.primary,
-                        0.25,
-                      ),
-                      color: theme.currentPalette.primary,
-                      cursor: "default",
-                    }}
-                  >
-                    <Typography
-                      component="span"
-                      sx={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                      }}
-                    >
-                      Price Per Mile
-                    </Typography>
-
-                    <Typography
-                      component="span"
-                      sx={{
-                        fontSize: 16,
-                        fontWeight: 800,
-                      }}
-                    >
-                      {calc !== ""
-                        ? `$${Number(calc).toFixed(2)}`
-                        : "$0.00"}
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                {/* RATE FIELDS */}
+                {/* ================= RATE FIELDS ================= */}
                 <Grid container spacing={1.5} sx={{ mt: 2 }}>
-                  {/* DEAD HEAD */}
+                  {/* DEAD HEAD MILES */}
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
@@ -1187,7 +1135,7 @@ const CalculationPage = () => {
                   </Grid>
                 </Grid>
 
-                {/* CALCULATION RESULT */}
+                {/* ================= CALCULATION RESULT ================= */}
                 {calc !== "" && (
                   <Fade in>
                     <Alert
@@ -1233,16 +1181,21 @@ const CalculationPage = () => {
                   </Typography>
 
                   <Stack spacing={2} sx={{ mt: 2 }}>
+                    {/* TRUCK SELECT */}
                     <TextField
                       select
                       fullWidth
                       required
                       label="Available Truck"
                       value={selectedTruckId}
-                      disabled={isLoadingTrucks}
-                      onChange={(e) => {
-                        setSelectedTruckId(e.target.value);
+                      disabled={isLoadingTrucks || isSavingPreview}
+                      onChange={async (e) => {
+                        const truckId = e.target.value;
+
+                        setSelectedTruckId(truckId);
                         setTruckPreview(null);
+
+                        await handleGetTruckPreview(truckId);
                       }}
                       sx={{
                         "& .MuiFormLabel-asterisk": {
@@ -1276,116 +1229,150 @@ const CalculationPage = () => {
                         const id = truck.id || truck._id;
 
                         return (
-                          <MenuItem key={id} value={id}>
+                          <MenuItem
+                            key={id}
+                            value={id}
+                          >
                             Truck ({truck.truckNumber})
                           </MenuItem>
                         );
                       })}
                     </TextField>
 
-                    {/* SAVE */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <Button
-                        variant="contained"
-                        onClick={handleSaveTruckPreview}
-                        disabled={
-                          isSavingPreview ||
-                          !selectedTruckId ||
-                          !hasNum(dh) ||
-                          !hasNum(loadMiles) ||
-                          !hasNum(rate) ||
-                          calc === ""
-                        }
+                    {/* ================= LOADING ================= */}
+                    {isSavingPreview && (
+                      <Box
                         sx={{
-                          minWidth: 130,
-                          minHeight: 42,
-                          borderRadius: 2,
-                          textTransform: "none",
-                          fontWeight: 700,
-                          bgcolor: theme.currentPalette.primary,
-                          "&:hover": {
-                            bgcolor: alpha(
-                              theme.currentPalette.primary,
-                              0.9,
-                            ),
-                          },
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 1,
+                          py: 1,
                         }}
                       >
-                        {isSavingPreview ? (
-                          <>
-                            <CircularProgress
-                              size={18}
-                              color="inherit"
-                              sx={{ mr: 1 }}
-                            />
-                            Saving...
-                          </>
-                        ) : (
-                          "Save"
-                        )}
-                      </Button>
-                    </Box>
+                        <CircularProgress size={18} />
 
-                    {/* WEEKLY PRICE PER MILE */}
-                    {truckPreview?.projected?.averagePerMile != null && (
-                      <Stack sx={{ mt: 2 }}>
-                        <Box
-                          component="button"
-                          type="button"
+                        <Typography
                           sx={{
-                            width: "100%",
-                            height: 56,
-                            px: 2,
-                            borderRadius: 2,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            bgcolor: alpha(
-                              theme.currentPalette.primary,
-                              0.06,
-                            ),
-                            border: "1px solid",
-                            borderColor: alpha(
-                              theme.currentPalette.primary,
-                              0.25,
-                            ),
-                            color: theme.currentPalette.primary,
-                            cursor: "default",
+                            fontSize: 13,
+                            color: "text.secondary",
                           }}
                         >
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: 14,
-                              fontWeight: 700,
-                            }}
-                          >
-                            Price Per Mile Per Week
-                          </Typography>
-
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: 16,
-                              fontWeight: 800,
-                            }}
-                          >
-                            $
-                            {Number(
-                              truckPreview.projected.averagePerMile,
-                            ).toFixed(2)}
-                          </Typography>
-                        </Box>
-                      </Stack>
+                          Loading truck preview...
+                        </Typography>
+                      </Box>
                     )}
+
+                    {/* ================= PRICE BOX ================= */}
+                    <Box
+                      sx={{
+                        width: "100%",
+                        px: 2.5,
+                        py: 2,
+                        borderRadius: 2,
+
+                        bgcolor: alpha(
+                          theme.currentPalette.primary,
+                          0.06,
+                        ),
+
+                        border: "1px solid",
+
+                        borderColor: alpha(
+                          theme.currentPalette.primary,
+                          0.25,
+                        ),
+                      }}
+                    >
+                      <Grid
+                        container
+                        spacing={2}
+                        alignItems="flex-start"
+                      >
+                        {/* ================= LEFT ================= */}
+                        <Grid size={{ xs: 6 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color:
+                                  theme.currentPalette.primary,
+                              }}
+                            >
+                              Price Per Mile Per Week
+                            </Typography>
+
+                            <Typography
+                              sx={{
+                                mt: 0.75,
+                                fontSize: 20,
+                                fontWeight: 800,
+                                lineHeight: 1.2,
+                                color:
+                                  theme.currentPalette.primary,
+                              }}
+                            >
+                              {truckPreview?.projected
+                                ?.averagePerMile != null
+                                ? `$${Number(
+                                  truckPreview.projected
+                                    .averagePerMile,
+                                ).toFixed(2)}`
+                                : "$0.00"}
+                            </Typography>
+                          </Box>
+                        </Grid>
+
+                        {/* ================= RIGHT ================= */}
+                        <Grid size={{ xs: 6 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              textAlign: "right",
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color:
+                                  theme.currentPalette.primary,
+                              }}
+                            >
+                              Price Per Mile
+                            </Typography>
+
+                            <Typography
+                              sx={{
+                                mt: 0.75,
+                                fontSize: 20,
+                                fontWeight: 800,
+                                lineHeight: 1.2,
+                                color:
+                                  theme.currentPalette.primary,
+                              }}
+                            >
+                              {calc !== ""
+                                ? `$${Number(calc).toFixed(2)}`
+                                : "$0.00"}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
                   </Stack>
                 </Box>
               </Paper>
+
             </Stack>
           </Grid>
 
