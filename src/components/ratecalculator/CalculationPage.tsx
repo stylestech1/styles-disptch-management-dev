@@ -770,7 +770,6 @@ const CalculationPage = () => {
         </Stack>
 
         <Grid container spacing={3}>
-          {/* LEFT */}
           <Grid size={{ xs: 12, lg: 6 }}>
             <Stack spacing={3}>
               <Paper
@@ -789,7 +788,227 @@ const CalculationPage = () => {
                   },
                 }}
               >
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: theme.currentPalette.primary,
+                  }}
+                >
+                  Route Planning
+                </Typography>
 
+                {/* ROUTE METRICS */}
+                <Grid container spacing={1.5} sx={{ mt: 2 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <MetricBox
+                      title="DHO to Origin"
+                      icon={<RouteIcon fontSize="small" />}
+                      value={
+                        dhoToOriginDistance
+                          ? `${dhoToOriginDistance.toFixed(1)} miles`
+                          : "—"
+                      }
+                      sub={
+                        dhoToOriginTime
+                          ? formatTime(dhoToOriginTime)
+                          : ""
+                      }
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <MetricBox
+                      title="Total Route"
+                      icon={<Truck size={18} />}
+                      value={
+                        totalDistance
+                          ? `${totalDistance.toFixed(1)} miles`
+                          : "—"
+                      }
+                      sub={
+                        totalTime
+                          ? formatTime(totalTime)
+                          : validDestinationsCount
+                            ? `${validDestinationsCount} stops`
+                            : ""
+                      }
+                    />
+                  </Grid>
+                </Grid>
+
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  {/* DHO */}
+                  <LocationAutocomplete
+                    key={`dho-${resetKey}`}
+                    label="DHO(Driver Home Origin)"
+                    value={dho}
+                    required
+                    setValue={setDho}
+                    placeholder="e.g. FixIt Auto Center"
+                    showZipCode={true}
+                    startAdornment={
+                      <MapPinHouse
+                        size={18}
+                        color={theme.currentPalette.primary}
+                      />
+                    }
+                  />
+
+                  {/* ORIGIN */}
+                  <LocationAutocomplete
+                    key={`origin-${resetKey}`}
+                    label="Pick Up (Origin)"
+                    value={origin}
+                    setValue={setOrigin}
+                    required
+                    placeholder="e.g. FixIt Auto Center"
+                    showZipCode={true}
+                    startAdornment={
+                      <MapPinCheck
+                        size={18}
+                        color={theme.currentPalette.primary}
+                      />
+                    }
+                  />
+
+                  {/* DESTINATIONS HEADER */}
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: theme.currentPalette.primary,
+                      }}
+                    >
+                      Destinations
+                    </Typography>
+
+                    <div className="flex gap-2">
+                      <Tooltip title="Clear all routes">
+                        <span>
+                          <IconButton
+                            sx={iconBtnSx(theme)}
+                            onClick={clearAllRoutes}
+                            size="small"
+                          >
+                            <MapPinMinus />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+
+                      <Tooltip title="Add destination">
+                        <span>
+                          <IconButton
+                            sx={iconBtnSx(theme)}
+                            onClick={handleAddDestination}
+                            size="small"
+                          >
+                            <MapPinPlus />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </div>
+                  </Stack>
+
+                  {/* DESTINATION INPUTS */}
+                  {destinations.map((destination, index) => (
+                    <Stack
+                      key={`dest-${index}-${resetKey}`}
+                      direction="row"
+                      spacing={1}
+                      alignItems="flex-end"
+                    >
+                      <Box sx={{ flex: 1 }}>
+                        <LocationAutocomplete
+                          label={`Destination ${index + 1}`}
+                          value={destination}
+                          required
+                          setValue={(place) =>
+                            handleUpdateDestination(index, place)
+                          }
+                          placeholder="e.g. FixIt Auto Center"
+                          showZipCode={true}
+                          startAdornment={
+                            <MapPinned
+                              size={18}
+                              color={theme.currentPalette.primary}
+                            />
+                          }
+                        />
+                      </Box>
+
+                      {destinations.length > 1 && (
+                        <Tooltip title="Remove destination">
+                          <IconButton
+                            onClick={() =>
+                              handleRemoveDestination(index)
+                            }
+                            size="small"
+                            sx={{ mb: 0.5 }}
+                          >
+                            <span
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Trash2 size={18} color="red" />
+                            </span>
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  ))}
+
+                  {/* LOAD DETAILS */}
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: theme.currentPalette.primary,
+                      }}
+                    >
+                      Load Details
+                    </Typography>
+
+                    <TextField
+                      sx={{ mt: 1.25 }}
+                      label="Notes"
+                      placeholder="Add any additional information here..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      fullWidth
+                      multiline
+                      minRows={4}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Box>
+                </Stack>
+              </Paper>
+
+              {/* ================= RATE CALCULATION ================= */}
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: borderBlue,
+                  bgcolor: "#fff",
+                  p: 2.25,
+                  "& .MuiInputLabel-root": {
+                    fontSize: 13,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
+              >
                 <Typography
                   sx={{
                     fontSize: 18,
@@ -823,9 +1042,15 @@ const CalculationPage = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      bgcolor: alpha(theme.currentPalette.primary, 0.06),
+                      bgcolor: alpha(
+                        theme.currentPalette.primary,
+                        0.06,
+                      ),
                       border: "1px solid",
-                      borderColor: alpha(theme.currentPalette.primary, 0.25),
+                      borderColor: alpha(
+                        theme.currentPalette.primary,
+                        0.25,
+                      ),
                       color: theme.currentPalette.primary,
                       cursor: "default",
                     }}
@@ -854,7 +1079,7 @@ const CalculationPage = () => {
                   </Box>
                 </Stack>
 
-
+                {/* RATE FIELDS */}
                 <Grid container spacing={1.5} sx={{ mt: 2 }}>
                   {/* DEAD HEAD */}
                   <Grid size={{ xs: 12, md: 4 }}>
@@ -985,6 +1210,7 @@ const CalculationPage = () => {
 
                 <Divider sx={{ my: 3 }} />
 
+                {/* ================= AVAILABLE TRUCKS ================= */}
                 <Box>
                   <Typography
                     sx={{
@@ -1007,7 +1233,6 @@ const CalculationPage = () => {
                   </Typography>
 
                   <Stack spacing={2} sx={{ mt: 2 }}>
-                    {/* TRUCK DROPDOWN */}
                     <TextField
                       select
                       fullWidth
@@ -1040,11 +1265,12 @@ const CalculationPage = () => {
                         </MenuItem>
                       )}
 
-                      {!isLoadingTrucks && availableTrucks.length === 0 && (
-                        <MenuItem disabled>
-                          No available trucks
-                        </MenuItem>
-                      )}
+                      {!isLoadingTrucks &&
+                        availableTrucks.length === 0 && (
+                          <MenuItem disabled>
+                            No available trucks
+                          </MenuItem>
+                        )}
 
                       {availableTrucks.map((truck: any) => {
                         const id = truck.id || truck._id;
@@ -1056,56 +1282,6 @@ const CalculationPage = () => {
                         );
                       })}
                     </TextField>
-
-                    {/* FROM + TO */}
-                    {/* <Grid container spacing={1.5}>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            fullWidth
-                            required
-                            type="date"
-                            label="From"
-                            value={fromDate}
-                            onChange={(e) => {
-                              setFromDate(e.target.value);
-                              setTruckPreview(null);
-                            }}
-                            InputLabelProps={{
-                              shrink: true,
-                            }}
-                            sx={{
-                              "& .MuiFormLabel-asterisk": {
-                                color: "red",
-                              },
-                            }}
-                          />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            fullWidth
-                            required
-                            type="date"
-                            label="To"
-                            value={toDate}
-                            onChange={(e) => {
-                              setToDate(e.target.value);
-                              setTruckPreview(null);
-                            }}
-                            inputProps={{
-                              min: fromDate || undefined,
-                            }}
-                            InputLabelProps={{
-                              shrink: true,
-                            }}
-                            sx={{
-                              "& .MuiFormLabel-asterisk": {
-                                color: "red",
-                              },
-                            }}
-                          />
-                        </Grid>
-                      </Grid> */}
 
                     {/* SAVE */}
                     <Box
@@ -1124,8 +1300,6 @@ const CalculationPage = () => {
                           !hasNum(loadMiles) ||
                           !hasNum(rate) ||
                           calc === ""
-                          // !fromDate ||
-                          // !toDate
                         }
                         sx={{
                           minWidth: 130,
@@ -1157,6 +1331,7 @@ const CalculationPage = () => {
                       </Button>
                     </Box>
 
+                    {/* WEEKLY PRICE PER MILE */}
                     {truckPreview?.projected?.averagePerMile != null && (
                       <Stack sx={{ mt: 2 }}>
                         <Box
@@ -1170,239 +1345,57 @@ const CalculationPage = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            bgcolor: alpha(theme.currentPalette.primary, 0.06),
+                            bgcolor: alpha(
+                              theme.currentPalette.primary,
+                              0.06,
+                            ),
                             border: "1px solid",
-                            borderColor: alpha(theme.currentPalette.primary, 0.25),
+                            borderColor: alpha(
+                              theme.currentPalette.primary,
+                              0.25,
+                            ),
                             color: theme.currentPalette.primary,
                             cursor: "default",
                           }}
                         >
                           <Typography
                             component="span"
-                            sx={{ fontSize: 14, fontWeight: 700 }}
+                            sx={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                            }}
                           >
                             Price Per Mile Per Week
                           </Typography>
 
                           <Typography
                             component="span"
-                            sx={{ fontSize: 16, fontWeight: 800 }}
+                            sx={{
+                              fontSize: 16,
+                              fontWeight: 800,
+                            }}
                           >
-                            ${Number(truckPreview.projected.averagePerMile).toFixed(2)}
+                            $
+                            {Number(
+                              truckPreview.projected.averagePerMile,
+                            ).toFixed(2)}
                           </Typography>
                         </Box>
                       </Stack>
                     )}
-
                   </Stack>
                 </Box>
-              </Paper>
-
-              <Paper
-                elevation={0}
-                sx={{
-                  borderRadius: 2,
-                  border: "1px solid",
-                  borderColor: borderBlue,
-                  bgcolor: "#fff",
-                  p: 2.25,
-                  "& .MuiInputLabel-root": { fontSize: 13 },
-                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: theme.currentPalette.primary,
-                  }}
-                >
-                  Route Planning
-                </Typography>
-
-                <Grid container spacing={1.5} sx={{ mt: 2 }}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <MetricBox
-                      title="DHO to Origin"
-                      icon={<RouteIcon fontSize="small" />}
-                      value={
-                        dhoToOriginDistance
-                          ? `${dhoToOriginDistance.toFixed(1)} miles`
-                          : "—"
-                      }
-                      sub={dhoToOriginTime ? formatTime(dhoToOriginTime) : ""}
-                    />
-                  </Grid>
-
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <MetricBox
-                      title="Total Route"
-                      icon={<Truck fontSize="small" />}
-                      value={
-                        totalDistance
-                          ? `${totalDistance.toFixed(1)} miles`
-                          : "—"
-                      }
-                      sub={
-                        totalTime
-                          ? formatTime(totalTime)
-                          : validDestinationsCount
-                            ? `${validDestinationsCount} stops`
-                            : ""
-                      }
-                    />
-                  </Grid>
-                </Grid>
-
-                <Stack spacing={2} sx={{ mt: 2 }}>
-                  <LocationAutocomplete
-                    key={`dho-${resetKey}`}
-                    label="DHO(Driver Home Origin)"
-                    value={dho}
-                    required
-                    setValue={setDho}
-                    placeholder="e.g. FixIt Auto Center"
-                    showZipCode={true}
-                    startAdornment={
-                      <MapPinHouse
-                        size={18}
-                        color={theme.currentPalette.primary}
-                      />
-                    }
-                  />
-
-                  <LocationAutocomplete
-                    key={`origin-${resetKey}`}
-                    label="Pick Up (Origin)"
-                    value={origin}
-                    setValue={setOrigin}
-                    required
-                    placeholder="e.g. FixIt Auto Center"
-                    showZipCode={true}
-                    startAdornment={
-                      <MapPinCheck
-                        size={18}
-                        color={theme.currentPalette.primary}
-                      />
-                    }
-                  />
-
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 18,
-                        fontWeight: 800,
-                        color: theme.currentPalette.primary,
-                      }}
-                    >
-                      Destinations
-                    </Typography>
-
-                    <div className="flex gap-2">
-                      <Tooltip title="Clear all routes">
-                        <span>
-                          <IconButton
-                            sx={iconBtnSx(theme)}
-                            onClick={clearAllRoutes}
-                            size="small"
-                          >
-                            <MapPinMinus />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-
-                      <Tooltip title="Add destination">
-                        <span>
-                          <IconButton
-                            sx={iconBtnSx(theme)}
-                            onClick={handleAddDestination}
-                            size="small"
-                          >
-                            <MapPinPlus />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </div>
-                  </Stack>
-
-                  {destinations.map((destination, index) => (
-                    <Stack
-                      key={`dest-${index}-${resetKey}`}
-                      direction="row"
-                      spacing={1}
-                      alignItems="flex-end"
-                    >
-                      <Box sx={{ flex: 1 }}>
-                        <LocationAutocomplete
-                          label={`Destination ${index + 1}`}
-                          value={destination}
-                          required
-                          setValue={(place) =>
-                            handleUpdateDestination(index, place)
-                          }
-                          placeholder="e.g. FixIt Auto Center"
-                          showZipCode={true}
-                          startAdornment={
-                            <MapPinned
-                              size={18}
-                              color={theme.currentPalette.primary}
-                            />
-                          }
-                        />
-                      </Box>
-
-                      {destinations.length > 1 && (
-                        <Tooltip title="Remove destination">
-                          <IconButton
-                            onClick={() => handleRemoveDestination(index)}
-                            size="small"
-                            sx={{ mb: 0.5 }}
-                          >
-                            <span
-                              style={{ display: "flex", alignItems: "center" }}
-                            >
-                              <Trash2 size={18} color="red" />
-                            </span>
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Stack>
-                  ))}
-
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: 18,
-                        fontWeight: 800,
-                        color: theme.currentPalette.primary,
-                      }}
-                    >
-                      Load Details
-                    </Typography>
-
-                    <TextField
-                      sx={{ mt: 1.25 }}
-                      label="Notes"
-                      placeholder="Add any additional information here..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      fullWidth
-                      multiline
-                      minRows={4}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Box>
-                </Stack>
               </Paper>
             </Stack>
           </Grid>
 
-          {/* RIGHT */}
-          <Grid size={{ xs: 12, lg: 6 }} sx={{ minWidth: 0, display: "flex" }}>
+          {/* ========================= RIGHT / MAP ========================= */}
+          <Grid
+            size={{ xs: 12, lg: 6 }}
+            sx={{
+              minWidth: 0,
+            }}
+          >
             <Paper
               elevation={0}
               sx={{
@@ -1412,18 +1405,27 @@ const CalculationPage = () => {
                 borderColor: borderBlue,
                 bgcolor: "#fff",
                 width: "100%",
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
                 minWidth: 0,
                 overflow: "hidden",
+
+                // مهم: الـ map مش هتتمدد بطول الـ left side
+                height: {
+                  xs: 450,
+                  md: 520,
+                  lg: 650,
+                },
               }}
             >
+              {/* MAP HEADER */}
               <Stack
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
-                sx={{ mb: 2, minWidth: 0, gap: 1 }}
+                sx={{
+                  mb: 2,
+                  minWidth: 0,
+                  gap: 1,
+                }}
               >
                 <Typography
                   sx={{
@@ -1445,7 +1447,10 @@ const CalculationPage = () => {
                   sx={{
                     flexShrink: 0,
                     color: theme.currentPalette.primary,
-                    backgroundColor: alpha(theme.currentPalette.primary, 0.02),
+                    backgroundColor: alpha(
+                      theme.currentPalette.primary,
+                      0.02,
+                    ),
                     maxWidth: 140,
                     "& .MuiChip-label": {
                       overflow: "hidden",
@@ -1456,7 +1461,16 @@ const CalculationPage = () => {
                 />
               </Stack>
 
-              <Box sx={{ flex: 1, minHeight: 0, width: "100%" }}>
+              {/* MAP */}
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "calc(100% - 48px)",
+                  minHeight: 0,
+                  overflow: "hidden",
+                  borderRadius: 2,
+                }}
+              >
                 <Suspense fallback={<MapFallback />}>
                   <LazyGoogleMapsLoader>
                     <LazyMapWithRoute
@@ -1471,9 +1485,8 @@ const CalculationPage = () => {
               </Box>
             </Paper>
           </Grid>
-
-
         </Grid>
+
       </Container>
 
       <Popover
