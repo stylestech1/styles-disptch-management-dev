@@ -77,7 +77,7 @@ import {
 import {
   useAddMessageMutation,
   useCreateOrGetConversationMutation,
-  useGetTrucksQuery,
+  useGetAllTruckQuery,
   useLazyGetTruckPreviewQuery,
 } from "@/redux/slices/apiSlice";
 import { UserChat } from "../chat/UserChats";
@@ -392,12 +392,25 @@ const CalculationPage = () => {
   };
 
   const getFridayToThursdayPeriod = () => {
+    const today = new Date();
+
+
+    const currentDay = today.getDay();
+
+    const daysSinceFriday = (currentDay - 5 + 7) % 7;
+
+    const friday = new Date(today);
+    friday.setHours(0, 0, 0, 0);
+    friday.setDate(today.getDate() - daysSinceFriday);
+
+    const thursday = new Date(friday);
+    thursday.setDate(friday.getDate() + 6);
+
     return {
-      from: "2026-09-21",
-      to: "2026-09-27",
+      from: formatDate(friday),
+      to: formatDate(thursday),
     };
   };
-
   const toggleUser = (userId: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(userId)
@@ -464,7 +477,7 @@ const CalculationPage = () => {
   }, []);
 
   const { data: trucksData, isLoading: isLoadingTrucks } =
-    useGetTrucksQuery(undefined);
+    useGetAllTruckQuery(undefined);
 
   const [
     getTruckPreview,
@@ -507,16 +520,22 @@ const CalculationPage = () => {
 
     const timer = setTimeout(async () => {
       try {
-const { from, to } = getFridayToThursdayPeriod();
+        const { from, to } = getFridayToThursdayPeriod();
 
-const response = await getTruckPreview({
-  truckId: selectedTruckId,
-  distanceMiles: Number(dh) + Number(loadMiles),
-  pricePerMile: Number(calc),
-  totalPrice: Number(rate),
-  from,
-  to,
-}).unwrap();
+        const response = await getTruckPreview({
+          truckId: selectedTruckId,
+
+          // Map / Rate distance
+          distanceMiles: Number(dh) + Number(loadMiles),
+
+          pricePerMile: Number(calc),
+
+          totalPrice: Number(rate),
+
+          from,
+          to,
+        }).unwrap();
+
         setTruckPreview(response?.data || response);
       } catch (error) {
         console.error(error);
@@ -1458,7 +1477,7 @@ const response = await getTruckPreview({
                                 ? `$${Number(truckPreview.projected.averagePerMile).toFixed(2)}`
                                 : "$0.00"}
                             </Typography>
-
+                            
                           </Box>
                         </Grid>
 

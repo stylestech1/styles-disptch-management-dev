@@ -788,6 +788,12 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["Trucks"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
+    getAllTruck: builder.query({
+      query: () => `/api/v1/trucks`,
+      providesTags: ["Trucks"],
+      keepUnusedDataFor: 60 * 60 * 24,
+    }),
+
     getRepairById: builder.query<{ data: any }, string>({
       query: (id) => `/api/v1/repairs/${id}`,
       providesTags: ["Repairs"],
@@ -1444,6 +1450,7 @@ export const {
   useGetTrucksWithPaginationQuery,
   useGetAllTrucksQuery,
   useGetAllTrucksUnUsedQuery,
+  useGetAllTruckQuery,
   useGetTruckSummaryQuery,
   useLazyGetTruckPreviewQuery,
   // useGetTruckGraphSummaryQuery,
