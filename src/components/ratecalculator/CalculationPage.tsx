@@ -390,13 +390,27 @@ const CalculationPage = () => {
 
     return `${year}-${month}-${day}`;
   };
+
   const getFridayToThursdayPeriod = () => {
+    const today = new Date();
+
+
+    const currentDay = today.getDay();
+
+    const daysSinceFriday = (currentDay - 5 + 7) % 7;
+
+    const friday = new Date(today);
+    friday.setHours(0, 0, 0, 0);
+    friday.setDate(today.getDate() - daysSinceFriday);
+
+    const thursday = new Date(friday);
+    thursday.setDate(friday.getDate() + 6);
+
     return {
-      from: "2026-09-21",
-      to: "2026-09-27",
+      from: formatDate(friday),
+      to: formatDate(thursday),
     };
   };
-
   const toggleUser = (userId: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(userId)
@@ -475,15 +489,14 @@ const CalculationPage = () => {
   // const [toDate, setToDate] = useState("");
   const [truckPreview, setTruckPreview] = useState<any>(null);
 
-  const visibleRateCalculationRows = useMemo(
-    () =>
-      selectedTruckId
-        ? rateCalculationRows.filter(
-          (row) => String(row.truckId) === String(selectedTruckId),
-        )
-        : rateCalculationRows,
-    [rateCalculationRows, selectedTruckId],
-  );
+  const visibleRateCalculationRows = useMemo(() => {
+    if (!selectedTruckId) return [];
+
+    return rateCalculationRows.filter(
+      (row) => String(row.truckId) === String(selectedTruckId),
+    );
+  }, [rateCalculationRows, selectedTruckId]);
+
 
   const clearRateInputs = useCallback(() => {
     setDho(null);
@@ -511,12 +524,18 @@ const CalculationPage = () => {
 
         const response = await getTruckPreview({
           truckId: selectedTruckId,
+
+          // Map / Rate distance
           distanceMiles: Number(dh) + Number(loadMiles),
+
           pricePerMile: Number(calc),
+
           totalPrice: Number(rate),
+
           from,
           to,
         }).unwrap();
+
         setTruckPreview(response?.data || response);
       } catch (error) {
         console.error(error);
@@ -1454,14 +1473,11 @@ const CalculationPage = () => {
                                 color: theme.currentPalette.primary,
                               }}
                             >
-                              {hasNum(dh) &&
-                                hasNum(loadMiles) &&
-                                hasNum(rate) &&
-                                hasNum(calc) &&
-                                truckPreview?.projected?.averagePerMile != null
+                              {truckPreview?.projected?.averagePerMile != null
                                 ? `$${Number(truckPreview.projected.averagePerMile).toFixed(2)}`
                                 : "$0.00"}
                             </Typography>
+                            
                           </Box>
                         </Grid>
 
@@ -1636,255 +1652,253 @@ const CalculationPage = () => {
               </Box>
             </Paper>
 
-            {selectedTruckId && (
-              <Paper
-                elevation={0}
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 3,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: borderBlue,
+                bgcolor: "#fff",
+                p: 2.25,
+              }}
+            >
+              <Typography
                 sx={{
-                  mt: 3,
-                  borderRadius: 2,
-                  border: "1px solid",
-                  borderColor: borderBlue,
-                  bgcolor: "#fff",
-                  p: 2.25,
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: theme.currentPalette.primary,
                 }}
               >
-                <Typography
-                  sx={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: theme.currentPalette.primary,
-                  }}
-                >
-                  Rate History
-                </Typography>
+                Rate History
+              </Typography>
 
-                <Typography
-                  sx={{ mt: 0.5, mb: 2, fontSize: 12, color: "text.secondary" }}
-                >
-                  Saved rate calculations
-                </Typography>
+              <Typography
+                sx={{ mt: 0.5, mb: 2, fontSize: 12, color: "text.secondary" }}
+              >
+                Saved rate calculations
+              </Typography>
 
-                <TableContainer
+              <TableContainer
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  maxHeight: 500,
+                  overflowX: "hidden",
+                  width: "100%",
+                }}
+              >
+                <MuiTable
+                  stickyHeader
+                  size="small"
                   sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    maxHeight: 500,
-                    overflowX: "hidden",
+                    tableLayout: "fixed",
                     width: "100%",
+                    "& th, & td": {
+                      px: 0.5,
+                      py: 1,
+                      fontSize: 12,
+                      verticalAlign: "middle",
+                    },
+
+                    "& th": {
+                      height: 58,
+                      fontWeight: 800,
+                      lineHeight: 1.3,
+                    },
                   }}
                 >
-                  <MuiTable
-                    stickyHeader
-                    size="small"
-                    sx={{
-                      tableLayout: "fixed",
-                      width: "100%",
-                      "& th, & td": {
-                        px: 0.5,
-                        py: 1,
-                        fontSize: 12,
-                        verticalAlign: "middle",
-                      },
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        sx={{
+                          width: "36%",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Route
+                      </TableCell>
 
-                      "& th": {
-                        height: 58,
-                        fontWeight: 800,
-                        lineHeight: 1.3,
-                      },
-                    }}
-                  >
-                    <TableHead>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: "12%",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Total
+                        <br />
+                        Miles
+                      </TableCell>
+
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: "11%",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Price
+                      </TableCell>
+
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: "14%",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Total
+                        <br />
+                        Price
+                      </TableCell>
+
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: "18%",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Total Price
+                        <br />
+                        / Week
+                      </TableCell>
+
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: "9%",
+                          fontWeight: 800,
+                          px: 0.25,
+                        }}
+                      >
+                        Action
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+
+                  <TableBody>
+                    {visibleRateCalculationRows.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          sx={{
-                            width: "36%",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Route
-                        </TableCell>
-
-                        <TableCell
+                          colSpan={6}
                           align="center"
                           sx={{
-                            width: "12%",
-                            fontWeight: 800,
+                            py: 5,
+                            color: "text.secondary",
+                            fontSize: 13,
                           }}
                         >
-                          Total
-                          <br />
-                          Miles
-                        </TableCell>
-
-                        <TableCell
-                          align="center"
-                          sx={{
-                            width: "11%",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Price
-                        </TableCell>
-
-                        <TableCell
-                          align="center"
-                          sx={{
-                            width: "14%",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Total
-                          <br />
-                          Price
-                        </TableCell>
-
-                        <TableCell
-                          align="center"
-                          sx={{
-                            width: "18%",
-                            fontWeight: 800,
-                          }}
-                        >
-                          Total Price
-                          <br />
-                          / Week
-                        </TableCell>
-
-                        <TableCell
-                          align="center"
-                          sx={{
-                            width: "9%",
-                            fontWeight: 800,
-                            px: 0.25,
-                          }}
-                        >
-                          Action
+                          No rate calculations yet
                         </TableCell>
                       </TableRow>
-                    </TableHead>
-
-                    <TableBody>
-                      {visibleRateCalculationRows.length === 0 ? (
-                        <TableRow>
+                    ) : (
+                      visibleRateCalculationRows.map((row) => (
+                        <TableRow key={row.id} hover>
+                          {/* ROUTE */}
                           <TableCell
-                            colSpan={6}
-                            align="center"
                             sx={{
-                              py: 5,
-                              color: "text.secondary",
-                              fontSize: 13,
+                              overflowWrap: "anywhere",
+                              pl: 1.5,
                             }}
                           >
-                            No rate calculations yet
+                            <Stack spacing={0.6}>
+                              {row.route
+                                .split(/\s*→\s*/)
+                                .filter((stop) => stop && stop !== "—")
+                                .map((stop, index, stops) => {
+                                  const StopIcon =
+                                    index === 0
+                                      ? MapPinHouse
+                                      : index === stops.length - 1
+                                        ? MapPinned
+                                        : Navigation;
+
+                                  return (
+                                    <Stack
+                                      key={`${index}-${stop}`}
+                                      direction="row"
+                                      spacing={0.7}
+                                      alignItems="center"
+                                      sx={{ minWidth: 0 }}
+                                    >
+                                      <StopIcon
+                                        size={14}
+                                        color={theme.currentPalette.primary}
+                                        style={{ flexShrink: 0 }}
+                                      />
+
+                                      <Typography
+                                        sx={{
+                                          fontSize: 11,
+                                          lineHeight: 1.4,
+                                          minWidth: 0,
+                                          overflowWrap: "anywhere",
+                                          wordBreak: "break-word",
+                                        }}
+                                      >
+                                        {formatRouteStop(stop)}
+                                      </Typography>
+                                    </Stack>
+                                  );
+                                })}
+
+                              {(!row.route || row.route === "—") && (
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "text.secondary",
+                                  }}
+                                >
+                                  —
+                                </Typography>
+                              )}
+                            </Stack>
+                          </TableCell>
+
+                          {/* TOTAL MILES */}
+                          <TableCell align="center">
+                            {Number(row.totalMiles ?? 0).toFixed(1)}
+                          </TableCell>
+
+                          {/* PRICE */}
+                          <TableCell align="center">
+                            ${Number(row.pricePerMile ?? 0).toFixed(2)}
+                          </TableCell>
+
+                          {/* TOTAL PRICE */}
+                          <TableCell align="center">
+                            ${Number(row.totalPrice ?? 0).toFixed(2)}
+                          </TableCell>
+
+                          {/* TOTAL PRICE / WEEK */}
+                          <TableCell align="center">
+                            ${Number(row.totalPricePerWeek ?? 0).toFixed(2)}
+                          </TableCell>
+
+                          {/* ACTION */}
+                          <TableCell align="center">
+                            <Tooltip title="Delete">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  dispatch(removeRateCalculation(row.id))
+                                }
+                              >
+                                <Trash2 size={17} color="red" />
+                              </IconButton>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
-                      ) : (
-                        visibleRateCalculationRows.map((row) => (
-                          <TableRow key={row.id} hover>
-                            {/* ROUTE */}
-                            <TableCell
-                              sx={{
-                                overflowWrap: "anywhere",
-                                pl: 1.5,
-                              }}
-                            >
-                              <Stack spacing={0.6}>
-                                {row.route
-                                  .split(/\s*→\s*/)
-                                  .filter((stop) => stop && stop !== "—")
-                                  .map((stop, index, stops) => {
-                                    const StopIcon =
-                                      index === 0
-                                        ? MapPinHouse
-                                        : index === stops.length - 1
-                                          ? MapPinned
-                                          : Navigation;
+                      ))
+                    )}
+                  </TableBody>
+                </MuiTable>
 
-                                    return (
-                                      <Stack
-                                        key={`${index}-${stop}`}
-                                        direction="row"
-                                        spacing={0.7}
-                                        alignItems="center"
-                                        sx={{ minWidth: 0 }}
-                                      >
-                                        <StopIcon
-                                          size={14}
-                                          color={theme.currentPalette.primary}
-                                          style={{ flexShrink: 0 }}
-                                        />
-
-                                        <Typography
-                                          sx={{
-                                            fontSize: 11,
-                                            lineHeight: 1.4,
-                                            minWidth: 0,
-                                            overflowWrap: "anywhere",
-                                            wordBreak: "break-word",
-                                          }}
-                                        >
-                                          {formatRouteStop(stop)}
-                                        </Typography>
-                                      </Stack>
-                                    );
-                                  })}
-
-                                {(!row.route || row.route === "—") && (
-                                  <Typography
-                                    sx={{
-                                      fontSize: 11,
-                                      color: "text.secondary",
-                                    }}
-                                  >
-                                    —
-                                  </Typography>
-                                )}
-                              </Stack>
-                            </TableCell>
-
-                            {/* TOTAL MILES */}
-                            <TableCell align="center">
-                              {Number(row.totalMiles ?? 0).toFixed(1)}
-                            </TableCell>
-
-                            {/* PRICE */}
-                            <TableCell align="center">
-                              ${Number(row.pricePerMile ?? 0).toFixed(2)}
-                            </TableCell>
-
-                            {/* TOTAL PRICE */}
-                            <TableCell align="center">
-                              ${Number(row.totalPrice ?? 0).toFixed(2)}
-                            </TableCell>
-
-                            {/* TOTAL PRICE / WEEK */}
-                            <TableCell align="center">
-                              ${Number(row.totalPricePerWeek ?? 0).toFixed(2)}
-                            </TableCell>
-
-                            {/* ACTION */}
-                            <TableCell align="center">
-                              <Tooltip title="Delete">
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    dispatch(removeRateCalculation(row.id))
-                                  }
-                                >
-                                  <Trash2 size={17} color="red" />
-                                </IconButton>
-                              </Tooltip>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </MuiTable>
-
-                </TableContainer>
-              </Paper>
-            )}
+              </TableContainer>
+            </Paper>
           </Grid>
         </Grid>
 
