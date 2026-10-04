@@ -29,13 +29,18 @@ import {
   IconButton,
   Fade,
   alpha,
-  Dialog,
   useTheme,
   useMediaQuery,
   Popover,
   MenuItem,
+  Table as MuiTable,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableBody,
 } from "@mui/material";
-import { DirectionsCar, Check, Route as RouteIcon } from "@mui/icons-material";
+import { Check, Route as RouteIcon } from "@mui/icons-material";
 import LocationAutocomplete, {
   TPlace,
 } from "@/components/sections/LocationAutocomplete";
@@ -43,7 +48,16 @@ import {
   calculateDhoToOriginDistance,
   calculateFullRouteDistance,
 } from "@/utils/googleDistanceCalculator";
-import { RootState, useAppSelector } from "@/redux/store";
+import {
+  RootState,
+  useAppDispatch,
+  useAppSelector,
+} from "@/redux/store";
+
+import {
+  addRateCalculation,
+  removeRateCalculation,
+} from "@/redux/slices/rateCalculationSlice";
 import {
   DollarSign,
   LandPlot,
@@ -58,6 +72,7 @@ import {
   Send,
   Trash2,
   Truck,
+  Navigation,
 } from "lucide-react";
 import {
   useAddMessageMutation,
@@ -237,6 +252,20 @@ const formatTime = (hours: number): string => {
   return `${hoursPart}h ${minutesPart}m`;
 };
 
+const formatRouteStop = (stop: string): string => {
+  const parts = stop.split(",").map((part) => part.trim());
+  if (parts.length < 3) return stop;
+
+  const hasCountry = /^(USA|United States(?: of America)?)$/i.test(
+    parts[parts.length - 1],
+  );
+  const cityIndex = hasCountry ? parts.length - 3 : parts.length - 2;
+  const regionIndex = cityIndex + 1;
+  const region = parts[regionIndex].replace(/\s+\d[\w-]*.*$/, "").trim();
+
+  return `${parts[cityIndex]}, ${region}`;
+};
+
 const MapFallback = () => (
   <Box
     sx={{
@@ -331,10 +360,6 @@ const MetricBox = ({
 
 const CalculationPage = () => {
   const theme = useAppSelector((state: RootState) => state.palette);
-
-  const selectedConversationId = useAppSelector(
-    (state: RootState) => state.chat.selectedConversationId,
-  );
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
 
@@ -351,6 +376,12 @@ const CalculationPage = () => {
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const { isSocketReady } = useChatSocket();
+  const dispatch = useAppDispatch();
+
+  const rateCalculationRows = useAppSelector(
+    (state: RootState) =>
+      state.rateCalculation.rows,
+  );
 
   const formatDate = (date: Date) => {
     const year = date.getFullYear();
@@ -465,47 +496,172 @@ const CalculationPage = () => {
   // const [toDate, setToDate] = useState("");
   const [truckPreview, setTruckPreview] = useState<any>(null);
 
-  const handleGetTruckPreview = async (truckId: string) => {
+  const visibleRateCalculationRows = useMemo(
+    () =>
+      selectedTruckId
+        ? rateCalculationRows.filter(
+          (row) => String(row.truckId) === String(selectedTruckId),
+        )
+        : rateCalculationRows,
+    [rateCalculationRows, selectedTruckId],
+  );
+
+  const clearRateInputs = useCallback(() => {
+    setDho(null);
+    setOrigin(null);
+    setDestinations([null]);
+    setNotes("");
+    clearCalculation();
+    setResetKey((prev) => prev + 1);
+  }, [clearCalculation]);
+
+  const handleGetTruckPreview = async (
+    truckId: string,
+    inputs = { dh, loadMiles, rate, calc, dho, origin, destinations },
+  ) => {
     if (!truckId) {
       setTruckPreview(null);
       return;
     }
 
-    if (!hasNum(dh) || !hasNum(loadMiles) || !hasNum(rate)) {
-      toast.error(
-        "Please fill Dead Head Miles, Load Miles and Rate first"
-      );
-      setTruckPreview(null);
-      return;
-    }
+    // if (
+    //   !hasNum(dh) ||
+    //   !hasNum(loadMiles) ||
+    //   !hasNum(rate)
+    // ) {
+    //   toast.error(
+    //     "Please fill Dead Head Miles, Load Miles and Rate first",
+    //   );
 
-    if (calc === "") {
-      toast.error("Price Per Mile is required");
-      setTruckPreview(null);
-      return;
-    }
+    //   setTruckPreview(null);
+    //   return;
+    // }
+
+    // if (calc === "") {
+    //   toast.error("Price Per Mile is required");
+
+    //   setTruckPreview(null);
+    //   return;
+    // }
 
     try {
-      const { from, to } = getFridayToThursdayPeriod();
+      const { from, to } =
+        getFridayToThursdayPeriod();
 
       const response = await getTruckPreview({
         truckId,
-        distanceMiles: Number(dh) + Number(loadMiles),
-        pricePerMile: Number(calc),
-        totalPrice: Number(rate),
+
+        distanceMiles:
+          Number(inputs.dh) + Number(inputs.loadMiles),
+
+        pricePerMile: Number(inputs.calc),
+
+        totalPrice: Number(inputs.rate),
+
         from,
         to,
       }).unwrap();
 
-      setTruckPreview(response?.data || response);
+      const preview =
+        response?.data || response;
+
+      setTruckPreview(preview);
+
+      const selectedTruck =
+        availableTrucks.find(
+          (truck: any) =>
+            (truck.id || truck._id) === truckId,
+        );
+
+
+      const validDestinations =
+        inputs.destinations.filter(
+          (destination): destination is TPlace =>
+            destination !== null,
+        );
+
+      const routeParts: string[] = [];
+
+      if (inputs.dho?.display_name) {
+        routeParts.push(inputs.dho.display_name);
+      }
+
+      if (inputs.origin?.display_name) {
+        routeParts.push(inputs.origin.display_name);
+      }
+
+      validDestinations.forEach(
+        (destination) => {
+          if (destination.display_name) {
+            routeParts.push(
+              destination.display_name,
+            );
+          }
+        },
+      );
+
+      const route =
+        routeParts.length > 0
+          ? routeParts.join(" → ")
+          : "—";
+
+
+      dispatch(
+        addRateCalculation({
+          id: `${truckId}-${Date.now()}`,
+
+          truckId,
+
+          truckNumber:
+            selectedTruck?.truckNumber ||
+            preview?.truck?.truckNumber ||
+            truckId,
+
+          totalMiles: Number(dh) + Number(loadMiles),
+
+          pricePerMile: Number(calc),
+
+          totalPrice: Number(rate),
+
+          totalPricePerWeek: Number(
+            preview?.projected?.totalPricePerWeek ??
+            preview?.projected?.totalPrice ??
+            preview?.projected?.averagePerMile ??
+            0,
+          ),
+
+          pricePerMilePerWeek: Number(
+            preview?.projected?.averagePerMile ?? 0,
+          ),
+
+          route,
+        }),
+      );
+
+      clearCalculation();
+
+      clearAllRoutes();
+
+      setResetKey((prev) => prev + 1);
+
+      toast.success("Rate calculation added to table");
+      toast.success(
+        "Rate calculation added to table",
+      );
     } catch (error) {
-      console.error("Truck preview error:", error);
+      // console.error(
+      //   "Truck preview error:",
+      //   error,
+      // );
 
       setTruckPreview(null);
 
-      toast.error("Failed to load truck preview");
+      // toast.error(
+      //   "Failed to load truck preview",
+      // );
     }
   };
+
   const availableTrucks = useMemo(() => {
     if (Array.isArray(trucksData)) {
       return trucksData;
@@ -678,14 +834,9 @@ const CalculationPage = () => {
   ]);
 
   const resetAllBtn = useCallback(() => {
-    setDho(null);
-    setOrigin(null);
-    setDestinations([null]);
-    setNotes("");
-    clearCalculation();
-    setResetKey((prev) => prev + 1);
+    clearRateInputs();
     toast.success("All inputs reset successfully");
-  }, [clearCalculation]);
+  }, [clearRateInputs]);
 
   const handleMapLocationChange = useCallback(
     (
@@ -1158,7 +1309,6 @@ const CalculationPage = () => {
 
                 <Divider sx={{ my: 3 }} />
 
-                {/* ================= AVAILABLE TRUCKS ================= */}
                 <Box>
                   <Typography
                     sx={{
@@ -1191,11 +1341,21 @@ const CalculationPage = () => {
                       disabled={isLoadingTrucks || isSavingPreview}
                       onChange={async (e) => {
                         const truckId = e.target.value;
+                        const inputs = {
+                          dh,
+                          loadMiles,
+                          rate,
+                          calc,
+                          dho,
+                          origin,
+                          destinations,
+                        };
 
                         setSelectedTruckId(truckId);
                         setTruckPreview(null);
+                        clearRateInputs();
 
-                        await handleGetTruckPreview(truckId);
+                        await handleGetTruckPreview(truckId, inputs);
                       }}
                       sx={{
                         "& .MuiFormLabel-asterisk": {
@@ -1239,7 +1399,6 @@ const CalculationPage = () => {
                       })}
                     </TextField>
 
-                    {/* ================= LOADING ================= */}
                     {isSavingPreview && (
                       <Box
                         sx={{
@@ -1262,8 +1421,6 @@ const CalculationPage = () => {
                         </Typography>
                       </Box>
                     )}
-
-                    {/* ================= PRICE BOX ================= */}
                     <Box
                       sx={{
                         width: "100%",
@@ -1289,7 +1446,6 @@ const CalculationPage = () => {
                         spacing={2}
                         alignItems="flex-start"
                       >
-                        {/* ================= LEFT ================= */}
                         <Grid size={{ xs: 6 }}>
                           <Box
                             sx={{
@@ -1330,7 +1486,6 @@ const CalculationPage = () => {
                           </Box>
                         </Grid>
 
-                        {/* ================= RIGHT ================= */}
                         <Grid size={{ xs: 6 }}>
                           <Box
                             sx={{
@@ -1376,7 +1531,6 @@ const CalculationPage = () => {
             </Stack>
           </Grid>
 
-          {/* ========================= RIGHT / MAP ========================= */}
           <Grid
             size={{ xs: 12, lg: 6 }}
             sx={{
@@ -1395,7 +1549,6 @@ const CalculationPage = () => {
                 minWidth: 0,
                 overflow: "hidden",
 
-                // مهم: الـ map مش هتتمدد بطول الـ left side
                 height: {
                   xs: 450,
                   md: 520,
@@ -1471,6 +1624,273 @@ const CalculationPage = () => {
                 </Suspense>
               </Box>
             </Paper>
+
+            {selectedTruckId && visibleRateCalculationRows.length > 0 && (
+              <Paper
+                elevation={0}
+                sx={{
+                  mt: 3,
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: borderBlue,
+                  bgcolor: "#fff",
+                  p: 2.25,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: theme.currentPalette.primary,
+                  }}
+                >
+                  Rate History
+                </Typography>
+
+                <Typography
+                  sx={{ mt: 0.5, mb: 2, fontSize: 12, color: "text.secondary" }}
+                >
+                  Saved rate calculations
+                </Typography>
+
+                <TableContainer
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    maxHeight: 500,
+                    overflowX: "hidden",
+                    width: "100%",
+                  }}
+                >
+                  <MuiTable
+                    stickyHeader
+                    size="small"
+                    sx={{
+                      tableLayout: "fixed",
+                      width: "100%",
+                      "& th, & td": {
+                        px: 0.5,
+                        py: 1,
+                        fontSize: 12,
+                        verticalAlign: "middle",
+                      },
+
+                      "& th": {
+                        height: 58,
+                        fontWeight: 800,
+                        lineHeight: 1.3,
+                      },
+                    }}
+                  >
+                    <TableHead>
+                      <TableRow>
+                        <TableCell
+                          sx={{
+                            width: "36%",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Route
+                        </TableCell>
+
+                        <TableCell
+                          align="center"
+                          sx={{
+                            width: "12%",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Total
+                          <br />
+                          Miles
+                        </TableCell>
+
+                        <TableCell
+                          align="center"
+                          sx={{
+                            width: "11%",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Price
+                        </TableCell>
+
+                        <TableCell
+                          align="center"
+                          sx={{
+                            width: "14%",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Total
+                          <br />
+                          Price
+                        </TableCell>
+
+                        <TableCell
+                          align="center"
+                          sx={{
+                            width: "18%",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Total Price
+                          <br />
+                          / Week
+                        </TableCell>
+
+                        <TableCell
+                          align="center"
+                          sx={{
+                            width: "9%",
+                            fontWeight: 800,
+                            px: 0.25,
+                          }}
+                        >
+                          Action
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {visibleRateCalculationRows.map((row) => (
+                        <TableRow key={row.id} hover>
+                          {/* ROUTE */}
+                          <TableCell
+                            sx={{
+                              overflowWrap: "anywhere",
+                              pl: 1.5,
+                            }}
+                          >
+                            <Stack spacing={0.6}>
+                              {row.route
+                                .split(/\s*→\s*/)
+                                .filter((stop) => stop && stop !== "—")
+                                .map((stop, index, stops) => {
+                                  const StopIcon =
+                                    index === 0
+                                      ? MapPinHouse
+                                      : index === stops.length - 1
+                                        ? MapPinned
+                                        : Navigation;
+
+                                  return (
+                                    <Stack
+                                      key={`${index}-${stop}`}
+                                      direction="row"
+                                      spacing={0.7}
+                                      alignItems="center"
+                                      sx={{ minWidth: 0 }}
+                                    >
+                                      <StopIcon
+                                        size={14}
+                                        color={theme.currentPalette.primary}
+                                        style={{ flexShrink: 0 }}
+                                      />
+                                      <Typography
+                                        sx={{
+                                          fontSize: 11,
+                                          lineHeight: 1.4,
+                                          minWidth: 0,
+                                          overflowWrap: "anywhere",
+                                          wordBreak: "break-word",
+                                        }}
+                                      >
+                                        {formatRouteStop(stop)}
+                                      </Typography>
+                                    </Stack>
+                                  );
+                                })}
+
+                              {(!row.route || row.route === "—") && (
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "text.secondary",
+                                  }}
+                                >
+                                  —
+                                </Typography>
+                              )}
+                            </Stack>
+                          </TableCell>
+
+                          {/* TOTAL MILES */}
+                          <TableCell
+                            align="center"
+                            sx={{
+                              whiteSpace: "nowrap",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {Number(row.totalMiles ?? 0).toFixed(1)}
+                          </TableCell>
+
+                          {/* PRICE */}
+                          <TableCell
+                            align="center"
+                            sx={{
+                              whiteSpace: "nowrap",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            ${Number(row.pricePerMile ?? 0).toFixed(2)}
+                          </TableCell>
+
+                          {/* TOTAL PRICE */}
+                          <TableCell
+                            align="center"
+                            sx={{
+                              whiteSpace: "nowrap",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            ${Number(row.totalPrice ?? 0).toFixed(2)}
+                          </TableCell>
+
+                          {/* TOTAL PRICE / WEEK */}
+                          <TableCell
+                            align="center"
+                            sx={{
+                              whiteSpace: "nowrap",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            $
+                            {Number(
+                              row.totalPricePerWeek ??
+                              row.pricePerMilePerWeek ??
+                              0,
+                            ).toFixed(2)}
+                          </TableCell>
+
+                          {/* ACTION */}
+                          <TableCell
+                            align="center"
+                            sx={{
+                              px: 0.5,
+                            }}
+                          >
+                            <Tooltip title="Delete">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  dispatch(removeRateCalculation(row.id))
+                                }
+                              >
+                                <Trash2 size={17} color="red" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </MuiTable>
+
+                </TableContainer>
+              </Paper>
+            )}
           </Grid>
         </Grid>
 
