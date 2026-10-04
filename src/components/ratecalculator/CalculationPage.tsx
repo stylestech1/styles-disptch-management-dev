@@ -1348,8 +1348,12 @@ const CalculationPage = () => {
                         if (!truckId) return;
 
                         try {
+                          const { from, to } = getFridayToThursdayPeriod();
+
                           const response = await getTruckPreview({
                             truckId,
+                            from,
+                            to,
                           }).unwrap();
 
                           setTruckPreview(response?.data || response);
@@ -1359,7 +1363,7 @@ const CalculationPage = () => {
                           toast.error("Failed to load truck preview");
                         }
                       }}
-
+                      
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
