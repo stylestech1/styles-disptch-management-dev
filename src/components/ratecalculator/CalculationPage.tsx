@@ -514,6 +514,34 @@ const CalculationPage = () => {
     clearCalculation();
     setResetKey((prev) => prev + 1);
   }, [clearCalculation]);
+  useEffect(() => {
+    if (!selectedTruckId) return;
+
+    const hasRateData =
+      hasNum(dh) &&
+      hasNum(loadMiles) &&
+      hasNum(rate) &&
+      hasNum(calc);
+
+    if (!hasRateData) {
+      setTruckPreview(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleGetTruckPreview(selectedTruckId, {
+        dh,
+        loadMiles,
+        rate,
+        calc,
+        dho,
+        origin,
+        destinations,
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [selectedTruckId, dh, loadMiles, rate, calc]);
 
   const handleGetTruckPreview = async (
     truckId: string,
@@ -617,11 +645,17 @@ const CalculationPage = () => {
             preview?.truck?.truckNumber ||
             truckId,
 
-          totalMiles: Number(dh) + Number(loadMiles),
+          // totalMiles: Number(dh) + Number(loadMiles),
 
-          pricePerMile: Number(calc),
+          // pricePerMile: Number(calc),
 
-          totalPrice: Number(rate),
+          // totalPrice: Number(rate),
+
+          totalMiles: Number(inputs.dh) + Number(inputs.loadMiles),
+
+          pricePerMile: Number(inputs.calc),
+
+          totalPrice: Number(inputs.rate),
 
           totalPricePerWeek: Number(
             preview?.projected?.totalPricePerWeek ??
@@ -631,7 +665,7 @@ const CalculationPage = () => {
           ),
 
           pricePerMilePerWeek: Number(
-            preview?.projected?.averagePerMile ?? 0,
+            preview?.projected?.averagePerMile ?? 0
           ),
 
           route,
@@ -1339,23 +1373,30 @@ const CalculationPage = () => {
                       label="Available Truck"
                       value={selectedTruckId}
                       disabled={isLoadingTrucks || isSavingPreview}
-                      onChange={async (e) => {
+                      // onChange={async (e) => {
+                      //   const truckId = e.target.value;
+                      //   const inputs = {
+                      //     dh,
+                      //     loadMiles,
+                      //     rate,
+                      //     calc,
+                      //     dho,
+                      //     origin,
+                      //     destinations,
+                      //   };
+
+                      //   setSelectedTruckId(truckId);
+                      //   setTruckPreview(null);
+                      //   // clearRateInputs();
+
+                      //   // await handleGetTruckPreview(truckId, inputs);
+                      // }}
+
+                      onChange={(e) => {
                         const truckId = e.target.value;
-                        const inputs = {
-                          dh,
-                          loadMiles,
-                          rate,
-                          calc,
-                          dho,
-                          origin,
-                          destinations,
-                        };
 
                         setSelectedTruckId(truckId);
                         setTruckPreview(null);
-                        clearRateInputs();
-
-                        await handleGetTruckPreview(truckId, inputs);
                       }}
                       sx={{
                         "& .MuiFormLabel-asterisk": {
@@ -1471,16 +1512,11 @@ const CalculationPage = () => {
                                 fontSize: 20,
                                 fontWeight: 800,
                                 lineHeight: 1.2,
-                                color:
-                                  theme.currentPalette.primary,
+                                color: theme.currentPalette.primary,
                               }}
                             >
-                              {truckPreview?.projected
-                                ?.averagePerMile != null
-                                ? `$${Number(
-                                  truckPreview.projected
-                                    .averagePerMile,
-                                ).toFixed(2)}`
+                              {truckPreview?.projected?.averagePerMile != null
+                                ? `$${Number(truckPreview.projected.averagePerMile).toFixed(2)}`
                                 : "$0.00"}
                             </Typography>
                           </Box>
