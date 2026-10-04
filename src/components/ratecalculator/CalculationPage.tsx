@@ -509,8 +509,6 @@ const CalculationPage = () => {
       try {
         const { from, to } = getFridayToThursdayPeriod();
 
-        const { from, to } = getFridayToThursdayPeriod();
-
         const response = await getTruckPreview({
           truckId: selectedTruckId,
           distanceMiles: Number(dh) + Number(loadMiles),
