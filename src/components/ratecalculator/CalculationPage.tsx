@@ -514,6 +514,7 @@ const CalculationPage = () => {
     clearCalculation();
     setResetKey((prev) => prev + 1);
   }, [clearCalculation]);
+
   useEffect(() => {
     if (!selectedTruckId) return;
 
@@ -523,177 +524,126 @@ const CalculationPage = () => {
       hasNum(rate) &&
       hasNum(calc);
 
-    if (!hasRateData) {
-      setTruckPreview(null);
-      return;
-    }
+    // لو مفيش rate data
+    // سيبي نتيجة الـ first request زي ما هي
+    if (!hasRateData) return;
 
-    const timer = setTimeout(() => {
-      handleGetTruckPreview(selectedTruckId, {
-        dh,
-        loadMiles,
-        rate,
-        calc,
-        dho,
-        origin,
-        destinations,
-      });
+    const timer = setTimeout(async () => {
+      try {
+        const { from, to } = getFridayToThursdayPeriod();
+
+        const response = await getTruckPreview({
+          truckId: selectedTruckId,
+
+          // Map / Rate distance
+          distanceMiles: Number(dh) + Number(loadMiles),
+
+          pricePerMile: Number(calc),
+
+          totalPrice: Number(rate),
+
+          from,
+          to,
+        }).unwrap();
+
+        setTruckPreview(response?.data || response);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to update truck preview");
+      }
     }, 500);
 
     return () => clearTimeout(timer);
   }, [selectedTruckId, dh, loadMiles, rate, calc]);
 
-  const handleGetTruckPreview = async (
-    truckId: string,
-    inputs = { dh, loadMiles, rate, calc, dho, origin, destinations },
-  ) => {
-    if (!truckId) {
-      setTruckPreview(null);
+  const handleSaveRateCalculation = () => {
+    if (!selectedTruckId) {
+      toast.error("Please select a truck");
       return;
     }
 
-    // if (
-    //   !hasNum(dh) ||
-    //   !hasNum(loadMiles) ||
-    //   !hasNum(rate)
-    // ) {
-    //   toast.error(
-    //     "Please fill Dead Head Miles, Load Miles and Rate first",
-    //   );
-
-    //   setTruckPreview(null);
-    //   return;
-    // }
-
-    // if (calc === "") {
-    //   toast.error("Price Per Mile is required");
-
-    //   setTruckPreview(null);
-    //   return;
-    // }
-
-    try {
-      const { from, to } =
-        getFridayToThursdayPeriod();
-
-      const response = await getTruckPreview({
-        truckId,
-
-        distanceMiles:
-          Number(inputs.dh) + Number(inputs.loadMiles),
-
-        pricePerMile: Number(inputs.calc),
-
-        totalPrice: Number(inputs.rate),
-
-        from,
-        to,
-      }).unwrap();
-
-      const preview =
-        response?.data || response;
-
-      setTruckPreview(preview);
-
-      const selectedTruck =
-        availableTrucks.find(
-          (truck: any) =>
-            (truck.id || truck._id) === truckId,
-        );
-
-
-      const validDestinations =
-        inputs.destinations.filter(
-          (destination): destination is TPlace =>
-            destination !== null,
-        );
-
-      const routeParts: string[] = [];
-
-      if (inputs.dho?.display_name) {
-        routeParts.push(inputs.dho.display_name);
-      }
-
-      if (inputs.origin?.display_name) {
-        routeParts.push(inputs.origin.display_name);
-      }
-
-      validDestinations.forEach(
-        (destination) => {
-          if (destination.display_name) {
-            routeParts.push(
-              destination.display_name,
-            );
-          }
-        },
-      );
-
-      const route =
-        routeParts.length > 0
-          ? routeParts.join(" → ")
-          : "—";
-
-
-      dispatch(
-        addRateCalculation({
-          id: `${truckId}-${Date.now()}`,
-
-          truckId,
-
-          truckNumber:
-            selectedTruck?.truckNumber ||
-            preview?.truck?.truckNumber ||
-            truckId,
-
-          // totalMiles: Number(dh) + Number(loadMiles),
-
-          // pricePerMile: Number(calc),
-
-          // totalPrice: Number(rate),
-
-          totalMiles: Number(inputs.dh) + Number(inputs.loadMiles),
-
-          pricePerMile: Number(inputs.calc),
-
-          totalPrice: Number(inputs.rate),
-
-          totalPricePerWeek: Number(
-            preview?.projected?.totalPricePerWeek ??
-            preview?.projected?.totalPrice ??
-            preview?.projected?.averagePerMile ??
-            0,
-          ),
-
-          pricePerMilePerWeek: Number(
-            preview?.projected?.averagePerMile ?? 0
-          ),
-
-          route,
-        }),
-      );
-
-      clearCalculation();
-
-      clearAllRoutes();
-
-      setResetKey((prev) => prev + 1);
-
-      toast.success("Rate calculation added to table");
-      toast.success(
-        "Rate calculation added to table",
-      );
-    } catch (error) {
-      // console.error(
-      //   "Truck preview error:",
-      //   error,
-      // );
-
-      setTruckPreview(null);
-
-      // toast.error(
-      //   "Failed to load truck preview",
-      // );
+    if (
+      !hasNum(dh) ||
+      !hasNum(loadMiles) ||
+      !hasNum(rate) ||
+      !hasNum(calc)
+    ) {
+      toast.error("Please complete Rate Calculation first");
+      return;
     }
+
+    if (!truckPreview) {
+      toast.error("Truck preview is not ready");
+      return;
+    }
+
+    const selectedTruck = availableTrucks.find(
+      (truck: any) =>
+        (truck.id || truck._id) === selectedTruckId,
+    );
+
+    const validDestinations = destinations.filter(
+      (destination): destination is TPlace =>
+        destination !== null,
+    );
+
+    const routeParts: string[] = [];
+
+    if (dho?.display_name) {
+      routeParts.push(dho.display_name);
+    }
+
+    if (origin?.display_name) {
+      routeParts.push(origin.display_name);
+    }
+
+    validDestinations.forEach((destination) => {
+      if (destination.display_name) {
+        routeParts.push(destination.display_name);
+      }
+    });
+
+    const route =
+      routeParts.length > 0
+        ? routeParts.join(" → ")
+        : "—";
+
+    dispatch(
+      addRateCalculation({
+        id: `${selectedTruckId}-${Date.now()}`,
+
+        truckId: selectedTruckId,
+
+        truckNumber:
+          selectedTruck?.truckNumber ||
+          truckPreview?.truck?.truckNumber ||
+          selectedTruckId,
+
+        totalMiles: Number(dh) + Number(loadMiles),
+
+        pricePerMile: Number(calc),
+
+        totalPrice: Number(rate),
+
+        totalPricePerWeek: Number(
+          truckPreview?.projected?.totalPricePerWeek ??
+          truckPreview?.projected?.totalPrice ??
+          truckPreview?.projected?.totalRevenue ??
+          0,
+        ),
+
+        pricePerMilePerWeek: Number(
+          truckPreview?.projected?.averagePerMile ?? 0,
+        ),
+
+        route,
+      }),
+    );
+
+    toast.success("Rate calculation saved");
+
+    clearRateInputs();
+    setTruckPreview(null);
   };
 
   const availableTrucks = useMemo(() => {
@@ -715,7 +665,6 @@ const CalculationPage = () => {
 
     return [];
   }, [trucksData]);
-
   const validDestinationsCount = useMemo(
     () => destinations.filter((dest) => dest !== null).length,
     [destinations],
@@ -1392,12 +1341,27 @@ const CalculationPage = () => {
                       //   // await handleGetTruckPreview(truckId, inputs);
                       // }}
 
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const truckId = e.target.value;
 
                         setSelectedTruckId(truckId);
                         setTruckPreview(null);
+
+                        if (!truckId) return;
+
+                        try {
+                          const response = await getTruckPreview({
+                            truckId,
+                          }).unwrap();
+
+                          setTruckPreview(response?.data || response);
+                        } catch (error) {
+                          console.error(error);
+                          setTruckPreview(null);
+                          toast.error("Failed to load truck preview");
+                        }
                       }}
+
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
@@ -1556,6 +1520,38 @@ const CalculationPage = () => {
                                 ? `$${Number(calc).toFixed(2)}`
                                 : "$0.00"}
                             </Typography>
+
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              startIcon={<Check />}
+                              onClick={handleSaveRateCalculation}
+                              disabled={
+                                !selectedTruckId ||
+                                !hasNum(dh) ||
+                                !hasNum(loadMiles) ||
+                                !hasNum(rate) ||
+                                !hasNum(calc) ||
+                                !truckPreview ||
+                                isSavingPreview
+                              }
+                              sx={{
+                                mt: 2,
+                                py: 1.2,
+                                borderRadius: 2,
+                                fontWeight: 700,
+                                textTransform: "none",
+                                bgcolor: theme.currentPalette.primary,
+                                "&:hover": {
+                                  bgcolor: alpha(
+                                    theme.currentPalette.primary,
+                                    0.9,
+                                  ),
+                                },
+                              }}
+                            >
+                              Save
+                            </Button>
                           </Box>
                         </Grid>
                       </Grid>
