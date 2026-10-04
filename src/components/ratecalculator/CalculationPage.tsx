@@ -390,34 +390,13 @@ const CalculationPage = () => {
 
     return `${year}-${month}-${day}`;
   };
-
   const getFridayToThursdayPeriod = () => {
-    const today = new Date();
-
-    // JS:
-    // Sunday = 0
-    // Monday = 1
-    // ...
-    // Friday = 5
-    // Saturday = 6
-
-    const currentDay = today.getDay();
-
-    // Number of days since the most recent Friday
-    const daysSinceFriday = (currentDay - 5 + 7) % 7;
-
-    const friday = new Date(today);
-    friday.setHours(0, 0, 0, 0);
-    friday.setDate(today.getDate() - daysSinceFriday);
-
-    const thursday = new Date(friday);
-    thursday.setDate(friday.getDate() + 6);
-
     return {
-      from: formatDate(friday),
-      to: formatDate(thursday),
+      from: "2026-09-21",
+      to: "2026-09-27",
     };
   };
+
   const toggleUser = (userId: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(userId)
@@ -530,20 +509,16 @@ const CalculationPage = () => {
       try {
         const { from, to } = getFridayToThursdayPeriod();
 
+        const { from, to } = getFridayToThursdayPeriod();
+
         const response = await getTruckPreview({
           truckId: selectedTruckId,
-
-          // Map / Rate distance
           distanceMiles: Number(dh) + Number(loadMiles),
-
           pricePerMile: Number(calc),
-
           totalPrice: Number(rate),
-
           from,
           to,
         }).unwrap();
-
         setTruckPreview(response?.data || response);
       } catch (error) {
         console.error(error);
@@ -1363,7 +1338,7 @@ const CalculationPage = () => {
                           toast.error("Failed to load truck preview");
                         }
                       }}
-                      
+
                       sx={{
                         "& .MuiFormLabel-asterisk": {
                           color: "red",
@@ -1663,7 +1638,7 @@ const CalculationPage = () => {
               </Box>
             </Paper>
 
-            {selectedTruckId && visibleRateCalculationRows.length > 0 && (
+            {selectedTruckId && (
               <Paper
                 elevation={0}
                 sx={{
@@ -1792,137 +1767,120 @@ const CalculationPage = () => {
                     </TableHead>
 
                     <TableBody>
-                      {visibleRateCalculationRows.map((row) => (
-                        <TableRow key={row.id} hover>
-                          {/* ROUTE */}
+                      {visibleRateCalculationRows.length === 0 ? (
+                        <TableRow>
                           <TableCell
-                            sx={{
-                              overflowWrap: "anywhere",
-                              pl: 1.5,
-                            }}
-                          >
-                            <Stack spacing={0.6}>
-                              {row.route
-                                .split(/\s*→\s*/)
-                                .filter((stop) => stop && stop !== "—")
-                                .map((stop, index, stops) => {
-                                  const StopIcon =
-                                    index === 0
-                                      ? MapPinHouse
-                                      : index === stops.length - 1
-                                        ? MapPinned
-                                        : Navigation;
-
-                                  return (
-                                    <Stack
-                                      key={`${index}-${stop}`}
-                                      direction="row"
-                                      spacing={0.7}
-                                      alignItems="center"
-                                      sx={{ minWidth: 0 }}
-                                    >
-                                      <StopIcon
-                                        size={14}
-                                        color={theme.currentPalette.primary}
-                                        style={{ flexShrink: 0 }}
-                                      />
-                                      <Typography
-                                        sx={{
-                                          fontSize: 11,
-                                          lineHeight: 1.4,
-                                          minWidth: 0,
-                                          overflowWrap: "anywhere",
-                                          wordBreak: "break-word",
-                                        }}
-                                      >
-                                        {formatRouteStop(stop)}
-                                      </Typography>
-                                    </Stack>
-                                  );
-                                })}
-
-                              {(!row.route || row.route === "—") && (
-                                <Typography
-                                  sx={{
-                                    fontSize: 11,
-                                    color: "text.secondary",
-                                  }}
-                                >
-                                  —
-                                </Typography>
-                              )}
-                            </Stack>
-                          </TableCell>
-
-                          {/* TOTAL MILES */}
-                          <TableCell
+                            colSpan={6}
                             align="center"
                             sx={{
-                              whiteSpace: "nowrap",
-                              fontVariantNumeric: "tabular-nums",
+                              py: 5,
+                              color: "text.secondary",
+                              fontSize: 13,
                             }}
                           >
-                            {Number(row.totalMiles ?? 0).toFixed(1)}
-                          </TableCell>
-
-                          {/* PRICE */}
-                          <TableCell
-                            align="center"
-                            sx={{
-                              whiteSpace: "nowrap",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            ${Number(row.pricePerMile ?? 0).toFixed(2)}
-                          </TableCell>
-
-                          {/* TOTAL PRICE */}
-                          <TableCell
-                            align="center"
-                            sx={{
-                              whiteSpace: "nowrap",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            ${Number(row.totalPrice ?? 0).toFixed(2)}
-                          </TableCell>
-
-                          {/* TOTAL PRICE / WEEK */}
-                          <TableCell
-                            align="center"
-                            sx={{
-                              whiteSpace: "nowrap",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            $
-                            {Number(
-                              row.totalPricePerWeek ??
-                              row.pricePerMilePerWeek ??
-                              0,
-                            ).toFixed(2)}
-                          </TableCell>
-
-                          {/* ACTION */}
-                          <TableCell
-                            align="center"
-                            sx={{
-                              px: 0.5,
-                            }}
-                          >
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  dispatch(removeRateCalculation(row.id))
-                                }
-                              >
-                                <Trash2 size={17} color="red" />
-                              </IconButton>
-                            </Tooltip>
+                            No rate calculations yet
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        visibleRateCalculationRows.map((row) => (
+                          <TableRow key={row.id} hover>
+                            {/* ROUTE */}
+                            <TableCell
+                              sx={{
+                                overflowWrap: "anywhere",
+                                pl: 1.5,
+                              }}
+                            >
+                              <Stack spacing={0.6}>
+                                {row.route
+                                  .split(/\s*→\s*/)
+                                  .filter((stop) => stop && stop !== "—")
+                                  .map((stop, index, stops) => {
+                                    const StopIcon =
+                                      index === 0
+                                        ? MapPinHouse
+                                        : index === stops.length - 1
+                                          ? MapPinned
+                                          : Navigation;
+
+                                    return (
+                                      <Stack
+                                        key={`${index}-${stop}`}
+                                        direction="row"
+                                        spacing={0.7}
+                                        alignItems="center"
+                                        sx={{ minWidth: 0 }}
+                                      >
+                                        <StopIcon
+                                          size={14}
+                                          color={theme.currentPalette.primary}
+                                          style={{ flexShrink: 0 }}
+                                        />
+
+                                        <Typography
+                                          sx={{
+                                            fontSize: 11,
+                                            lineHeight: 1.4,
+                                            minWidth: 0,
+                                            overflowWrap: "anywhere",
+                                            wordBreak: "break-word",
+                                          }}
+                                        >
+                                          {formatRouteStop(stop)}
+                                        </Typography>
+                                      </Stack>
+                                    );
+                                  })}
+
+                                {(!row.route || row.route === "—") && (
+                                  <Typography
+                                    sx={{
+                                      fontSize: 11,
+                                      color: "text.secondary",
+                                    }}
+                                  >
+                                    —
+                                  </Typography>
+                                )}
+                              </Stack>
+                            </TableCell>
+
+                            {/* TOTAL MILES */}
+                            <TableCell align="center">
+                              {Number(row.totalMiles ?? 0).toFixed(1)}
+                            </TableCell>
+
+                            {/* PRICE */}
+                            <TableCell align="center">
+                              ${Number(row.pricePerMile ?? 0).toFixed(2)}
+                            </TableCell>
+
+                            {/* TOTAL PRICE */}
+                            <TableCell align="center">
+                              ${Number(row.totalPrice ?? 0).toFixed(2)}
+                            </TableCell>
+
+                            {/* TOTAL PRICE / WEEK */}
+                            <TableCell align="center">
+                              ${Number(row.totalPricePerWeek ?? 0).toFixed(2)}
+                            </TableCell>
+
+                            {/* ACTION */}
+                            <TableCell align="center">
+                              <Tooltip title="Delete">
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    dispatch(removeRateCalculation(row.id))
+                                  }
+                                >
+                                  <Trash2 size={17} color="red" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </MuiTable>
 
