@@ -524,8 +524,6 @@ const CalculationPage = () => {
       hasNum(rate) &&
       hasNum(calc);
 
-    // لو مفيش rate data
-    // سيبي نتيجة الـ first request زي ما هي
     if (!hasRateData) return;
 
     const timer = setTimeout(async () => {
@@ -1479,7 +1477,11 @@ const CalculationPage = () => {
                                 color: theme.currentPalette.primary,
                               }}
                             >
-                              {truckPreview?.projected?.averagePerMile != null
+                              {hasNum(dh) &&
+                                hasNum(loadMiles) &&
+                                hasNum(rate) &&
+                                hasNum(calc) &&
+                                truckPreview?.projected?.averagePerMile != null
                                 ? `$${Number(truckPreview.projected.averagePerMile).toFixed(2)}`
                                 : "$0.00"}
                             </Typography>
