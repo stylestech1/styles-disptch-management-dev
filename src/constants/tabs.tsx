@@ -142,15 +142,15 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
   ],
   employee: [
     {
+      label: "Loads",
+      subtitle: "Manage your dispatch team members and their access",
+      icon: <Boxes />,
+    },
+    {
       label: "My Trucks",
       subtitle: "View the trucks assigned to you",
       icon: <Truck />,
       path: "truck-dispatchers",
-    },
-    {
-      label: "Loads",
-      subtitle: "Manage your dispatch team members and their access",
-      icon: <Boxes />,
     },
     {
       label: "Rate Calculator",

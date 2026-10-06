@@ -36,15 +36,13 @@ import Pagination from "@/components/ui/Pagination";
 import {
     useGetMyTruckAssignmentsQuery,
     useGetTruckDispatchersQuery,
-    useUpdateMyTruckAssignmentMutation,
+    useUpdateMyTruckAssignmentAdminMutation,
+    useUpdateTruckDispatcherAssignmentMutation,
 } from "@/redux/slices/apiSlice";
 
 import { useAppSelector } from "@/redux/store";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
-/* =========================================================
-   TYPES
-========================================================= */
 
 type CurrentLoad = {
     id: string;
@@ -200,20 +198,16 @@ const formatDate = (date?: string) => {
     return value.toLocaleString();
 };
 
-/* =========================================================
-   COMPONENT
-========================================================= */
 
 export default function TruckDispatcher() {
     const currentUser = useAppSelector((state) => state.auth.user);
 
     const role = currentUser?.role?.toLowerCase();
 
-    const isAdmin = role === "admin";
+    const isAdminOrManager =
+        role === "admin" || role === "manager";
 
-    /* =======================================================
-       STATES
-    ======================================================= */
+
 
     const [page, setPage] = useState(1);
 
@@ -262,13 +256,11 @@ export default function TruckDispatcher() {
             keyword: debouncedSearch || undefined,
         },
         {
-            skip: !isAdmin,
+            skip: !isAdminOrManager,
         }
     );
 
-    /* =======================================================
-       DISPATCHER REQUEST
-    ======================================================= */
+
 
     const {
         data: dispatcherResponse,
@@ -277,16 +269,26 @@ export default function TruckDispatcher() {
         isError: isDispatcherError,
         error: dispatcherError,
     } = useGetMyTruckAssignmentsQuery(undefined, {
-        skip: isAdmin || !role,
+        skip: isAdminOrManager || !role,
     });
 
+    // const isUpdating =
+    //     isAdminUpdating || isDispatcherUpdating;
 
-    const [updateAssignment, { isLoading: isUpdating }] =
-        useUpdateMyTruckAssignmentMutation();
+    const [
+        updateTruckDispatcherAssignment,
+        { isLoading: isAdminUpdating },
+    ] = useUpdateTruckDispatcherAssignmentMutation();
 
+    const [
+        updateMyTruckAssignment,
+        { isLoading: isDispatcherUpdating },
+    ] = useUpdateMyTruckAssignmentAdminMutation();
 
+    const isUpdating =
+        isAdminUpdating || isDispatcherUpdating;
 
-    const response = isAdmin
+    const response = isAdminOrManager
         ? adminResponse
         : dispatcherResponse;
 
@@ -322,15 +324,15 @@ export default function TruckDispatcher() {
        LOADING / ERROR
     ======================================================= */
 
-    const isLoading = isAdmin
+    const isLoading = isAdminOrManager
         ? isAdminLoading || isAdminFetching
         : isDispatcherLoading || isDispatcherFetching;
 
-    const isError = isAdmin
+    const isError = isAdminOrManager
         ? isAdminError
         : isDispatcherError;
 
-    const requestError = isAdmin
+    const requestError = isAdminOrManager
         ? adminError
         : dispatcherError;
 
@@ -368,11 +370,19 @@ export default function TruckDispatcher() {
         }
 
         try {
-            await updateAssignment({
+            const payload = {
                 assignmentId: editingAssignment.id,
-                notes,
-                currentLocation,
-            }).unwrap();
+                notes: notes.trim(),
+                currentLocation: currentLocation.trim(),
+            };
+
+            if (isAdminOrManager) {
+                // Admin / Manager
+                await updateTruckDispatcherAssignment(payload).unwrap();
+            } else {
+                // Employee / Dispatcher
+                await updateMyTruckAssignment(payload).unwrap();
+            }
 
             toast.success("Assignment updated successfully");
             closeEdit();
@@ -380,7 +390,6 @@ export default function TruckDispatcher() {
             toast.error(getErrorMessage(error));
         }
     };
-
 
     return (
         <Box
@@ -391,7 +400,7 @@ export default function TruckDispatcher() {
                 },
             }}
         >
-            <Toaster position="top-right" />
+            <Toaster position="top-center" />
 
             <Box
                 sx={{
@@ -432,7 +441,7 @@ export default function TruckDispatcher() {
                             fontWeight: 700,
                         }}
                     >
-                        {isAdmin
+                        {isAdminOrManager
                             ? "Truck Dispatcher Assignments"
                             : "My Trucks"}
                     </Typography>
@@ -441,7 +450,7 @@ export default function TruckDispatcher() {
                         variant="body2"
                         color="text.secondary"
                     >
-                        {isAdmin
+                        {isAdminOrManager
                             ? "View and manage assigned trucks"
                             : "View your assigned trucks and details"}
                     </Typography>
@@ -497,7 +506,7 @@ export default function TruckDispatcher() {
             </Box>
 
 
-            {!role ? (
+            {/* {!role ? (
                 <Alert
                     severity="info"
                     sx={{ mb: 2 }}
@@ -511,7 +520,7 @@ export default function TruckDispatcher() {
                 >
                     {getErrorMessage(requestError)}
                 </Alert>
-            ) : null}
+            ) : null} */}
 
 
 
@@ -628,7 +637,7 @@ export default function TruckDispatcher() {
                 }}
             />
 
-            {isAdmin &&
+            {isAdminOrManager &&
                 paginationResult &&
                 paginationResult.totalPages >
                 1 && (
