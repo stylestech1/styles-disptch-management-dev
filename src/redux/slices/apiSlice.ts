@@ -996,6 +996,26 @@ export const apiSlice = api.injectEndpoints({
           }),
         },
       }),
+      providesTags: ["TruckDispatchers"],
+    }),
+    getMyTruckAssignments: builder.query<unknown, void>({
+      query: () => "/api/v1/truck-dispatchers/my-trucks",
+      providesTags: ["TruckDispatchers"],
+    }),
+    updateMyTruckAssignment: builder.mutation<
+      unknown,
+      {
+        assignmentId: string;
+        notes: string;
+        currentLocation: string;
+      }
+    >({
+      query: ({ assignmentId, ...body }) => ({
+        url: `/api/v1/truck-dispatchers/my-trucks/${assignmentId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
     }),
 
     // getTruckDispatchers: builder.query<unknown, void>({
@@ -1004,6 +1024,11 @@ export const apiSlice = api.injectEndpoints({
     // }),
     getTruckDispatcherById: builder.query({
       query: (id: string) => `/api/v1/truck-dispatchers/${id}`,
+      providesTags: ["TruckDispatchers"],
+    }),
+    getTruckAssignmentsByDispatcherId: builder.query<unknown, string>({
+      query: (dispatcherId) =>
+        `/api/v1/truck-dispatchers/dispatcher/${dispatcherId}`,
       providesTags: ["TruckDispatchers"],
     }),
     createTruckDispatcher: builder.mutation({
@@ -1469,7 +1494,10 @@ export const {
   useUpdateTruckMutation,
   useDeleteTruckMutation,
   useGetTruckDispatchersQuery,
+  useGetMyTruckAssignmentsQuery,
+  useUpdateMyTruckAssignmentMutation,
   useGetTruckDispatcherByIdQuery,
+  useLazyGetTruckAssignmentsByDispatcherIdQuery,
   useCreateTruckDispatcherMutation,
   useUpdateTruckDispatcherMutation,
 

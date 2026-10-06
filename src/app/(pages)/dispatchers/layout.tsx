@@ -92,7 +92,9 @@ export default function AdminLayout({
       };
     }
     const activeTab = tabs.find(
-      (tab) => tab.label.replace(/\s+/g, "").toLowerCase() === cleanedPath
+      (tab) =>
+        tab.path?.toLowerCase() === cleanedPath ||
+        tab.label.replace(/\s+/g, "").toLowerCase() === cleanedPath
     );
     return activeTab || { label: "", subtitle: "" };
   };
@@ -175,7 +177,8 @@ export default function AdminLayout({
       <List sx={{ flex: 1, overflowY: "auto", pt: 2, pb: 1 }}>
         {tabs.map(({ label, icon }, i) => {
           if (label !== "Load Details" && label !== "Notifications") {
-            const link = `${base}/${label.replace(/\s+/g, "").toLowerCase()}`;
+            const tab = tabs[i];
+            const link = `${base}/${tab.path ?? label.replace(/\s+/g, "").toLowerCase()}`;
             const active = pathname.startsWith(link);
             return (
               <ListItemButton

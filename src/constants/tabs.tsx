@@ -64,6 +64,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <UserPlus />,
     },
     {
+      label: "Truck Dispatcher Assignments",
+      subtitle: "View and edit truck dispatcher assignments",
+      icon: <Truck />,
+      path: "truck-dispatchers",
+    },
+    {
       label: "Maintenance",
       icon: <Wrench />,
       children: [
@@ -136,6 +142,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
   ],
   employee: [
     {
+      label: "My Trucks",
+      subtitle: "View the trucks assigned to you",
+      icon: <Truck />,
+      path: "truck-dispatchers",
+    },
+    {
       label: "Loads",
       subtitle: "Manage your dispatch team members and their access",
       icon: <Boxes />,
@@ -164,6 +176,14 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
     {
       label: "Notifications",
       subtitle: "Manage your notifications and stay updated.",
+    },
+  ],
+  dispatcher: [
+    {
+      label: "My Trucks",
+      subtitle: "View the trucks assigned to you",
+      icon: <Truck />,
+      path: "truck-dispatchers",
     },
   ],
   driver: [

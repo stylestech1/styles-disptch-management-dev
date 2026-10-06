@@ -136,7 +136,7 @@ export default function AdminLayout({
     }
     for (const tab of tabs) {
       const tabKey = tab?.label?.replace(/\s+/g, "").toLowerCase();
-      if (tabKey === cleanedPath) return tab;
+      if (tab.path?.toLowerCase() === cleanedPath || tabKey === cleanedPath) return tab;
 
       if (tab.children?.length) {
         const child = tab.children.find(
@@ -333,7 +333,7 @@ export default function AdminLayout({
             );
           }
 
-          const link = `${base}/${tab.label.replace(/\s+/g, "").toLowerCase()}`;
+          const link = `${base}/${tab.path ?? tab.label.replace(/\s+/g, "").toLowerCase()}`;
           const active = pathname === link;
 
           return (
