@@ -11,6 +11,7 @@ import {
     Alert,
     Box,
     Button,
+    Checkbox,
     Dialog,
     DialogActions,
     DialogContent,
@@ -18,6 +19,7 @@ import {
     FormControl,
     IconButton,
     InputLabel,
+    ListItemText,
     Menu,
     MenuItem,
     Select,
@@ -70,36 +72,33 @@ import {
     useUpdateTruckDispatcherMutation,
 } from "@/redux/slices/apiSlice";
 
-/* =========================================================
-   TYPES
-========================================================= */
 
 type TruckDispatcher = {
     id?: string;
     _id?: string;
 
     truck?: string | TTruck;
-    dispatcher?: string | TUser;
-
     truckId?: string | TTruck;
+
+    dispatcher?: string | TUser;
     dispatcherId?: string | TUser;
-
-    status: "active" | "inactive";
-
-    notes?: string;
     assignedBy?: string;
-
     createdAt?: string;
     updatedAt?: string;
+    status: "active" | "inactive";
+    notes?: string;
 };
 
-type AssignmentForm = {
+type SelectedTruck = {
     truckId: string;
-    dispatcherId: string;
-    status: "active" | "inactive";
     notes: string;
 };
 
+type AssignmentForm = {
+    trucks: SelectedTruck[];
+    dispatcherId: string;
+    status: "active" | "inactive";
+};
 type DetailItemProps = {
     icon: ReactNode;
     label: string;
@@ -107,12 +106,6 @@ type DetailItemProps = {
     primary: string;
 };
 
-/*
-    The response from:
-    /truck-dispatchers?unusedTrucks=true
-
-    returns trucks with _id.
-*/
 type UnusedTruck = TTruck & {
     _id?: string;
     id?: string;
@@ -120,9 +113,6 @@ type UnusedTruck = TTruck & {
     model?: string;
 };
 
-/* =========================================================
-   HELPERS
-========================================================= */
 
 const getId = (
     value:
@@ -230,10 +220,6 @@ const unwrapList = <T,>(
     return [];
 };
 
-/* =========================================================
-   DETAIL ITEM
-========================================================= */
-
 function DetailItem({
     icon,
     label,
@@ -303,9 +289,6 @@ function DetailItem({
     );
 }
 
-/* =========================================================
-   PAGE
-========================================================= */
 
 export default function AssignDriver() {
     const theme = useAppSelector(
@@ -313,9 +296,6 @@ export default function AssignDriver() {
             state.palette
     );
 
-    /* =====================================================
-       DISPATCHERS
-    ===================================================== */
 
     const {
         data: dispatcherResponse,
@@ -324,10 +304,6 @@ export default function AssignDriver() {
             page: 1,
             limit: 100,
         });
-
-    /* =====================================================
-       MUTATIONS
-    ===================================================== */
 
     const [
         createAssignment,
@@ -346,10 +322,6 @@ export default function AssignDriver() {
         },
     ] =
         useUpdateTruckDispatcherMutation();
-
-    /* =====================================================
-       STATE
-    ===================================================== */
 
     const [
         dialogOpen,
@@ -388,16 +360,11 @@ export default function AssignDriver() {
             null
         );
 
-    const [
-        form,
-        setForm,
-    ] =
-        useState<AssignmentForm>({
-            truckId: "",
-            dispatcherId: "",
-            status: "active",
-            notes: "",
-        });
+    const [form, setForm] = useState<AssignmentForm>({
+        trucks: [],
+        dispatcherId: "",
+        status: "active",
+    });
 
     const [
         search,
@@ -408,10 +375,6 @@ export default function AssignDriver() {
         debouncedSearch,
         setDebouncedSearch,
     ] = useState("");
-
-    /* =====================================================
-       SEARCH DEBOUNCE
-    ===================================================== */
 
     useEffect(() => {
         const timer =
@@ -491,34 +454,12 @@ export default function AssignDriver() {
             dispatcherResponse
         );
 
-    /*
-        IMPORTANT:
-
-        Response is:
-
-        {
-            message: "...",
-            data: [
-                {
-                    _id: "...",
-                    truckNumber: "1300",
-                    model: "...",
-                    ...
-                }
-            ]
-        }
-
-        So we read data directly.
-    */
 
     const unusedTrucks =
         unwrapList<UnusedTruck>(
             unusedTrucksResponse
         );
 
-    /* =====================================================
-       TRUCKS FOR ADD / EDIT
-    ===================================================== */
 
     const availableTrucksForForm =
         useMemo(() => {
@@ -542,14 +483,6 @@ export default function AssignDriver() {
                     editingAssignment
                 );
 
-            /*
-                If current truck is only ID,
-                return unused trucks.
-
-                The selected value will still
-                remain in form.truckId.
-            */
-
             if (
                 !currentTruck ||
                 typeof currentTruck ===
@@ -560,11 +493,6 @@ export default function AssignDriver() {
 
             const currentTruckId =
                 getId(currentTruck);
-
-            /*
-                API returns _id, so use
-                getId instead of truck.id.
-            */
 
             const currentExists =
                 unusedTrucks.some(
@@ -595,9 +523,7 @@ export default function AssignDriver() {
             editingAssignment,
         ]);
 
-    /* =====================================================
-       COLUMNS
-    ===================================================== */
+
 
     const columns: Column[] = [
         {
@@ -630,10 +556,6 @@ export default function AssignDriver() {
             align: "center",
         },
     ];
-
-    /* =====================================================
-       LOCAL FILTER
-    ===================================================== */
 
     const filteredAssignments =
         useMemo(() => {
@@ -697,55 +619,41 @@ export default function AssignDriver() {
             search,
         ]);
 
-    /* =====================================================
-       OPEN ADD
-    ===================================================== */
 
     const openCreate = () => {
         setEditingAssignment(null);
 
         setForm({
-            truckId: "",
+            trucks: [],
             dispatcherId: "",
             status: "active",
-            notes: "",
         });
-
 
         setDialogOpen(true);
     };
 
+    const openEdit = (assignment: TruckDispatcher) => {
+        setEditingAssignment(assignment);
 
-
-    const openEdit = (
-        assignment: TruckDispatcher
-    ) => {
-        setEditingAssignment(
-            assignment
+        const truckId = getId(
+            getAssignmentTruck(assignment)
         );
 
         setForm({
-            truckId:
-                getId(
-                    getAssignmentTruck(
-                        assignment
-                    )
-                ),
+            trucks: truckId
+                ? [
+                    {
+                        truckId,
+                        notes: assignment.notes ?? "",
+                    },
+                ]
+                : [],
 
-            dispatcherId:
-                getId(
-                    getAssignmentDispatcher(
-                        assignment
-                    )
-                ),
+            dispatcherId: getId(
+                getAssignmentDispatcher(assignment)
+            ),
 
-            status:
-                assignment.status ??
-                "active",
-
-            notes:
-                assignment.notes ??
-                "",
+            status: assignment.status ?? "active",
         });
 
         setDialogOpen(true);
@@ -759,9 +667,6 @@ export default function AssignDriver() {
         setEditingAssignment(null);
     };
 
-    /* =====================================================
-       ACTION MENU
-    ===================================================== */
 
     const handleOpenActions = (
         event: React.MouseEvent<HTMLElement>,
@@ -811,86 +716,55 @@ export default function AssignDriver() {
             handleCloseActions();
         };
 
-    const handleSubmit =
-        async () => {
-            if (
-                !form.truckId ||
-                !form.dispatcherId
-            ) {
-                toast.error(
-                    "Choose a truck and dispatcher"
-                );
+    const handleSubmit = async () => {
+        if (form.trucks.length === 0 || !form.dispatcherId) {
+            toast.error("Choose at least one truck and dispatcher");
+            return;
+        }
 
-                return;
-            }
+        try {
+            if (editingAssignment) {
+                const id =
+                    editingAssignment.id ??
+                    editingAssignment._id;
 
-            try {
-
-
-                if (editingAssignment) {
-                    const id =
-                        editingAssignment.id ??
-                        editingAssignment._id;
-
-                    if (!id) {
-                        throw new Error(
-                            "Assignment ID is missing"
-                        );
-                    }
-
-                    await updateAssignment({
-                        id,
-
-                        truckId:
-                            form.truckId,
-
-                        dispatcherId:
-                            form.dispatcherId,
-
-                        status:
-                            form.status,
-
-                        notes:
-                            form.notes,
-                    }).unwrap();
-
-                    toast.success(
-                        "Assignment updated"
-                    );
+                if (!id) {
+                    throw new Error("Assignment ID is missing");
                 }
 
-                else {
-                    await createAssignment({
-                        truckId:
-                            form.truckId,
+                const truck = form.trucks[0];
 
-                        dispatcherId:
-                            form.dispatcherId,
-
-                        notes:
-                            form.notes,
-                    }).unwrap();
-
-                    toast.success(
-                        "Assignment created"
-                    );
-                }
+                await updateAssignment({
+                    id,
+                    truckId: truck.truckId,
+                    dispatcherId: form.dispatcherId,
+                    status: form.status,
+                    notes: truck.notes,
+                }).unwrap();
 
                 await refetchAssignments();
 
-                closeFormDialog();
-            } catch (error) {
-                console.error(
-                    "Assignment save error:",
-                    error
-                );
+                toast.success("Assignment updated");
+            } else {
+                const payload = form.trucks.map((truck) => ({
+                    truckId: truck.truckId,
+                    dispatcherId: form.dispatcherId,
+                    notes: truck.notes,
+                }));
 
-                toast.error(
-                    "Could not save the assignment"
-                );
+                await createAssignment(payload).unwrap();
+
+                await refetchAssignments();
+
+                toast.success("Assignments created");
             }
-        };
 
+            closeFormDialog();
+        } catch (error) {
+
+            toast.error("Could not save the assignment");
+        }
+    };
 
     return (
         <Box
@@ -907,10 +781,6 @@ export default function AssignDriver() {
             }}
         >
             <Toaster position="top-center" />
-
-            {/* =================================================
-                PAGE CONTROLS
-            ================================================= */}
 
             <Box
                 sx={{
@@ -1136,10 +1006,6 @@ export default function AssignDriver() {
                 </Box>
             </Box>
 
-            {/* =================================================
-                ERROR
-            ================================================= */}
-
             {isError && (
                 <Alert
                     severity="error"
@@ -1152,9 +1018,6 @@ export default function AssignDriver() {
                 </Alert>
             )}
 
-            {/* =================================================
-                TABLE
-            ================================================= */}
 
             <Box
                 sx={{
@@ -1261,10 +1124,6 @@ export default function AssignDriver() {
                 />
             </Box>
 
-            {/* =================================================
-                ACTION MENU
-            ================================================= */}
-
             <Menu
                 anchorEl={
                     actionAnchor
@@ -1353,10 +1212,6 @@ export default function AssignDriver() {
                 </MenuItem>
             </Menu>
 
-            {/* =================================================
-                ADD / EDIT POPUP
-            ================================================= */}
-
             <Dialog
                 open={dialogOpen}
 
@@ -1424,96 +1279,108 @@ export default function AssignDriver() {
                         </Alert>
                     )}
 
-                    {/* ==========================
-                        TRUCK
-                    ========================== */}
 
                     <FormControl
                         fullWidth
-
                         disabled={
                             isLoadingUnusedTrucks ||
                             isFetchingUnusedTrucks
                         }
                     >
                         <InputLabel id="truck-label">
-                            Truck
+                            Trucks
                         </InputLabel>
 
-                        <Select
+                        <Select<string[]>
                             labelId="truck-label"
+                            label="Trucks"
+                            multiple
+                            value={form.trucks.map(
+                                (item) => item.truckId
+                            )}
+                            onChange={(event) => {
+                                const value = event.target.value;
 
-                            label="Truck"
+                                const selectedIds =
+                                    typeof value === "string"
+                                        ? value.split(",")
+                                        : value;
 
-                            value={
-                                form.truckId
-                            }
+                                setForm((prev) => ({
+                                    ...prev,
 
-                            onChange={(
-                                event
-                            ) =>
-                                setForm(
-                                    (
-                                        prev
-                                    ) => ({
-                                        ...prev,
+                                    trucks: selectedIds.map(
+                                        (truckId) => {
+                                            const existing =
+                                                prev.trucks.find(
+                                                    (item) =>
+                                                        item.truckId ===
+                                                        truckId
+                                                );
 
-                                        truckId:
-                                            event
-                                                .target
-                                                .value,
-                                    })
-                                )
-                            }
-                        >
-                            {isLoadingUnusedTrucks ||
-                                isFetchingUnusedTrucks ? (
-                                <MenuItem disabled>
-                                    Loading trucks...
-                                </MenuItem>
-                            ) : availableTrucksForForm.length ===
-                                0 ? (
-                                <MenuItem disabled>
-                                    No unused trucks
-                                    available
-                                </MenuItem>
-                            ) : (
-                                availableTrucksForForm.map(
-                                    (
-                                        truck
-                                    ) => {
-                                        const truckId =
-                                            getId(
-                                                truck
+                                            return (
+                                                existing ?? {
+                                                    truckId,
+                                                    notes: "",
+                                                }
+                                            );
+                                        }
+                                    ),
+                                }));
+                            }}
+                            renderValue={(selectedIds) =>
+                                selectedIds
+                                    .map((id) => {
+                                        const truck =
+                                            availableTrucksForForm.find(
+                                                (item) =>
+                                                    getId(item) === id
                                             );
 
                                         return (
-                                            <MenuItem
-                                                key={
-                                                    truckId
-                                                }
-
-                                                value={
-                                                    truckId
-                                                }
-                                            >
-                                                {truck.truckNumber ??
-                                                    "No Truck Number"}
-
-                                                {truck.model
-                                                    ? ` · ${truck.model}`
-                                                    : ""}
-                                            </MenuItem>
+                                            truck?.truckNumber ??
+                                            truck?.model ??
+                                            id
                                         );
-                                    }
-                                )
+                                    })
+                                    .join(", ")
+                            }
+                        >
+                            {availableTrucksForForm.map(
+                                (truck) => {
+                                    const truckId = getId(truck);
+
+                                    const isSelected =
+                                        form.trucks.some(
+                                            (item) =>
+                                                item.truckId ===
+                                                truckId
+                                        );
+
+                                    return (
+                                        <MenuItem
+                                            key={truckId}
+                                            value={truckId}
+                                        >
+                                            <Checkbox
+                                                checked={isSelected}
+                                            />
+
+                                            <ListItemText
+                                                primary={
+                                                    truck.truckNumber ??
+                                                    "No Truck Number"
+                                                }
+                                                secondary={
+                                                    truck.model
+                                                }
+                                            />
+                                        </MenuItem>
+                                    );
+                                }
                             )}
                         </Select>
                     </FormControl>
-
-                    {/* ==========================
-                        DISPATCHER
-                    ========================== */}
 
                     <FormControl
                         fullWidth
@@ -1625,36 +1492,85 @@ export default function AssignDriver() {
                         NOTES
                     ========================== */}
 
-                    <TextField
-                        label="Notes"
+                    {form.trucks.length > 0 && (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2,
+                            }}
+                        >
+                            {form.trucks.map((selectedTruck) => {
+                                const truck =
+                                    availableTrucksForForm.find(
+                                        (item) =>
+                                            getId(item) ===
+                                            selectedTruck.truckId
+                                    );
 
-                        value={
-                            form.notes
-                        }
+                                const truckNumber =
+                                    truck?.truckNumber ??
+                                    "Unknown";
 
-                        onChange={(
-                            event
-                        ) =>
-                            setForm(
-                                (
-                                    prev
-                                ) => ({
-                                    ...prev,
+                                return (
+                                    <Box
+                                        key={selectedTruck.truckId}
+                                        sx={{
+                                            display: "grid",
+                                            gridTemplateColumns: {
+                                                xs: "1fr",
+                                                sm: "130px 1fr",
+                                            },
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                fontWeight: 700,
+                                                color:
+                                                    theme
+                                                        .currentPalette
+                                                        .primary,
+                                            }}
+                                        >
+                                            Truck #{truckNumber}
+                                        </Typography>
 
-                                    notes:
-                                        event
-                                            .target
-                                            .value,
-                                })
-                            )
-                        }
+                                        <TextField
+                                            label={`Notes for Truck ${truckNumber}`}
+                                            value={
+                                                selectedTruck.notes
+                                            }
+                                            onChange={(event) => {
+                                                const notes =
+                                                    event.target.value;
 
-                        multiline
+                                                setForm((prev) => ({
+                                                    ...prev,
 
-                        minRows={3}
-
-                        fullWidth
-                    />
+                                                    trucks:
+                                                        prev.trucks.map(
+                                                            (item) =>
+                                                                item.truckId ===
+                                                                    selectedTruck.truckId
+                                                                    ? {
+                                                                        ...item,
+                                                                        notes,
+                                                                    }
+                                                                    : item
+                                                        ),
+                                                }));
+                                            }}
+                                            fullWidth
+                                            multiline
+                                            minRows={2}
+                                        />
+                                    </Box>
+                                );
+                            })}
+                        </Box>
+                    )}
                 </DialogContent>
 
                 <DialogActions
@@ -1707,10 +1623,6 @@ export default function AssignDriver() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* =================================================
-                VIEW POPUP
-            ================================================= */}
 
             <Dialog
                 open={Boolean(

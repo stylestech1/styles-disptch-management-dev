@@ -795,6 +795,15 @@ export const apiSlice = api.injectEndpoints({
       }),
       invalidatesTags: ["TruckDispatchers"],
     }),
+    // updateTruckDispatcher: builder.mutation({
+    //   query: ({ id, ...body }) => ({
+    //     url: `/api/v1/truck-dispatchers/${id}`,
+    //     method: "PATCH",
+    //     body,
+    //   }),
+
+    //   invalidatesTags: ["TruckDispatchers"],
+    // }),
 
     getTruckPreview: builder.query({
       query: ({
@@ -992,46 +1001,21 @@ export const apiSlice = api.injectEndpoints({
         { type: "TruckSummary", id },
       ],
     }),
-    getTruckDispatchers: builder.query<
-      any,
-      {
-        page?: number;
-        limit?: number;
-        keyword?: string;
-        status?: string;
-        unusedTrucks?: boolean;
-      }
-    >({
-      query: ({
-        page = 1,
-        limit = 10,
-        keyword,
-        status,
-        unusedTrucks,
-      }) => ({
+    getTruckDispatchers: builder.query({
+      query: ({ page = 1, limit = 10, keyword, unusedTrucks }) => ({
         url: "/api/v1/truck-dispatchers",
         method: "GET",
-
         params: {
           page,
           limit,
-
-          ...(keyword && {
-            keyword,
-          }),
-
-          ...(status && {
-            status,
-          }),
-
-          ...(unusedTrucks !==
-            undefined && {
-            unusedTrucks,
-          }),
+          keyword,
+          unusedTrucks,
         },
       }),
+
       providesTags: ["TruckDispatchers"],
     }),
+
     getMyTruckAssignments: builder.query<unknown, void>({
       query: () => "/api/v1/truck-dispatchers/my-trucks",
       providesTags: ["TruckDispatchers"],
@@ -1067,13 +1051,20 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["TruckDispatchers"],
     }),
     createTruckDispatcher: builder.mutation({
-      query: (body: { truckId: string; dispatcherId: string; notes?: string }) => ({
+      query: (
+        body: {
+          truckId: string;
+          dispatcherId: string;
+          notes?: string;
+        }[]
+      ) => ({
         url: "/api/v1/truck-dispatchers",
         method: "POST",
         body,
       }),
       invalidatesTags: ["TruckDispatchers"],
     }),
+
     updateTruckDispatcher: builder.mutation({
       query: ({ id, ...body }: {
         id: string;
