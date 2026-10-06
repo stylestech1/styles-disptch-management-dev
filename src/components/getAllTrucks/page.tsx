@@ -496,7 +496,6 @@ export default function TruckDispatcher() {
                 </Box>
             </Box>
 
-g
 
             {!role ? (
                 <Alert
