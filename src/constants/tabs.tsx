@@ -178,14 +178,7 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       subtitle: "Manage your notifications and stay updated.",
     },
   ],
-  dispatcher: [
-    {
-      label: "My Trucks",
-      subtitle: "View the trucks assigned to you",
-      icon: <Truck />,
-      path: "truck-dispatchers",
-    },
-  ],
+
   driver: [
     {
       label: "Loads",

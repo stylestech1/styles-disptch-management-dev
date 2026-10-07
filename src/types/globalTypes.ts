@@ -1,7 +1,7 @@
 import { TPlace } from "@/components/sections/LocationAutocomplete";
 import { Dayjs } from "dayjs";
 
-export type TUserRole = "admin" | "employee" | "dispatcher" | "driver" | "superAdmin" | "manager";
+export type TUserRole = "admin" | "employee" | "driver" | "superAdmin" | "manager";
 export type TStatusLoad = "pending" | "in_transit" | "delivered" | "cancelled" | "truck_order_not_used";
 export type TStatusDriver = "inactive" | "available" | "busy";
 export type TTruckType = "reefer" | "van";
