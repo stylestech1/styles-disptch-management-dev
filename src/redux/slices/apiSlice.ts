@@ -7,6 +7,8 @@ import {
   TDriver,
   tDriverHiring,
   TLoadSummary,
+  TLoadClaimType,
+  TLoadClaimsResponse,
   TTrucksSummaryResponse,
   TTruckSummaryResponse,
   TTruckWithSummary,
@@ -59,6 +61,20 @@ export const apiSlice = api.injectEndpoints({
       query: () => `/api/v1/loads`,
       providesTags: ["Loads"],
       keepUnusedDataFor: 60 * 60 * 24,
+    }),
+
+    getLoadClaims: builder.query<
+      TLoadClaimsResponse,
+      { claimType?: TLoadClaimType } | void
+    >({
+      query: (params) => {
+        const query = params?.claimType
+          ? `?claimType=${encodeURIComponent(params.claimType)}`
+          : "";
+
+        return `/api/v1/loads/claims${query}`;
+      },
+      providesTags: ["Loads"],
     }),
 
     // ! ========== Service Centers ==========
@@ -1459,6 +1475,7 @@ export const {
   // TODO: ----- Loads -----
   useGetLoadsQuery,
   useGetAllLoadsQuery,
+  useGetLoadClaimsQuery,
   useGetLoadByIdQuery,
   useGetLoadByMongoIdQuery,
   useLazyGetLoadByIdQuery,

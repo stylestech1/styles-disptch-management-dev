@@ -11,6 +11,12 @@ export type TTruckId = {
   truckId: number;
   truckNumber: string;
 };
+export type TDetentionLayover = {
+  id?: string;
+  type: "detention" | "layover";
+  source: "shipper" | "receiver";
+  status?: "requested" | "paid" | "refused";
+};
 export type PaginationResult = {
   currentPage: number;
   limit: number;
@@ -159,9 +165,24 @@ export type TLoads = {
   leftShipper?: string;
   leftReceiver?: string;
   deliveredAt?: string;
+  detentionLayovers?: TDetentionLayover[];
+  tonuStatus?: "pending" | "paid" | "refused";
+  tonuReason?: string;
   createdAt?: string;
   documents?: TDocument[];
   documentsForDriver?: TDocument[];
+};
+export type TLoadClaimType = "detention" | "layover" | "tonu";
+export type TLoadClaim = TLoads & {
+  claimType?: TLoadClaimType;
+};
+export type TLoadClaimsResponse = {
+  data?: unknown;
+  claims?: unknown;
+  loads?: unknown;
+  results?: unknown;
+  docs?: unknown;
+  items?: unknown;
 };
 export type AttachmentItem = {
   id: string;

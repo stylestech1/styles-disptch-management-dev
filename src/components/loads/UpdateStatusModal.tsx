@@ -50,6 +50,19 @@ const createDefaultDetentionLayover = (): DetentionLayover => ({
   status: "requested",
 });
 
+const getDetentionLayovers = (load?: TLoads): DetentionLayover[] => {
+  const records = load?.detentionLayovers ?? [];
+
+  if (records.length > 0) {
+    return records.map((record) => ({
+      ...record,
+      status: record.status || "requested",
+    }));
+  }
+
+  return load?.status === "delivered" ? [createDefaultDetentionLayover()] : [];
+};
+
 const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
   isOpen,
   onClose,
@@ -71,15 +84,13 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
   const [detentionLayovers, setDetentionLayovers] = useState<
     DetentionLayover[]
-  >(
-    load?.status === "delivered"
-      ? [createDefaultDetentionLayover()]
-      : []
+  >(getDetentionLayovers(load));
+
+  const [tonuStatus, setTonuStatus] = useState<TonuStatus>(
+    load?.tonuStatus || "pending"
   );
 
-  const [tonuStatus, setTonuStatus] = useState<TonuStatus>("pending");
-
-  const [tonuReason, setTonuReason] = useState("");
+  const [tonuReason, setTonuReason] = useState(load?.tonuReason || "");
 
   const [showTonuFields, setShowTonuFields] = useState(
     load?.status === "truck_order_not_used"
@@ -317,17 +328,13 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
     setShowDeliveredAt(load?.status === "delivered");
 
-    setDetentionLayovers(
-      load?.status === "delivered"
-        ? [createDefaultDetentionLayover()]
-        : []
-    );
+    setDetentionLayovers(getDetentionLayovers(load));
 
     setShowTonuFields(load?.status === "truck_order_not_used");
 
-    setTonuStatus("pending");
+    setTonuStatus(load?.tonuStatus || "pending");
 
-    setTonuReason("");
+    setTonuReason(load?.tonuReason || "");
 
     onClose();
   };

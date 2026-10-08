@@ -11,7 +11,8 @@ import {
   Users,
   UserStar,
   Wrench,
-  UserPlus
+  UserPlus,
+  Info
 } from "lucide-react";
 import { MdOutlineHandyman } from "react-icons/md";
 
@@ -64,10 +65,16 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <UserPlus />,
     },
     {
-      label: "Truck Dispatcher Assignments",
+      label: "Truck Status",
       subtitle: "View and edit truck dispatcher assignments",
-      icon: <Truck />,
+      icon: <Info />,
       path: "truck-dispatchers",
+    },
+    {
+      label: "Truck Review",
+      subtitle: "View and edit truck claims",
+      icon: <Truck />,
+      path: "loads-claims",
     },
     {
       label: "Maintenance",
@@ -201,8 +208,8 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <Boxes />,
     },
     {
-      label: "Hiring Dispatchers",
-      subtitle: "Review, approve, and manage dispatcher recruitment requests",
+      label: "Hiring Drivers",
+      subtitle: "Review, approve, and manage driver recruitment requests",
       icon: <UserPlus />,
     },
     {

@@ -136,11 +136,6 @@ const columns: Column[] = [
         width: "16%",
     },
     {
-        key: "dispatcher",
-        header: "Dispatcher",
-        width: "20%",
-    },
-    {
         key: "location",
         header: "Current Location",
         width: "20%",
@@ -553,27 +548,36 @@ export default function TruckDispatcher() {
                                 height: 82,
                             }}
                         >
-                            {/* TRUCK NUMBER */}
+                            {/* TRUCK NUMBER + DISPATCHER NAME */}
                             <TableCell align="center">
-                                <Typography
-                                    variant="body2"
+                                <Box
                                     sx={{
-                                        fontWeight: 600,
-                                        color: "primary.main",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        gap: 0.5,
                                     }}
                                 >
-                                    {assignment.truck?.truckNumber || "-"}
-                                </Typography>
-                            </TableCell>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: "primary.main",
+                                        }}
+                                    >
+                                        {assignment.truck?.truckNumber || "-"}
+                                    </Typography>
 
-                            {/* DISPATCHER */}
-                            <TableCell align="center">
-                                <Typography
-                                    variant="body2"
-                                    fontWeight={500}
-                                >
-                                    {assignment.dispatcher?.name || "-"}
-                                </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            color: "text.secondary",
+                                            fontWeight: 500,
+                                        }}
+                                    >
+                                        {assignment.dispatcher?.name || "-"}
+                                    </Typography>
+                                </Box>
                             </TableCell>
 
                             {/* CURRENT LOCATION */}
