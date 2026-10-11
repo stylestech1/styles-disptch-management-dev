@@ -42,6 +42,7 @@ import {
 
 import { useAppSelector } from "@/redux/store";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import LocationAutocomplete, { TPlace } from "../sections/LocationAutocomplete";
 
 
 type CurrentLoad = {
@@ -52,9 +53,13 @@ type CurrentLoad = {
     status: "pending" | "in_transit";
     pickupAtFrom: string;
     pickupAtTo?: string;
+    completedAt?: string;
+    arrivalAtReceiver?: string;
+    leftReceiver?: string;
     deliveredAt?: string;
     truckType: string;
 };
+
 
 type AssignedDriver = {
     name: string;
@@ -125,9 +130,6 @@ type AssignmentsResponse = {
     };
 };
 
-/* =========================================================
-   TABLE COLUMNS
-========================================================= */
 
 const columns: Column[] = [
     {
@@ -139,6 +141,11 @@ const columns: Column[] = [
         key: "location",
         header: "Current Location",
         width: "20%",
+    },
+    {
+        key: "LOAD TIMELINE",
+        header: "Load Timeline",
+        width: "24%",
     },
     {
         key: "notes",
@@ -193,6 +200,23 @@ const formatDate = (date?: string) => {
     return value.toLocaleString();
 };
 
+const getCityState = (address?: string) => {
+    if (!address) return "-";
+
+    const parts = address.split(",").map((part) => part.trim());
+
+    if (parts.length < 2) return address;
+
+    // Example: 5656 Kelley St, Houston, TX 77026, USA
+    const city = parts[parts.length - 3];
+    const state = parts[parts.length - 2]
+        ?.replace(/\s+\d{5}(?:-\d{4})?$/, "");
+
+    if (!city || !state) return address;
+
+    return `${city}, ${state}`;
+};
+
 
 export default function TruckDispatcher() {
     const currentUser = useAppSelector((state) => state.auth.user);
@@ -220,11 +244,8 @@ export default function TruckDispatcher() {
 
     const [notes, setNotes] = useState("");
 
-    const [currentLocation, setCurrentLocation] = useState("");
-
-    /* =======================================================
-       SEARCH DEBOUNCE
-    ======================================================= */
+    const [currentLocation, setCurrentLocation] =
+        useState<TPlace | null>(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -331,32 +352,55 @@ export default function TruckDispatcher() {
         ? adminError
         : dispatcherError;
 
-    /* =======================================================
-       VIEW
-    ======================================================= */
 
     const openDetails = (assignment: Assignment) => {
+        console.log("Full Assignment:", assignment);
+        console.log("Current Load:", assignment.truck?.currentLoad);
+
+        console.table({
+            completedAt: assignment.truck?.currentLoad?.completedAt,
+            arrivalAtReceiver: assignment.truck?.currentLoad?.arrivalAtReceiver,
+            leftReceiver: assignment.truck?.currentLoad?.leftReceiver,
+            deliveredAt: assignment.truck?.currentLoad?.deliveredAt,
+        });
+
         setViewingAssignment(assignment);
     };
+
 
     const closeDetails = () => {
         setViewingAssignment(null);
     };
 
 
+
     const openEdit = (assignment: Assignment) => {
         setEditingAssignment(assignment);
         setNotes(assignment.notes ?? "");
-        setCurrentLocation(assignment.truck.currentLocation ?? "");
+
+        const location = assignment.truck?.currentLocation;
+
+        setCurrentLocation(
+            location
+                ? {
+                    display_name: location,
+                    lat: "",
+                    lon: "",
+                    place_id: "",
+                }
+                : null
+        );
     };
+
+
+
 
     const closeEdit = () => {
         setEditingAssignment(null);
-
         setNotes("");
-
-        setCurrentLocation("");
+        setCurrentLocation(null);
     };
+
 
     const saveEdit = async () => {
         if (!editingAssignment?.id) {
@@ -365,10 +409,11 @@ export default function TruckDispatcher() {
         }
 
         try {
+
             const payload = {
                 assignmentId: editingAssignment.id,
                 notes: notes.trim(),
-                currentLocation: currentLocation.trim(),
+                currentLocation: currentLocation?.display_name?.trim() ?? "",
             };
 
             if (isAdminOrManager) {
@@ -580,12 +625,117 @@ export default function TruckDispatcher() {
                                 </Box>
                             </TableCell>
 
+
                             {/* CURRENT LOCATION */}
-                            <TableCell align="center">
-                                <Typography variant="body2">
-                                    {assignment.truck?.currentLocation || "-"}
-                                </Typography>
+                            <TableCell align="center" sx={{ py: 2 }}>
+                                {assignment.truck?.currentLocation ? (
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                            minWidth: 150,
+                                        }}
+                                    >
+                                        <MapPin
+                                            size={17}
+                                            color="#1565C0"
+                                            style={{ flexShrink: 0 }}
+                                        />
+
+                                        <Typography
+                                            variant="body2"
+                                            title={assignment.truck.currentLocation}
+                                            sx={{
+                                                fontWeight: 600,
+                                                color: "primary.main",
+                                                whiteSpace: "nowrap",
+                                            }}
+                                        >
+                                            {getCityState(assignment.truck.currentLocation)}
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        -
+                                    </Typography>
+                                )}
                             </TableCell>
+
+
+
+
+                            {/* LOAD TIMELINE */}
+                            <TableCell align="left">
+                                {(() => {
+                                    const timeline = [
+                                        {
+                                            label: "Completed At",
+                                            value: assignment.truck?.currentLoad?.completedAt,
+                                        },
+                                        {
+                                            label: "Arrival At Receiver",
+                                            value: assignment.truck?.currentLoad?.arrivalAtReceiver,
+                                        },
+                                        {
+                                            label: "Left Receiver",
+                                            value: assignment.truck?.currentLoad?.leftReceiver,
+                                        },
+                                        {
+                                            label: "Delivered At",
+                                            value: assignment.truck?.currentLoad?.deliveredAt,
+                                        },
+                                    ].filter(
+                                        (item) =>
+                                            item.value &&
+                                            !Number.isNaN(new Date(item.value).getTime())
+                                    );
+
+                                    if (!timeline.length) return null;
+
+                                    return (
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                gap: 1,
+                                                minWidth: 280,
+                                                py: 1,
+                                            }}
+                                        >
+                                            {timeline.map(({ label, value }) => (
+                                                <Box
+                                                    key={label}
+                                                    sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 1,
+                                                        flexWrap: "wrap",
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{ whiteSpace: "nowrap" }}
+                                                    >
+                                                        {label}:
+                                                    </Typography>
+
+                                                    <Typography
+                                                        variant="body2"
+                                                        fontWeight={600}
+                                                        sx={{ whiteSpace: "nowrap" }}
+                                                    >
+                                                        {formatDate(value)}
+                                                    </Typography>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    );
+                                })()}
+                            </TableCell>
+
+
 
                             {/* NOTES */}
                             <TableCell align="center">
@@ -1110,6 +1260,40 @@ export default function TruckDispatcher() {
                                                     )}
                                                 </Typography>
                                             </Box>
+
+
+                                            {[
+                                                {
+                                                    label: "Completed At",
+                                                    value: viewingAssignment.truck.currentLoad.completedAt,
+                                                },
+                                                {
+                                                    label: "Arrival At Receiver",
+                                                    value: viewingAssignment.truck.currentLoad.arrivalAtReceiver,
+                                                },
+                                                {
+                                                    label: "Left Receiver",
+                                                    value: viewingAssignment.truck.currentLoad.leftReceiver,
+                                                },
+                                                {
+                                                    label: "Delivered At",
+                                                    value: viewingAssignment.truck.currentLoad.deliveredAt,
+                                                },
+                                            ].map(({ label, value }) => (
+                                                <Box key={label}>
+                                                    <Typography
+                                                        variant="caption"
+                                                        color="text.secondary"
+                                                    >
+                                                        {label}
+                                                    </Typography>
+
+                                                    <Typography fontWeight={600}>
+                                                        {formatDate(value)}
+                                                    </Typography>
+                                                </Box>
+                                            ))}
+
                                         </Box>
                                     </Box>
                                 )}
@@ -1233,17 +1417,14 @@ export default function TruckDispatcher() {
                     />
 
                     {/* CURRENT LOCATION */}
-
-                    <TextField
+                    <LocationAutocomplete
                         label="Current Location"
                         value={currentLocation}
-                        onChange={(event) =>
-                            setCurrentLocation(
-                                event.target.value
-                            )
-                        }
-                        placeholder="Example: Dallas, TX"
+                        setValue={(place) => setCurrentLocation(place)}
+                        placeholder="Enter truck's current location"
+                        showZipCode
                     />
+
                 </DialogContent>
 
                 <DialogActions

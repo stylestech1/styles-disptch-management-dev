@@ -22,7 +22,13 @@ import { RootState, useAppSelector } from "@/redux/store";
 import { TLoadClaim, TLoadClaimType } from "@/types/globalTypes";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
+import { MapPin, Navigation, Route } from "lucide-react";
+
 type ClaimFilter = "all" | TLoadClaimType;
+type RouteLocation = string | {
+    address?: string;
+    _id?: string;
+};
 
 type ClaimRecord = {
     _id?: string;
@@ -281,6 +287,97 @@ const LoadsClaimsPage = () => {
 
     const responseHasUnexpectedShape = false;
 
+    const getAddress = (location?: RouteLocation) => {
+        if (!location) return "-";
+
+        return typeof location === "string"
+            ? location
+            : location.address || "-";
+    };
+
+    const getCityState = (address: string) => {
+        const parts = address.split(",").map((part) => part.trim());
+
+        return parts.length >= 2
+            ? `${parts[0]}, ${parts[1]}`
+            : address;
+    };
+
+    const RouteCell = ({ load }: { load: ClaimLoad }) => {
+        const origin = getAddress(load.origin);
+
+        const destinations = Array.isArray(load.destination)
+            ? load.destination.map(getAddress)
+            : load.destination
+                ? [getAddress(load.destination)]
+                : [];
+
+        const locations = [
+            { address: origin, type: "origin" },
+            ...destinations.map((address, index) => ({
+                address,
+                type: index === destinations.length - 1
+                    ? "destination"
+                    : "stop",
+            })),
+        ];
+
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1.5,
+                    minWidth: 170,
+                }}
+            >
+                {locations.map((location, index) => {
+                    const Icon =
+                        location.type === "origin"
+                            ? MapPin
+                            : location.type === "destination"
+                                ? Route
+                                : Navigation;
+
+                    return (
+                        <Box
+                            key={`${location.type}-${index}`}
+                            sx={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 1.5,
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    color: "primary.main",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    mt: 0.25,
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <Icon size={17} />
+                            </Box>
+
+                            <Typography
+                                variant="body2"
+                                title={location.address}
+                                sx={{
+                                    fontWeight: 600,
+                                    color: "primary.main",
+                                    lineHeight: 1.6,
+                                }}
+                            >
+                                {getCityState(location.address)}
+                            </Typography>
+                        </Box>
+                    );
+                })}
+            </Box>
+        );
+    };
+
 
     const stats = useMemo(
         () => ({
@@ -419,14 +516,11 @@ const LoadsClaimsPage = () => {
                                 variant="outlined"
                             />
                         </TableCell>
-                        <TableCell align="left">
-                            <Typography variant="body2">
-                                {getOriginAddress(row.load)}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                to {getDestinationAddress(row.load)}
-                            </Typography>
+
+                        <TableCell align="left" sx={{ py: 2 }}>
+                            <RouteCell load={row.load} />
                         </TableCell>
+
                         <TableCell>{formatDate(row.load.deliveredAt)}</TableCell>
                         <TableCell>{titleCase(row.source)}</TableCell>
                         <TableCell>
