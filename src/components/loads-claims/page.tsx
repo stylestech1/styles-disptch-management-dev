@@ -17,7 +17,10 @@ import { IoAlertCircle, IoCloseCircle, IoTime } from "react-icons/io5";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import StatsCard from "@/components/ui/StatsCard";
 import UpdateStatusModal from "@/components/loads/UpdateStatusModal";
-import { useGetLoadClaimsQuery } from "@/redux/slices/apiSlice";
+import {
+    useLazyGetLoadByMongoIdQuery,
+    useGetLoadClaimsQuery,
+} from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
 import { TLoadClaim, TLoadClaimType } from "@/types/globalTypes";
 import { getErrorMessage } from "@/utils/getErrorMessage";
@@ -36,6 +39,8 @@ type ClaimRecord = {
     type: TLoadClaimType;
     source?: string;
     status?: string;
+    amount?: number | null;
+    note?: string;
     addedBy?: {
         _id?: string;
         name?: string;
@@ -224,6 +229,12 @@ const formatDate = (date?: string) => {
     return Number.isNaN(parsedDate.getTime()) ? "-" : parsedDate.toLocaleString();
 };
 
+const formatAmount = (amount?: number | null, currency?: string) => {
+    if (amount === undefined || amount === null) return "-";
+
+    return `${currency ? `${currency} ` : ""}${amount.toFixed(2)}`;
+};
+
 const titleCase = (value?: string) =>
     value
         ? value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
@@ -235,8 +246,9 @@ const columns: Column[] = [
     { key: "route", header: "Route", align: "left" },
     { key: "delivered", header: "Delivered" },
     { key: "source", header: "Source" },
+    { key: "amount", header: "Amount" },
     { key: "status", header: "Status" },
-    { key: "reason", header: "TONU Reason", align: "left" },
+    { key: "note", header: "Note / Reason", align: "left" },
     { key: "actions", header: "Actions" },
 ];
 
@@ -244,6 +256,7 @@ const LoadsClaimsPage = () => {
     const theme = useAppSelector((state: RootState) => state.palette);
     const [claimFilter, setClaimFilter] = useState<ClaimFilter>("all");
     const [selectedLoad, setSelectedLoad] = useState<TLoadClaim | null>(null);
+    const [fetchLoadByMongoId] = useLazyGetLoadByMongoIdQuery();
 
     const {
         data: allClaimsData,
@@ -496,8 +509,16 @@ const LoadsClaimsPage = () => {
                     <TableRow
                         key={row.key}
                         hover
+                        onClick={() => {
+                            const loadId = row.load._id ?? row.load.id;
+
+                            if (loadId) {
+                                void fetchLoadByMongoId(loadId);
+                            }
+                        }}
                         sx={{
                             "&:last-child td": { borderBottom: 0 },
+                            cursor: "pointer",
                         }}
                     >
                         <TableCell align="left">
@@ -524,6 +545,9 @@ const LoadsClaimsPage = () => {
                         <TableCell>{formatDate(row.load.deliveredAt)}</TableCell>
                         <TableCell>{titleCase(row.source)}</TableCell>
                         <TableCell>
+                            {formatAmount(row.record?.amount, row.load.currency)}
+                        </TableCell>
+                        <TableCell>
                             {row.recordStatus ? (
                                 <Chip
                                     size="small"
@@ -541,7 +565,7 @@ const LoadsClaimsPage = () => {
                         <TableCell align="left">
                             {row.type === "tonu"
                                 ? row.load.tonuReason || titleCase(row.load.tonuStatus)
-                                : "-"}
+                                : row.record?.note || "-"}
                         </TableCell>
                         <TableCell>
                             <Button

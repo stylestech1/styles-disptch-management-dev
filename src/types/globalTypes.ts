@@ -12,10 +12,13 @@ export type TTruckId = {
   truckNumber: string;
 };
 export type TDetentionLayover = {
+  _id?: string;
   id?: string;
   type: "detention" | "layover";
   source: "shipper" | "receiver";
   status?: "requested" | "paid" | "refused";
+  amount?: number | null;
+  note?: string;
 };
 export type PaginationResult = {
   currentPage: number;
@@ -134,6 +137,7 @@ export type TLoadsForm = {
   truckTemp: string;
 };
 export type TLoads = {
+  _id?: string;
   id?: string;
   loadId: string;
   origin: string;

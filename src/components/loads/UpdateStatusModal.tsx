@@ -38,10 +38,13 @@ type DetentionLayoverSource = "shipper" | "receiver";
 type DetentionLayoverStatus = "requested" | "paid" | "refused";
 
 interface DetentionLayover {
+  _id?: string;
   id?: string;
   type: DetentionLayoverType;
   source: DetentionLayoverSource;
   status: DetentionLayoverStatus;
+  amount?: number | null;
+  note?: string;
 }
 
 const createDefaultDetentionLayover = (): DetentionLayover => ({
@@ -57,6 +60,7 @@ const getDetentionLayovers = (load?: TLoads): DetentionLayover[] => {
     return records.map((record) => ({
       ...record,
       status: record.status || "requested",
+      amount: record.amount ,
     }));
   }
 
@@ -176,16 +180,10 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
     );
   };
 
-  const handleRecordStatusChange = async (
+  const handleRecordStatusChange = (
     index: number,
     value: DetentionLayoverStatus
   ) => {
-    const record = detentionLayovers[index];
-
-    if (!record) {
-      return;
-    }
-
     setDetentionLayovers((prev) =>
       prev.map((item, currentIndex) =>
         currentIndex === index
@@ -196,42 +194,6 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
           : item
       )
     );
-
-    if (!record.id) {
-      return;
-    }
-
-    if (!load.id) {
-      toast.error("Load ID is missing");
-      return;
-    }
-
-    try {
-      await updateDetentionLayoverStatus({
-        loadId: load.id,
-        recordId: record.id,
-        status: value,
-      }).unwrap();
-
-      toast.success("Detention / Layover status updated");
-    } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err);
-
-      toast.error(
-        errorMessage || "Failed to update Detention / Layover status"
-      );
-
-      setDetentionLayovers((prev) =>
-        prev.map((item, currentIndex) =>
-          currentIndex === index
-            ? {
-              ...item,
-              status: record.status,
-            }
-            : item
-        )
-      );
-    }
   };
 
   const handleUpdateLoadStatus = async (e: React.FormEvent) => {
@@ -246,7 +208,9 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
       });
     }
 
-    if (!load.id) {
+    const loadId = load.id ?? load._id;
+
+    if (!loadId) {
       return toast.error("Load ID is missing");
     }
 
@@ -255,8 +219,12 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
         status: TStatusLoad;
         deliveredAt?: string;
         detentionLayovers?: {
+          id?: string;
           type: DetentionLayoverType;
           source: DetentionLayoverSource;
+          status?: DetentionLayoverStatus;
+          amount: number | null;
+          note: string;
         }[];
         tonuStatus?: TonuStatus;
         tonuReason?: string;
@@ -269,8 +237,13 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
         if (detentionLayovers.length > 0) {
           requestBody.detentionLayovers = detentionLayovers.map((item) => ({
+            ...((item.id || item._id)
+              ? { id: item.id ?? item._id }
+              : { status: item.status }),
             type: item.type,
             source: item.source,
+            amount: item.amount ?? null,
+            note: item.note?.trim() ?? "",
           }));
         }
       }
@@ -283,12 +256,37 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
         }
       }
 
-      console.log("Update Load Request:", requestBody);
-
       await updateLoadStatus({
-        id: load.id,
+        id: loadId,
         ...requestBody,
       }).unwrap();
+
+      const statusUpdates = detentionLayovers.flatMap((item) => {
+        const recordId = item.id ?? item._id;
+
+        if (!recordId) {
+          return [];
+        }
+
+        const originalRecord = load.detentionLayovers?.find(
+          (record) => (record.id ?? record._id) === recordId
+        );
+        const originalStatus = originalRecord?.status ?? "requested";
+
+        return item.status !== originalStatus
+          ? [{ recordId, status: item.status }]
+          : [];
+      });
+
+      await Promise.all(
+        statusUpdates.map(({ recordId, status }) =>
+          updateDetentionLayoverStatus({
+            loadId,
+            recordId,
+            status,
+          }).unwrap()
+        )
+      );
 
       toast.success("Load updated successfully", {
         style: {
@@ -299,17 +297,6 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
       handleClose();
     } catch (err: unknown) {
-      if (selectedStatus === "truck_order_not_used") {
-        toast.error("Something went wrong", {
-          style: {
-            background: "#dc2626",
-            color: "#fff",
-          },
-        });
-
-        return;
-      }
-
       const errorMessage = getErrorMessage(err);
 
       toast.error(errorMessage || "Updating load failed", {
@@ -528,6 +515,76 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
                           mb: 0.5,
                         }}
                       >
+                        Amount
+                      </Typography>
+
+                      <TextField
+                        type="number"
+                        value={item.amount ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const amount =
+                            value === "" ? undefined : Number(value);
+
+                          setDetentionLayovers((prev) =>
+                            prev.map((record, currentIndex) =>
+                              currentIndex === index
+                                ? {
+                                    ...record,
+                                    amount:
+                                      amount === undefined ||
+                                      Number.isFinite(amount)
+                                        ? amount
+                                        : record.amount,
+                                  }
+                                : record
+                            )
+                          );
+                        }}
+                        inputProps={{ min: 0, step: "0.01" }}
+                        fullWidth
+                        size="small"
+                      />
+                    </div>
+
+                    <div>
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          mb: 0.5,
+                        }}
+                      >
+                        Note
+                      </Typography>
+
+                      <TextField
+                        value={item.note ?? ""}
+                        onChange={(e) =>
+                          setDetentionLayovers((prev) =>
+                            prev.map((record, currentIndex) =>
+                              currentIndex === index
+                                ? { ...record, note: e.target.value }
+                                : record
+                            )
+                          )
+                        }
+                        placeholder="Enter a note..."
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        size="small"
+                      />
+                    </div>
+
+                    <div>
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          mb: 0.5,
+                        }}
+                      >
                         Source
                       </Typography>
 
@@ -562,7 +619,6 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
                       <FormControl fullWidth size="small">
                         <Select
                           value={item.status}
-                          disabled={updatingRecordStatus}
                           onChange={(e) =>
                             handleRecordStatusChange(
                               index,
@@ -662,10 +718,10 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
         <Button
           variant="contained"
           type="submit"
-          disabled={updatingStatus}
+          disabled={updatingStatus || updatingRecordStatus}
           className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {updatingStatus ? (
+          {updatingStatus || updatingRecordStatus ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
               Updating...

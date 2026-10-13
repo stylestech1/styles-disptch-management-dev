@@ -1182,8 +1182,16 @@ export const apiSlice = api.injectEndpoints({
 
     // ! ========== Users [adminDashboard] ==========
     getAllDispatchers: builder.query({
-      query: ({ page = 1, limit = 10 }) =>
-        `/api/v1/adminDashboard?page=${page}&limit=${limit}`,
+      query: ({ page = 1, limit = 10, active }) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+
+        if (active !== undefined) params.set("active", String(active));
+
+        return `/api/v1/adminDashboard?${params.toString()}`;
+      },
       providesTags: ["Dispatchers"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
@@ -1199,16 +1207,35 @@ export const apiSlice = api.injectEndpoints({
       query: (jobId) => `/api/v1/adminDashboard?jobId=${jobId}`,
       providesTags: (result, error, jobId) => [{ type: "Dispatchers", id: jobId }],
     }),
-    getUserByRole: builder.query<any, string>({
-      query: (role) => `/api/v1/adminDashboard?role=${encodeURIComponent(role)}`,
-      providesTags: (result, error, role) => [{ type: "Dispatchers", id: role }],
+    getUserByRole: builder.query<
+      any,
+      string | { role: string; active?: boolean }
+    >({
+      query: (arg) => {
+        const { role, active } =
+          typeof arg === "string" ? { role: arg } : arg;
+        const params = new URLSearchParams({
+          role,
+        });
+
+        if (active !== undefined) params.set("active", String(active));
+
+        return `/api/v1/adminDashboard?${params.toString()}`;
+      },
+      providesTags: (result, error, arg) => [
+        {
+          type: "Dispatchers",
+          id: typeof arg === "string" ? arg : `${arg.role}-${arg.active}`,
+        },
+      ],
     }),
 
     getUserWithSearch: builder.query({
-      query: ({ from, to, page, limit }) => {
+      query: ({ from, to, page, limit, active }) => {
         const params = [`page=${page}`, `limit=${limit}`];
         if (from) params.push(`from=${from}`);
         if (to) params.push(`to=${to}`);
+        if (active !== undefined) params.push(`active=${active}`);
         const queryString = params.join("&");
         return `/api/v1/adminDashboard?${queryString}`;
       },
@@ -1478,6 +1505,7 @@ export const {
   useGetLoadClaimsQuery,
   useGetLoadByIdQuery,
   useGetLoadByMongoIdQuery,
+  useLazyGetLoadByMongoIdQuery,
   useLazyGetLoadByIdQuery,
 
   useCreateLoadsMutation,

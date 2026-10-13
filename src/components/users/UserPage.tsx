@@ -45,6 +45,7 @@ import SearchInput from "@/components/ui/SearchInput";
 import { CircleUserRound, ShieldUser, UsersRound, UserPen, UserRoundCog } from "lucide-react";
 
 type RoleFilter = "all" | "employee" | "driver" | "admin" | "manager";
+type StatusFilter = "all" | "active" | "inactive";
 const Users = () => {
   const [page, setPage] = useState(1);
   const [popup, setPopup] = useState(false);
@@ -52,6 +53,9 @@ const Users = () => {
   const [selectedUser, setSelectedUser] = useState<TDispatcher | null>(null);
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+  const activeFilter =
+    statusFilter === "all" ? undefined : statusFilter === "active";
 
   const [fromDate,] = useState<Dayjs | null>(null);
   const [toDate,] = useState<Dayjs | null>(null);
@@ -142,6 +146,7 @@ const Users = () => {
     {
       page,
       limit: 10,
+      active: activeFilter,
     },
     {
       refetchOnFocus: false,
@@ -160,6 +165,7 @@ const Users = () => {
       to: toDate ? toDate.format("YYYY-MM-DD") : undefined,
       page,
       limit: 10,
+      active: activeFilter,
     },
     { skip: !isFiltered }
   );
@@ -217,7 +223,10 @@ const Users = () => {
     error: roleError,
     isLoading: roleLoading,
   } = useGetUserByRoleQuery(
-    roleFilter,
+    {
+      role: roleFilter,
+      active: activeFilter,
+    },
     {
       skip: roleFilter === "all" || isSearching || isFiltered,
     }
@@ -247,7 +256,9 @@ const Users = () => {
     dispatchersData,
   ]);
 
-  const filteredUsers = users;
+  const filteredUsers = users.filter((user: TDispatcher) =>
+    activeFilter === undefined ? true : Boolean(user.active) === activeFilter
+  );
 
   const pagination = isFiltered
     ? filteredData?.paginationResult || null
@@ -529,6 +540,37 @@ const Users = () => {
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="manager">Manager</MenuItem>
 
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+
+          {/* status Filter */}
+          <Box sx={{ width: { xs: "100%", md: "auto" } }}>
+            <Box sx={selectSx}>
+              <FormControl fullWidth>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setPage(1);
+                    setStatusFilter(e.target.value as StatusFilter);
+                  }}
+                  displayEmpty
+                  input={<OutlinedInput />}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 2,
+                        color: theme.currentPalette.primary,
+                        mt: 1,
+                        bgcolor: "#fff",
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
                 </Select>
               </FormControl>
             </Box>

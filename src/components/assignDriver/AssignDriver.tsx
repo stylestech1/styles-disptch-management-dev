@@ -26,6 +26,7 @@ import {
     TableCell,
     TableRow,
     TextField,
+    Tooltip,
     Typography,
     alpha,
     darken,
@@ -93,6 +94,8 @@ type SelectedTruck = {
     truckId: string;
     notes: string;
 };
+
+const NOTES_PREVIEW_LENGTH = 40;
 
 type AssignmentForm = {
     trucks: SelectedTruck[];
@@ -1085,8 +1088,34 @@ export default function AssignDriver() {
                             </TableCell>
 
                             <TableCell align="center">
-                                {assignment.notes ||
-                                    "-"}
+                                {assignment.notes ? (
+                                    <Tooltip
+                                        title={
+                                            assignment.notes.length > NOTES_PREVIEW_LENGTH
+                                                ? assignment.notes
+                                                : ""
+                                        }
+                                        placement="top"
+                                    >
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                display: "inline-block",
+                                                maxWidth: 280,
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap",
+                                                verticalAlign: "middle",
+                                            }}
+                                        >
+                                            {assignment.notes.length > NOTES_PREVIEW_LENGTH
+                                                ? `${assignment.notes.slice(0, NOTES_PREVIEW_LENGTH)}...`
+                                                : assignment.notes}
+                                        </Box>
+                                    </Tooltip>
+                                ) : (
+                                    "-"
+                                )}
                             </TableCell>
 
                             <TableCell align="center">
