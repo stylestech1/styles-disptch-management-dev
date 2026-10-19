@@ -28,6 +28,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
 import { UserPlus } from "lucide-react";
+import { useGetEmployeePositionsQuery } from "@/redux/slices/apiSlice";
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -74,6 +75,7 @@ export default function CreateUserModal({
     reset,
     watch,
     control,
+    setValue,
   } = useForm<UserFormData>({
     defaultValues: {
       name: "",
@@ -89,6 +91,18 @@ export default function CreateUserModal({
 
   const role = watch("role");
   const watchPassword = watch("password");
+  const {
+    data: positionsData,
+    isLoading: positionsLoading,
+    error: positionsError,
+  } = useGetEmployeePositionsQuery(undefined, { skip: role !== "employee" });
+  const positions = positionsData?.data ?? [];
+
+  useEffect(() => {
+    if (role === "employee" && positionsError) {
+      toast.error(getErrorMessage(positionsError) || "Failed to load positions");
+    }
+  }, [positionsError, role]);
 
   const tfSx = {
     mb: 1,
@@ -302,7 +316,7 @@ export default function CreateUserModal({
             sx={{
               display: "flex",
               gap: 1.25,
-              flexDirection: role === "employee" ? "row" : "column",
+              // flexDirection: role === "employee" ? "row" : "column",
             }}
           >
             <Controller
@@ -318,7 +332,10 @@ export default function CreateUserModal({
                   InputLabelProps={{ shrink: true }}
                   sx={tfSx}
                   value={field.value || ""}
-                  onChange={field.onChange}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    setValue("position", "");
+                  }}
                   error={!!errors.role}
                   SelectProps={{
                     MenuProps: {
@@ -352,13 +369,66 @@ export default function CreateUserModal({
             />
 
             {role === "employee" && (
-              <TextField
-                label="Position"
-                placeholder="Position"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                sx={tfSx}
-                {...register("position", { required: "Position is required" })}
+              <Controller
+                name="position"
+                control={control}
+                rules={{ required: "Position is required" }}
+                render={({ field }) => (
+                  <TextField
+                    label="Position"
+                    select
+                    fullWidth
+                    required
+                    disabled={positionsLoading || !!positionsError}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      ...tfSx,
+                      "& .MuiFormHelperText-root": {
+                        display: "block",
+                        margin: "3px 0 0",
+                        padding: 0,
+                        height: "auto",
+                      },
+                    }}
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    error={!!errors.position || !!positionsError}
+                    helperText={
+                      errors.position?.message ||
+                      (positionsLoading
+                        ? "Loading positions..."
+                        : positionsError
+                          ? getErrorMessage(positionsError) || "Failed to load positions"
+                          : "")
+                    }
+                    SelectProps={{
+                      MenuProps: {
+                        disablePortal: false,
+                        anchorOrigin: { vertical: "bottom", horizontal: "left" },
+                        transformOrigin: { vertical: "top", horizontal: "left" },
+                        PaperProps: {
+                          sx: {
+                            zIndex: 20000,
+                            bgcolor: "#fff",
+                            mt: 1,
+                            borderRadius: "10px",
+                            overflow: "hidden",
+                            boxShadow: "0 14px 50px rgba(0,0,0,0.18)",
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="" disabled>
+                      Select position
+                    </MenuItem>
+                    {positions.map((position) => (
+                      <MenuItem key={position} value={position}>
+                        {position}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
               />
             )}
           </Box>

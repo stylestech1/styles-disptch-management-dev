@@ -36,23 +36,8 @@ export const apiSlice = api.injectEndpoints({
   endpoints: (builder) => ({
     // ! ========== Loads Methods ==========
     getLoads: builder.query({
-      query: ({ page = 1, limit = 10, sort, reservedBy }) => {
-        const params = new URLSearchParams({
-          page: String(page),
-          limit: String(limit),
-        });
-
-        if (sort) {
-          params.append("sort", sort);
-        }
-
-        if (reservedBy) {
-          params.append("reservedBy", reservedBy);
-        }
-
-        return `/api/v1/loads?${params.toString()}`;
-      },
-
+      query: ({ page = 1, limit = 10 }) =>
+        `/api/v1/loads?page=${page}&limit=${limit}`,
       providesTags: ["Loads", "Drivers", "Trucks"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
@@ -484,34 +469,25 @@ export const apiSlice = api.injectEndpoints({
       ],
     }),
 
+    // ! ========== Loads Using Id ==========
     getLoadById: builder.query({
-      query: (loadId) =>
-        `/api/v1/loads?keyword=${encodeURIComponent(loadId)}`,
-      providesTags: (result, error, loadId) => [
-        { type: "Loads", id: loadId },
-      ],
+      query: (loadId) => `/api/v1/loads?keyword=${encodeURIComponent(loadId)}`,
+      providesTags: (result, error, loadId) => [{ type: "Loads", id: loadId }],
     }),
 
     getLoadByMongoId: builder.query({
       query: (_id) => `/api/v1/loads?_id=${_id}`,
-      providesTags: (result, error, _id) => [
-        { type: "Loads", id: _id },
-      ],
+      providesTags: (result, error, _id) => [{ type: "Loads", id: _id }],
     }),
 
     getLoadsWithFilter: builder.query({
-      query: ({ from, to, page, limit, reservedBy }) => {
+      query: ({ from, to, page, limit }) => {
         const params = [`page=${page}`, `limit=${limit}`];
-
         if (from) params.push(`from=${from}`);
         if (to) params.push(`to=${to}`);
-        if (reservedBy) params.push(`reservedBy=${reservedBy}`);
-
         const queryString = params.join("&");
-
         return `/api/v1/loads?${queryString}`;
       },
-
       providesTags: ["Loads"],
     }),
 
@@ -521,7 +497,6 @@ export const apiSlice = api.injectEndpoints({
         method: "POST",
         body: formData,
       }),
-
       invalidatesTags: ["Loads"],
     }),
 
@@ -531,16 +506,15 @@ export const apiSlice = api.injectEndpoints({
         method: "PATCH",
         body: formData,
       }),
-
       invalidatesTags: ["Loads"],
     }),
+
     updateLoadsStatus: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/api/v1/loads/status/${id}`,
         method: "PATCH",
         body,
       }),
-
       invalidatesTags: ["Loads"],
     }),
 
@@ -552,21 +526,14 @@ export const apiSlice = api.injectEndpoints({
         status: "requested" | "paid" | "refused";
       }
     >({
-      query: ({
-        loadId,
-        recordId,
-        status,
-      }) => ({
+      query: ({ loadId, recordId, status }) => ({
         url: `/api/v1/loads/${loadId}/detention-layovers/${recordId}/status`,
         method: "PATCH",
-
-        body: {
-          status,
-        },
+        body: { status },
       }),
-
       invalidatesTags: ["Loads"],
     }),
+
     // ! ========== Documents ==========
     uploadDocuments: builder.mutation({
       query: ({ formData }) => ({
@@ -777,51 +744,17 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     // ! ========== Trucks ==========
-
-    updateTruckDispatcherAssignment: builder.mutation({
-      query: ({
-        assignmentId,
-        ...body
-      }: {
-        assignmentId: string;
-        dispatcherId?: string;
-        status?: "active" | "inactive";
-        notes?: string;
-        currentLocation?: string;
-      }) => ({
-        url: `/api/v1/truck-dispatchers/${assignmentId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: ["TruckDispatchers"],
-    }),
-
-    updateMyTruckAssignment: builder.mutation({
-      query: ({
-        assignmentId,
-        ...body
-      }: {
-        assignmentId: string;
-        notes?: string;
-        currentLocation?: string;
-      }) => ({
-        url: `/api/v1/truck-dispatchers/my-trucks/${assignmentId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: ["TruckDispatchers"],
-    }),
-    // updateTruckDispatcher: builder.mutation({
-    //   query: ({ id, ...body }) => ({
-    //     url: `/api/v1/truck-dispatchers/${id}`,
-    //     method: "PATCH",
-    //     body,
-    //   }),
-
-    //   invalidatesTags: ["TruckDispatchers"],
-    // }),
-
-    getTruckPreview: builder.query({
+    getTruckPreview: builder.query<
+      { data?: Record<string, unknown> } & Record<string, unknown>,
+      {
+        truckId: string;
+        distanceMiles?: number;
+        pricePerMile?: number;
+        totalPrice?: number;
+        from?: string;
+        to?: string;
+      }
+    >({
       query: ({
         truckId,
         distanceMiles,
@@ -852,39 +785,145 @@ export const apiSlice = api.injectEndpoints({
       providesTags: ["Trucks"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
-
     getRepairById: builder.query<{ data: any }, string>({
       query: (id) => `/api/v1/repairs/${id}`,
       providesTags: ["Repairs"],
     }),
-
     getTrucksWithPagination: builder.query({
       query: ({ page = 1, limit = 10 }) =>
         `/api/v1/trucks?page=${page}&limit=${limit}`,
       providesTags: ["Trucks"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
-    getAllTrucksUnUsed: builder.query<
-      any,
-      { unusedTrucks?: boolean }
-    >({
-      query: ({ unusedTrucks }) => ({
-        url: "/trucks",
-        method: "GET",
-        params: {
-          unusedTrucks,
-        },
-      }),
-    }),
 
     getAllTrucks: builder.query({
       query: (arg?: { sort?: string }) => {
-        const sort = arg?.sort;
         const params = new URLSearchParams();
-        if (sort) params.append("sort", sort);
+        if (arg?.sort) params.append("sort", arg.sort);
         return `/api/v1/trucks${params.toString() ? `?${params.toString()}` : ""}`;
       },
       providesTags: ["Trucks"],
+    }),
+
+    getAllTrucksUnUsed: builder.query<any, { unusedTrucks?: boolean }>({
+      query: ({ unusedTrucks }) => ({
+        url: "/trucks",
+        method: "GET",
+        params: { unusedTrucks },
+      }),
+    }),
+
+    getTruckDispatchers: builder.query<
+      unknown,
+      {
+        page?: number;
+        limit?: number;
+        keyword?: string;
+        unusedTrucks?: boolean;
+      }
+    >({
+      query: ({ page = 1, limit = 10, keyword, unusedTrucks }) => ({
+        url: "/api/v1/truck-dispatchers",
+        method: "GET",
+        params: { page, limit, keyword, unusedTrucks },
+      }),
+      providesTags: ["TruckDispatchers"],
+    }),
+
+    getMyTruckAssignments: builder.query<unknown, void>({
+      query: () => "/api/v1/truck-dispatchers/my-trucks",
+      providesTags: ["TruckDispatchers"],
+    }),
+
+    getTruckDispatcherById: builder.query<unknown, string>({
+      query: (id) => `/api/v1/truck-dispatchers/${id}`,
+      providesTags: ["TruckDispatchers"],
+    }),
+
+    getTruckAssignmentsByDispatcherId: builder.query<unknown, string>({
+      query: (dispatcherId) =>
+        `/api/v1/truck-dispatchers/dispatcher/${dispatcherId}`,
+      providesTags: ["TruckDispatchers"],
+    }),
+
+    createTruckDispatcher: builder.mutation<
+      unknown,
+      { truckId: string; dispatcherId: string; notes?: string }[]
+    >({
+      query: (body) => ({
+        url: "/api/v1/truck-dispatchers",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
+    }),
+
+    updateTruckDispatcher: builder.mutation<
+      unknown,
+      {
+        id: string;
+        truckId: string;
+        dispatcherId: string;
+        status: "active" | "inactive";
+        notes?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/api/v1/truck-dispatchers/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
+    }),
+
+    updateTruckDispatcherAssignment: builder.mutation<
+      unknown,
+      {
+        assignmentId: string;
+        dispatcherId?: string;
+        status?: "active" | "inactive";
+        notes?: string;
+        currentLocation?: string;
+      }
+    >({
+      query: ({ assignmentId, ...body }) => ({
+        url: `/api/v1/truck-dispatchers/${assignmentId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
+    }),
+
+    updateMyTruckAssignment: builder.mutation<
+      unknown,
+      {
+        assignmentId: string;
+        notes?: string;
+        currentLocation?: string;
+      }
+    >({
+      query: ({ assignmentId, ...body }) => ({
+        url: `/api/v1/truck-dispatchers/my-trucks/${assignmentId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
+    }),
+
+    updateMyTruckAssignmentAdmin: builder.mutation<
+      unknown,
+      {
+        assignmentId: string;
+        notes: string;
+        currentLocation: string;
+      }
+    >({
+      query: ({ assignmentId, ...body }) => ({
+        url: `/api/v1/truck-dispatchers/my-trucks/${assignmentId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["TruckDispatchers"],
     }),
 
     getTruckWithSearch: builder.query({
@@ -903,15 +942,16 @@ export const apiSlice = api.injectEndpoints({
       { from?: string; to?: string; sort?: string } | void
     >({
       query: (args) => {
-        const params = new URLSearchParams();
-        const today = new Date().toISOString().split("T")[0];
-
-        params.append("from", args?.from ?? today);
-        params.append("to", args?.to ?? today);
-        params.append("sort", args?.sort ?? "revenue");
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const params = new URLSearchParams({
+          from: args?.from ?? today,
+          to: args?.to ?? today,
+          sort: args?.sort ?? "revenue",
+        });
 
         return `/api/v1/summary/truck?${params.toString()}`;
       },
+
       providesTags: (result) =>
         result
           ? [
@@ -922,6 +962,7 @@ export const apiSlice = api.injectEndpoints({
             { type: "TruckSummary", id: "LIST" },
           ]
           : [{ type: "TruckSummary", id: "LIST" }],
+
       keepUnusedDataFor: 60 * 60,
     }),
 
@@ -952,29 +993,28 @@ export const apiSlice = api.injectEndpoints({
       keepUnusedDataFor: 60 * 60,
     }),
 
-    // getAllTruckSummaryWithFilter: builder.query<TTruckSummaryResponse, { from?: string; to?: string }>({
-    //   query: ({ from, to }) => {
-    //     const params = new URLSearchParams();
-    //     if (from) params.append("from", from);
-    //     if (to) params.append("to", to);
-    //     params.append("sort", "revenue");
-    //     return `/api/v1/summary/truck?${params.toString()}`;
-    //   },
-    //   providesTags: ["TruckSummary"],
-    //   keepUnusedDataFor: 60 * 60,
-    // }),
+    getAllTruckSummaryWithFilter: builder.query<TTruckSummaryResponse, { from?: string; to?: string }>({
+      query: ({ from, to }) => {
+        const params = new URLSearchParams();
+        if (from) params.append("from", from);
+        if (to) params.append("to", to);
+        // params.append("sort", "revenue");
+        return `/api/v1/summary/truck?${params.toString()}`;
+      },
+      providesTags: ["TruckSummary"],
+      keepUnusedDataFor: 60 * 60,
+    }),
 
-    // getTruckGraphSummary: builder.query<TTrucksSummaryResponse, { from?: string; to?: string }>({
-    //   query: ({ from, to }) => {
-    //     const params = new URLSearchParams();
-    //     if (from) params.append("from", from);
-    //     if (to) params.append("to", to);
-    //     params.append("sort", "revenue");
-    //     return `/api/v1/summary/truck?${params.toString()}`;
-    //   },
-    //   providesTags: ["TruckSummary"],
-    //   keepUnusedDataFor: 60 * 60,
-    // }),
+    getTruckGraphSummary: builder.query<TTrucksSummaryResponse, { from?: string; to?: string }>({
+      query: ({ from, to }) => {
+        const params = new URLSearchParams();
+        if (from) params.append("from", from);
+        if (to) params.append("to", to);
+        return `/api/v1/summary/truck?${params.toString()}`;
+      },
+      providesTags: ["TruckSummary"],
+      keepUnusedDataFor: 60 * 60,
+    }),
 
     getTruckByTruckId: builder.query({
       query: (keyword) =>
@@ -1016,84 +1056,6 @@ export const apiSlice = api.injectEndpoints({
         { type: "TruckSummary", id: "LIST" },
         { type: "TruckSummary", id },
       ],
-    }),
-    getTruckDispatchers: builder.query({
-      query: ({ page = 1, limit = 10, keyword, unusedTrucks }) => ({
-        url: "/api/v1/truck-dispatchers",
-        method: "GET",
-        params: {
-          page,
-          limit,
-          keyword,
-          unusedTrucks,
-        },
-      }),
-
-      providesTags: ["TruckDispatchers"],
-    }),
-
-    getMyTruckAssignments: builder.query<unknown, void>({
-      query: () => "/api/v1/truck-dispatchers/my-trucks",
-      providesTags: ["TruckDispatchers"],
-    }),
-
-    updateMyTruckAssignmentAdmin: builder.mutation<
-      unknown,
-      {
-        assignmentId: string;
-        notes: string;
-        currentLocation: string;
-      }
-    >({
-      query: ({ assignmentId, ...body }) => ({
-        url: `/api/v1/truck-dispatchers/my-trucks/${assignmentId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: ["TruckDispatchers"],
-    }),
-
-    // getTruckDispatchers: builder.query<unknown, void>({
-    //   query: () => "/api/v1/truck-dispatchers?limit=100&page=1",
-    //   providesTags: ["TruckDispatchers"],
-    // }),
-    getTruckDispatcherById: builder.query({
-      query: (id: string) => `/api/v1/truck-dispatchers/${id}`,
-      providesTags: ["TruckDispatchers"],
-    }),
-    getTruckAssignmentsByDispatcherId: builder.query<unknown, string>({
-      query: (dispatcherId) =>
-        `/api/v1/truck-dispatchers/dispatcher/${dispatcherId}`,
-      providesTags: ["TruckDispatchers"],
-    }),
-    createTruckDispatcher: builder.mutation({
-      query: (
-        body: {
-          truckId: string;
-          dispatcherId: string;
-          notes?: string;
-        }[]
-      ) => ({
-        url: "/api/v1/truck-dispatchers",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["TruckDispatchers"],
-    }),
-
-    updateTruckDispatcher: builder.mutation({
-      query: ({ id, ...body }: {
-        id: string;
-        truckId: string;
-        dispatcherId: string;
-        status: "active" | "inactive";
-        notes?: string;
-      }) => ({
-        url: `/api/v1/truck-dispatchers/${id}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: ["TruckDispatchers"],
     }),
 
     // ! ========== Trucks Maintenance ==========
@@ -1182,20 +1144,11 @@ export const apiSlice = api.injectEndpoints({
 
     // ! ========== Users [adminDashboard] ==========
     getAllDispatchers: builder.query({
-      query: ({ page = 1, limit = 10, active }) => {
-        const params = new URLSearchParams({
-          page: String(page),
-          limit: String(limit),
-        });
-
-        if (active !== undefined) params.set("active", String(active));
-
-        return `/api/v1/adminDashboard?${params.toString()}`;
-      },
+      query: ({ page = 1, limit = 10 }) =>
+        `/api/v1/adminDashboard?page=${page}&limit=${limit}`,
       providesTags: ["Dispatchers"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
-
     getActiveDispatchers: builder.query({
       query: ({ page = 1, limit = 100 }) =>
         `/api/v1/adminDashboard?position=Dispatcher&active=true&limit=${limit}&page=${page}`,
@@ -1214,28 +1167,23 @@ export const apiSlice = api.injectEndpoints({
       query: (arg) => {
         const { role, active } =
           typeof arg === "string" ? { role: arg } : arg;
-        const params = new URLSearchParams({
-          role,
-        });
-
+        const params = new URLSearchParams({ role });
         if (active !== undefined) params.set("active", String(active));
-
         return `/api/v1/adminDashboard?${params.toString()}`;
       },
-      providesTags: (result, error, arg) => [
+      providesTags: (_result, _error, arg) => [
         {
           type: "Dispatchers",
-          id: typeof arg === "string" ? arg : `${arg.role}-${arg.active}`,
+          id: typeof arg === "string" ? arg : arg.role,
         },
       ],
     }),
 
     getUserWithSearch: builder.query({
-      query: ({ from, to, page, limit, active }) => {
+      query: ({ from, to, page, limit }) => {
         const params = [`page=${page}`, `limit=${limit}`];
         if (from) params.push(`from=${from}`);
         if (to) params.push(`to=${to}`);
-        if (active !== undefined) params.push(`active=${active}`);
         const queryString = params.join("&");
         return `/api/v1/adminDashboard?${queryString}`;
       },
@@ -1245,6 +1193,10 @@ export const apiSlice = api.injectEndpoints({
     getUsersWithDriverRoles: builder.query({
       query: () => `/api/v1/adminDashboard?fields=email&role=driver`,
       providesTags: ["Dispatchers"],
+    }),
+
+    getEmployeePositions: builder.query<{ data: string[] }, void>({
+      query: () => `/api/v1/adminDashboard/positions`,
     }),
 
     createUser: builder.mutation({
@@ -1507,13 +1459,13 @@ export const {
   useGetLoadByMongoIdQuery,
   useLazyGetLoadByMongoIdQuery,
   useLazyGetLoadByIdQuery,
-
   useCreateLoadsMutation,
   useUpdateLoadsMutation,
   useUpdateLoadsStatusMutation,
   useUpdateDetentionLayoverStatusMutation,
-
   useGetLoadsWithFilterQuery,
+
+  // TODO: ----- Documents -----
   useUploadDocumentsMutation,
 
   // TODO: ----- Drivers -----
@@ -1543,20 +1495,30 @@ export const {
 
   // TODO: ----- Trucks -----
   useGetTrucksQuery,
+  useGetActiveDispatchersQuery,
   useGetTrucksWithPaginationQuery,
   useGetAllTrucksQuery,
-  useGetAllTrucksUnUsedQuery,
   useGetAllTruckQuery,
-  useGetTruckSummaryQuery,
+  useGetAllTrucksUnUsedQuery,
+  useGetTruckDispatchersQuery,
+  useGetMyTruckAssignmentsQuery,
+  useGetTruckDispatcherByIdQuery,
+  useLazyGetTruckAssignmentsByDispatcherIdQuery,
+  useCreateTruckDispatcherMutation,
+  useUpdateTruckDispatcherMutation,
+  useUpdateTruckDispatcherAssignmentMutation,
+  useUpdateMyTruckAssignmentMutation,
+  useUpdateMyTruckAssignmentAdminMutation,
   useLazyGetTruckPreviewQuery,
-  // useGetTruckGraphSummaryQuery,
+  useGetTruckSummaryQuery,
+  useGetTruckGraphSummaryQuery,
   useGetTruckWithSearchQuery,
   useGetSpecificTruckSummaryQuery,
   useLazyGetSpecificTruckSummaryQuery,
   useGetTruckBytruckNumberQuery,
   useLazyGetTruckBytruckNumberQuery,
   useGetTruckSummaryWithFilterQuery,
-  // useGetAllTruckSummaryWithFilterQuery,
+  useGetAllTruckSummaryWithFilterQuery,
   useGetTruckByIdQuery,
   useGetTruckByTruckIdQuery,
   useLazyGetTruckByIdQuery,
@@ -1564,13 +1526,6 @@ export const {
   useCreateTruckMutation,
   useUpdateTruckMutation,
   useDeleteTruckMutation,
-  useGetTruckDispatchersQuery,
-  useGetMyTruckAssignmentsQuery,
-  useUpdateMyTruckAssignmentAdminMutation,
-  useGetTruckDispatcherByIdQuery,
-  useLazyGetTruckAssignmentsByDispatcherIdQuery,
-  useCreateTruckDispatcherMutation,
-  useUpdateTruckDispatcherMutation,
 
   // TODO: ----- Trucks Maintenance -----
   useGetAllMaintenancesQuery,
@@ -1583,7 +1538,6 @@ export const {
   useCreateMaintenanceMutation,
   useUpdateMaintenanceMutation,
   useDeleteMaintenanceMutation,
-  useUpdateTruckDispatcherAssignmentMutation,
 
   // TODO: ----- Notes -----
   useAddNoteMutation,
@@ -1591,11 +1545,11 @@ export const {
 
   // TODO: ----- Users -----
   useGetAllDispatchersQuery,
-  useGetActiveDispatchersQuery,
   useGetUserByIdQuery,
   useLazyGetUserByIdQuery,
   useGetUserWithSearchQuery,
   useGetUsersWithDriverRolesQuery,
+  useGetEmployeePositionsQuery,
   useCreateUserMutation,
   useUpdateUserRoleMutation,
   useActivateUserMutation,
@@ -1649,6 +1603,8 @@ export const {
   useUpdateCompanyMutation,
   useUpdateactivationcompanyMutation,
   useUpdatedeactivationcompanyMutation,
+  // useUpdateActivationCompanyMutation,
+  // useUpdateDeactivationCompanyMutation,
   // TODO: ----- settings  -----
   useGetUserByRoleQuery,
   useGetSettingsQuery,

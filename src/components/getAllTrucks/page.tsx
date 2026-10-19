@@ -20,7 +20,6 @@ import {
 } from "@mui/material";
 
 import {
-    FileText,
     MapPin,
     Pencil,
     Search,
@@ -510,7 +509,7 @@ export default function TruckDispatcher() {
                         },
                     }}
                 >
-                    {/* <TextField
+                    <TextField
                         size="small"
                         value={search}
                         onChange={(event) => {
@@ -541,12 +540,12 @@ export default function TruckDispatcher() {
                                 md: "initial",
                             },
                         }}
-                    /> */}
+                    />
                 </Box>
             </Box>
 
 
-            {/* {!role ? (
+            {!role ? (
                 <Alert
                     severity="info"
                     sx={{ mb: 2 }}
@@ -560,7 +559,7 @@ export default function TruckDispatcher() {
                 >
                     {getErrorMessage(requestError)}
                 </Alert>
-            ) : null} */}
+            ) : null}
 
 
 

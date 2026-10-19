@@ -10,6 +10,7 @@ import {
   Button,
   Divider,
   FormControl,
+  FormHelperText,
   InputAdornment,
   InputLabel,
   MenuItem,
@@ -24,6 +25,7 @@ import { Mail, Phone, UserRoundPen, ChevronDown, BadgeCheck, UserStar } from "lu
 import { TDispatcher, TUserRole } from "@/types/globalTypes";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RootState, useAppSelector } from "@/redux/store";
+import { useGetEmployeePositionsQuery } from "@/redux/slices/apiSlice";
 
 interface UserSettingsModalProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ interface UserSettingsModalProps {
     email: string;
     phone: string;
     role: TUserRole;
+    position: string;
   }) => Promise<void>;
   onActivateUser: (userId: string) => Promise<void>;
   onDeactivateUser: (userId: string) => Promise<void>;
@@ -57,15 +60,26 @@ const UserSettingsModal = ({
     name: string;
     email: string;
     phone: string;
-    role: TUserRole;
+    role: string;
+    position: string;
     status: "active" | "inactive";
   }>({
     name: "",
     email: "",
     phone: "",
-    role: "employee",
+    role: "dispatcher",
+    position: "",
     status: "active",
   });
+
+  const {
+    data: positionsData,
+    isLoading: positionsLoading,
+    error: positionsError,
+  } = useGetEmployeePositionsQuery(undefined, {
+    skip: !isOpen || tempUser.role !== "employee",
+  });
+  const positions = positionsData?.data ?? [];
 
   useEffect(() => {
     if (user) {
@@ -73,11 +87,18 @@ const UserSettingsModal = ({
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role as TUserRole,
+        role: user.role,
+        position: user.position || "",
         status: user.active ? "active" : "inactive",
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    if (isOpen && tempUser.role === "employee" && positionsError) {
+      toast.error(getErrorMessage(positionsError) || "Failed to load positions");
+    }
+  }, [isOpen, positionsError, tempUser.role]);
 
   const initials = useMemo(() => {
     const name = user?.name || "";
@@ -97,13 +118,15 @@ const UserSettingsModal = ({
         user.name !== tempUser.name ||
         user.email !== tempUser.email ||
         user.phone !== tempUser.phone ||
-        user.role !== tempUser.role
+        user.role !== tempUser.role ||
+        user.position !== tempUser.position
       ) {
         await onUpdateRole(user.id, {
           name: tempUser.name,
           email: tempUser.email,
           phone: tempUser.phone,
-          role: tempUser.role,
+          role: tempUser.role as TUserRole,
+          position: tempUser.position,
         });
       }
 
@@ -299,7 +322,14 @@ const UserSettingsModal = ({
 
               <Select
                 value={tempUser.role}
-                onChange={(e) => setTempUser((p) => ({ ...p, role: e.target.value as TUserRole }))}
+                onChange={(e) => {
+                  const role = e.target.value as TUserRole;
+                  setTempUser((p) => ({
+                    ...p,
+                    role,
+                    position: role === p.role ? p.position : "",
+                  }));
+                }}
                 IconComponent={ChevronDown as any}
                 input={
                   <OutlinedInput
@@ -336,6 +366,62 @@ const UserSettingsModal = ({
                 
               </Select>
             </FormControl>
+
+            {tempUser.role === "employee" && (
+              <FormControl
+                fullWidth
+                variant="outlined"
+                required
+                error={!!positionsError}
+                disabled={positionsLoading || !!positionsError}
+              >
+                <InputLabel
+                  sx={{
+                    fontWeight: 600,
+                    color: alpha(text, 0.60),
+                    "&.Mui-focused": { color: primary },
+                  }}
+                >
+                  Position
+                </InputLabel>
+                <Select
+                  value={tempUser.position}
+                  onChange={(e) =>
+                    setTempUser((p) => ({ ...p, position: e.target.value }))
+                  }
+                  input={<OutlinedInput label="Position" />}
+                  sx={fieldSx}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        mt: 1,
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(text, 0.10)}`,
+                        overflow: "hidden",
+                        zIndex: 2000,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    {positionsLoading ? "Loading positions..." : "Select position"}
+                  </MenuItem>
+                  {tempUser.position && !positions.includes(tempUser.position) && (
+                    <MenuItem value={tempUser.position}>{tempUser.position}</MenuItem>
+                  )}
+                  {positions.map((position) => (
+                    <MenuItem key={position} value={position}>
+                      {position}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {positionsError && (
+                  <FormHelperText>
+                    {getErrorMessage(positionsError) || "Failed to load positions"}
+                  </FormHelperText>
+                )}
+              </FormControl>
+            )}
 
             {/* Status */}
             <FormControl fullWidth variant="outlined">

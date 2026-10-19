@@ -518,11 +518,11 @@ const TrucksPage: React.FC = () => {
 
         <td className="p-4 text-center">
           {typeof t.assignedDriver === "object"
-            ? (t.assignedDriver as any)?.name
+            ? t.assignedDriver.name
             : t.assignedDriver || "Unassigned"}
-          {typeof t.assignedDriver === "object" && (t.assignedDriver as any)?.driverId && (
+          {typeof t.assignedDriver === "object" && t.assignedDriver.driverId != null && (
             <Box component="span" sx={{ fontSize: "0.75rem", color: "text.secondary", display: "block" }}>
-              ID: {(t.assignedDriver as any)?.driverId}
+              ID: {t.assignedDriver.driverId}
             </Box>
           )}
         </td>

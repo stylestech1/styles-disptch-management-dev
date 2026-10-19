@@ -72,6 +72,7 @@ import {
     useGetTruckDispatchersQuery,
     useUpdateTruckDispatcherMutation,
 } from "@/redux/slices/apiSlice";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 
 
 type TruckDispatcher = {
@@ -764,8 +765,9 @@ export default function AssignDriver() {
 
             closeFormDialog();
         } catch (error) {
-
-            toast.error("Could not save the assignment");
+            toast.error(
+                getErrorMessage(error) || "Could not save the assignment"
+            );
         }
     };
 

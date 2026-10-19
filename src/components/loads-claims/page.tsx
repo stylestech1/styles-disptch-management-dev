@@ -18,7 +18,6 @@ import DataTable, { Column } from "@/components/ui/DataTable";
 import StatsCard from "@/components/ui/StatsCard";
 import UpdateStatusModal from "@/components/loads/UpdateStatusModal";
 import {
-    useLazyGetLoadByMongoIdQuery,
     useGetLoadClaimsQuery,
 } from "@/redux/slices/apiSlice";
 import { RootState, useAppSelector } from "@/redux/store";
@@ -26,6 +25,7 @@ import { TLoadClaim, TLoadClaimType } from "@/types/globalTypes";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 import { MapPin, Navigation, Route } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 
 type ClaimFilter = "all" | TLoadClaimType;
 type RouteLocation = string | {
@@ -256,7 +256,6 @@ const LoadsClaimsPage = () => {
     const theme = useAppSelector((state: RootState) => state.palette);
     const [claimFilter, setClaimFilter] = useState<ClaimFilter>("all");
     const [selectedLoad, setSelectedLoad] = useState<TLoadClaim | null>(null);
-    const [fetchLoadByMongoId] = useLazyGetLoadByMongoIdQuery();
 
     const {
         data: allClaimsData,
@@ -288,6 +287,9 @@ const LoadsClaimsPage = () => {
         [allRows, claimFilter, filteredClaimsData]
     );
 
+    const router = useRouter();
+    const role = usePathname().split("/")[1];
+
     const loading =
         claimFilter === "all"
             ? isAllClaimsLoading
@@ -299,6 +301,14 @@ const LoadsClaimsPage = () => {
             : filteredClaimsError;
 
     const responseHasUnexpectedShape = false;
+
+    const handleRowClick = (row: ClaimRow) => {
+        const loadId = row.load._id ?? row.load.id;
+
+        if (!loadId || !role) return;
+
+        router.push(`/${role}/loadDetails/${loadId}`);
+    };
 
     const getAddress = (location?: RouteLocation) => {
         if (!location) return "-";
@@ -509,13 +519,7 @@ const LoadsClaimsPage = () => {
                     <TableRow
                         key={row.key}
                         hover
-                        onClick={() => {
-                            const loadId = row.load._id ?? row.load.id;
-
-                            if (loadId) {
-                                void fetchLoadByMongoId(loadId);
-                            }
-                        }}
+                        onClick={() => handleRowClick(row)}
                         sx={{
                             "&:last-child td": { borderBottom: 0 },
                             cursor: "pointer",
@@ -572,13 +576,15 @@ const LoadsClaimsPage = () => {
                                 size="small"
                                 variant="outlined"
                                 disabled={!row.load.id && !row.load._id}
-                                onClick={() =>
+                                onClick={(event) => {
+                                    event.stopPropagation();
+
                                     setSelectedLoad({
                                         ...row.load,
                                         origin: getOriginAddress(row.load),
                                         destination: getDestinationAddress(row.load),
-                                    })
-                                }
+                                    });
+                                }}
                             >
                                 Update
                             </Button>

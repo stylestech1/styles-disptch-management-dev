@@ -315,7 +315,13 @@ const Users = () => {
 
   const handleUpdateRole = async (
     userId: string,
-    updates: { name: string; email: string; phone: string; role: TUserRole }
+    updates: {
+      name: string;
+      email: string;
+      phone: string;
+      role: TUserRole;
+      position: string;
+    }
   ) => {
     if (!token) return router.replace("/");
     try {
