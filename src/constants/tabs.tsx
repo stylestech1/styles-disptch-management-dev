@@ -154,6 +154,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: <Boxes />,
     },
     {
+      label: "Detention / layover",
+      subtitle: "View and edit truck Detention / layover",
+      icon: <Truck />,
+      path: "loads-claims",
+    },
+    {
       label: "My Trucks",
       subtitle: "View the trucks assigned to you",
       icon: <Truck />,
@@ -206,6 +212,12 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       subtitle:
         "Manage and track all your shipments and deliveries in one place.",
       icon: <Boxes />,
+    },
+    {
+      label: "Detention / layover",
+      subtitle: "View and edit truck Detention / layover",
+      icon: <Truck />,
+      path: "loads-claims",
     },
     {
       label: "Hiring Drivers",

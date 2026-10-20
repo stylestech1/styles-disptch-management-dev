@@ -64,7 +64,7 @@ const getDetentionLayovers = (load?: TLoads): DetentionLayover[] => {
     }));
   }
 
-  return load?.status === "delivered" ? [createDefaultDetentionLayover()] : [];
+  return [];
 };
 
 const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
@@ -115,11 +115,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
     setShowDeliveredAt(newStatus === "delivered");
 
-    if (newStatus === "delivered") {
-      setDetentionLayovers((prev) =>
-        prev.length > 0 ? prev : [createDefaultDetentionLayover()]
-      );
-    } else {
+    if (newStatus !== "delivered") {
       setDeliveredAt("");
       setDetentionLayovers([]);
     }
@@ -635,7 +631,8 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
                       </FormControl>
                     </div>
 
-                    {detentionLayovers.length > 1 && (
+                    {(detentionLayovers.length > 1 ||
+                      !(item.id || item._id)) && (
                       <Button
                         type="button"
                         color="error"
@@ -676,9 +673,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
                   }
                 >
                   <MenuItem value="pending">Pending</MenuItem>
-
                   <MenuItem value="paid">Paid</MenuItem>
-
                   <MenuItem value="refused">Refused</MenuItem>
                 </Select>
               </FormControl>
