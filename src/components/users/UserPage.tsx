@@ -44,7 +44,7 @@ import {
 import SearchInput from "@/components/ui/SearchInput";
 import { CircleUserRound, ShieldUser, UsersRound, UserPen, UserRoundCog } from "lucide-react";
 
-type RoleFilter = "all" | "employee" | "driver" | "admin" | "manager";
+type RoleFilter = "all" | "employee" | "driver" | "admin";
 type StatusFilter = "all" | "active" | "inactive";
 const Users = () => {
   const [page, setPage] = useState(1);
@@ -285,7 +285,6 @@ const Users = () => {
       totalUsers: Number(s?.total ?? 0),
       drivers: Number(s?.drivers ?? 0),
       admins: Number(s?.admins ?? 0),
-      managers: Number(s?.managers ?? 0),
       employees: Number(s?.employee ?? s?.employees ?? 0),
     };
   }, [dispatchersData?.stats]);
@@ -544,8 +543,6 @@ const Users = () => {
                   <MenuItem value="employee">Employee</MenuItem>
                   <MenuItem value="driver">Driver</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-
                 </Select>
               </FormControl>
             </Box>

@@ -361,7 +361,6 @@ const UserSettingsModal = ({
               >
                 <MenuItem value="employee">Employee</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
                 <MenuItem value="driver">Driver</MenuItem>
                 
               </Select>
