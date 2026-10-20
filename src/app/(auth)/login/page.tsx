@@ -3,6 +3,7 @@
 
 import Loading from "@/components/ui/Loading";
 import { loginSuccess } from "@/redux/slices/authSlice";
+import { getEffectiveUserRole } from "@/utils/getEffectiveUserRole";
 import { RootState, useAppDispatch, useAppSelector } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -323,7 +324,7 @@ const Login = () => {
 
       // Small delay to ensure cookies are set before redirecting
       setTimeout(() => {
-        const role = result.data.role?.toLowerCase();
+        const role = getEffectiveUserRole(result.data).toLowerCase();
         if (role === "admin") {
           router.replace("/admin/loads");
         } else if (role === "superadmin" || role === "super-admin" || role === "super_admin") {

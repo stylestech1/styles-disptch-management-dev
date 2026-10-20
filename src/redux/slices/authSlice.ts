@@ -2,6 +2,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { TAuthState, TUser } from "@/types/globalTypes";
 import Cookies from "js-cookie";
+import { getEffectiveUserRole } from "@/utils/getEffectiveUserRole";
 
 const initialState: TAuthState = {
   user: null,
@@ -17,19 +18,20 @@ const authSlice = createSlice({
       action: PayloadAction<{ user: TUser; token: string }>
     ) => {
       const { user, token } = action.payload;
+      const effectiveUser = { ...user, role: getEffectiveUserRole(user) };
       Cookies.set("token", token, {
         expires: 7,
         path: "/",
         sameSite: "lax",
         secure: true,
       });
-      Cookies.set("userRole", user.role, {
+      Cookies.set("userRole", effectiveUser.role, {
         expires: 7,
         path: "/",
         sameSite: "lax",
         secure: true,
       });
-      state.user = user;
+      state.user = effectiveUser;
       state.token = token;
     },
     logout: (state) => {

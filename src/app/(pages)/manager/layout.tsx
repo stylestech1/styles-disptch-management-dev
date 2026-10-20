@@ -33,6 +33,7 @@ import { Collapse } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { Info, InfoIcon } from "lucide-react";
 import { useGetUserInfoQuery } from "@/redux/slices/apiSlice";
+import { getEffectiveUserRole } from "@/utils/getEffectiveUserRole";
 
 const DRAWER_WIDTH = 300;
 
@@ -79,8 +80,9 @@ export default function ManagerLayout({
 
   if (!currentUser) return null;
 
-  const roleKey = (currentUser?.role || "").toLowerCase() as keyof typeof TABS_CONFIG;
-  const base = currentUser.role === "admin" ? "/admin" : "/manager";
+  const effectiveRole = getEffectiveUserRole(currentUser);
+  const roleKey = effectiveRole.toLowerCase() as keyof typeof TABS_CONFIG;
+  const base = effectiveRole === "admin" ? "/admin" : "/manager";
 
   const tabs = Array.isArray(TABS_CONFIG[roleKey]) ? TABS_CONFIG[roleKey] : [];
 
@@ -218,7 +220,7 @@ export default function ManagerLayout({
                 textTransform: "capitalize",
               }}
             >
-              {currentUser.role}
+              {effectiveRole}
             </Typography>
           </Box>
         </Link>
