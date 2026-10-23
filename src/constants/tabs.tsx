@@ -66,7 +66,7 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
     },
     {
       label: "Truck Status",
-      subtitle: "View and edit truck dispatcher assignments",
+      subtitle: "View and edit truck status",
       icon: <Info />,
       path: "truck-dispatchers",
     },
