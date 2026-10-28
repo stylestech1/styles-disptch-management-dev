@@ -68,6 +68,10 @@ type AssignedDriver = {
     driverId: string;
 };
 
+type LastKnownLocation = {
+    city?: string;
+};
+
 type TruckType = {
     id: string;
     truckNumber: string;
@@ -84,6 +88,7 @@ type TruckType = {
     status?: string;
 
     currentLocation?: string;
+    lastKnownLocation?: LastKnownLocation | null;
 
     assignedDriver?: AssignedDriver | null;
 
@@ -183,6 +188,10 @@ const getCityState = (address?: string) => {
 
     return `${city}, ${state}`;
 };
+
+const getTruckLocationLabel = (truck?: TruckType, fallback = "-") =>
+    truck?.lastKnownLocation?.city ||
+    (truck?.currentLocation ? getCityState(truck.currentLocation) : fallback);
 
 
 export default function TruckDispatcher() {
@@ -664,22 +673,55 @@ export default function TruckDispatcher() {
                                             color="#1565C0"
                                             style={{ flexShrink: 0, marginTop: 2 }}
                                         />
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                            title={assignment.truck?.currentLocation || ""}
-                                            sx={{
-                                                overflow: "hidden",
-                                                display: "-webkit-box",
-                                                WebkitBoxOrient: "vertical",
-                                                WebkitLineClamp: 2,
-                                                overflowWrap: "anywhere",
-                                            }}
-                                        >
-                                            {assignment.truck?.currentLocation
-                                                ? getCityState(assignment.truck.currentLocation)
-                                                : "Location unavailable"}
+                                        <Box sx={{ minWidth: 0 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Current Location
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                title={getTruckLocationLabel(
+                                                    assignment.truck,
+                                                    "Location unavailable"
+                                                )}
+                                                sx={{
+                                                    overflow: "hidden",
+                                                    display: "-webkit-box",
+                                                    WebkitBoxOrient: "vertical",
+                                                    WebkitLineClamp: 2,
+                                                    overflowWrap: "anywhere",
+                                                }}
+                                            >
+                                                {getTruckLocationLabel(
+                                                    assignment.truck,
+                                                    "Location unavailable"
+                                                )}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+
+                                    <Box sx={{ minWidth: 0, pl: 2.75 }}>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Destination
                                         </Typography>
+                                        <Stack spacing={0.25}>
+                                            {assignment.truck?.currentLoad?.destination?.length
+                                                ? assignment.truck.currentLoad.destination.map((destination, index) => (
+                                                    <Typography
+                                                        key={`${destination}-${index}`}
+                                                        variant="body2"
+                                                        fontWeight={600}
+                                                        sx={{ overflowWrap: "anywhere" }}
+                                                    >
+                                                        {destination}
+                                                    </Typography>
+                                                ))
+                                                : (
+                                                    <Typography variant="body2" fontWeight={600}>
+                                                        -
+                                                    </Typography>
+                                                )}
+                                        </Stack>
                                     </Box>
 
                                     <Stack
@@ -963,10 +1005,7 @@ export default function TruckDispatcher() {
                                     ],
                                     [
                                         "Current Location",
-                                        viewingAssignment
-                                            .truck
-                                            ?.currentLocation ||
-                                        "-",
+                                        getTruckLocationLabel(viewingAssignment.truck),
                                     ],
 
                                     [
@@ -1198,13 +1237,23 @@ export default function TruckDispatcher() {
                                                     Destination
                                                 </Typography>
 
-                                                <Typography
-                                                    fontWeight={600}
-                                                >
-                                                    {viewingAssignment.truck.currentLoad.destination?.join(
-                                                        ", "
-                                                    ) || "-"}
-                                                </Typography>
+                                                <Stack spacing={0.25}>
+                                                    {viewingAssignment.truck.currentLoad.destination?.length
+                                                        ? viewingAssignment.truck.currentLoad.destination.map((destination, index) => (
+                                                            <Typography
+                                                                key={`${destination}-${index}`}
+                                                                fontWeight={600}
+                                                                sx={{ overflowWrap: "anywhere" }}
+                                                            >
+                                                                {destination}
+                                                            </Typography>
+                                                        ))
+                                                        : (
+                                                            <Typography fontWeight={600}>
+                                                                -
+                                                            </Typography>
+                                                        )}
+                                                </Stack>
                                             </Box>
 
                                             <Box>
