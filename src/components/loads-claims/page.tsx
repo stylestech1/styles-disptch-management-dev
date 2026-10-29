@@ -263,13 +263,14 @@ const LoadsClaimsPage = () => {
     const {
         data: allClaimsData,
         isLoading: isAllClaimsLoading,
+        isFetching: isAllClaimsFetching,
         error: allClaimsError,
         refetch: refetchAllClaims,
     } = useGetLoadClaimsQuery({ keyword: keyword || undefined });
 
     const {
         data: filteredClaimsData,
-        isLoading: isFilteredClaimsLoading,
+        isFetching: isFilteredClaimsFetching,
         error: filteredClaimsError,
         refetch: refetchFilteredClaims,
     } = useGetLoadClaimsQuery(
@@ -297,8 +298,8 @@ const LoadsClaimsPage = () => {
 
     const loading =
         claimFilter === "all"
-            ? isAllClaimsLoading
-            : isFilteredClaimsLoading;
+            ? isAllClaimsFetching
+            : isFilteredClaimsFetching;
 
     const error =
         claimFilter === "all"
@@ -419,6 +420,12 @@ const LoadsClaimsPage = () => {
     const handleFilterChange = (value: ClaimFilter) => setClaimFilter(value);
     const handleSearchSubmit = () => setKeyword(searchInput.trim());
     const handleSearchClear = () => setKeyword("");
+    const handleSearchInputChange = (value: string) => {
+        setSearchInput(value);
+        if (!value.trim()) {
+            setKeyword("");
+        }
+    };
     const refetch = claimFilter === "all" ? refetchAllClaims : refetchFilteredClaims;
 
     return (
@@ -452,7 +459,7 @@ const LoadsClaimsPage = () => {
                 >
                     <SearchInput
                         value={searchInput}
-                        onChange={setSearchInput}
+                        onChange={handleSearchInputChange}
                         onClear={handleSearchClear}
                         onSubmit={handleSearchSubmit}
                         placeholder="Search load ID, driver, or truck number"
