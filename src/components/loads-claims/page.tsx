@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { IoAlertCircle, IoCloseCircle, IoTime } from "react-icons/io5";
 import DataTable, { Column } from "@/components/ui/DataTable";
+import Pagination from "@/components/ui/Pagination";
 import SearchInput from "@/components/ui/SearchInput";
 import StatsCard from "@/components/ui/StatsCard";
 import UpdateStatusModal from "@/components/loads/UpdateStatusModal";
@@ -256,6 +257,7 @@ const columns: Column[] = [
 const LoadsClaimsPage = () => {
     const theme = useAppSelector((state: RootState) => state.palette);
     const [claimFilter, setClaimFilter] = useState<ClaimFilter>("all");
+    const [page, setPage] = useState(1);
     const [searchInput, setSearchInput] = useState("");
     const [keyword, setKeyword] = useState("");
     const [selectedLoad, setSelectedLoad] = useState<TLoadClaim | null>(null);
@@ -266,7 +268,11 @@ const LoadsClaimsPage = () => {
         isFetching: isAllClaimsFetching,
         error: allClaimsError,
         refetch: refetchAllClaims,
-    } = useGetLoadClaimsQuery({ keyword: keyword || undefined });
+    } = useGetLoadClaimsQuery({
+        page,
+        limit: 10,
+        keyword: keyword || undefined,
+    });
 
     const {
         data: filteredClaimsData,
@@ -276,7 +282,12 @@ const LoadsClaimsPage = () => {
     } = useGetLoadClaimsQuery(
         claimFilter === "all"
             ? undefined
-            : { claimType: claimFilter, keyword: keyword || undefined },
+            : {
+                claimType: claimFilter,
+                keyword: keyword || undefined,
+                page,
+                limit: 10,
+            },
         { skip: claimFilter === "all" }
     );
 
@@ -417,12 +428,26 @@ const LoadsClaimsPage = () => {
         [allRows]
     );
 
-    const handleFilterChange = (value: ClaimFilter) => setClaimFilter(value);
-    const handleSearchSubmit = () => setKeyword(searchInput.trim());
-    const handleSearchClear = () => setKeyword("");
+    const currentResponse = claimFilter === "all" ? allClaimsData : filteredClaimsData;
+    const pagination =
+        (currentResponse as ClaimsResponse | undefined)?.paginationResult ?? null;
+
+    const handleFilterChange = (value: ClaimFilter) => {
+        setPage(1);
+        setClaimFilter(value);
+    };
+    const handleSearchSubmit = () => {
+        setPage(1);
+        setKeyword(searchInput.trim());
+    };
+    const handleSearchClear = () => {
+        setPage(1);
+        setKeyword("");
+    };
     const handleSearchInputChange = (value: string) => {
         setSearchInput(value);
         if (!value.trim()) {
+            setPage(1);
             setKeyword("");
         }
     };
@@ -623,6 +648,22 @@ const LoadsClaimsPage = () => {
                         </TableCell>
                     </TableRow>
                 )}
+            />
+
+            <Pagination
+                pagination={
+                    pagination
+                        ? {
+                            currentPage: pagination.currentPage,
+                            totalPages: pagination.totalPages,
+                            total: pagination.totalDocs,
+                        }
+                        : null
+                }
+                page={page}
+                setPage={setPage}
+                pageSize={pagination?.limit ?? 10}
+                showInfo
             />
 
             {selectedLoad && (

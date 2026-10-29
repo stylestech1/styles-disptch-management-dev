@@ -50,10 +50,16 @@ export const apiSlice = api.injectEndpoints({
 
     getLoadClaims: builder.query<
       TLoadClaimsResponse,
-      { claimType?: TLoadClaimType; keyword?: string } | void
+      { claimType?: TLoadClaimType; keyword?: string; page?: number; limit?: number } | void
     >({
       query: (params) => {
         const queryParams = new URLSearchParams();
+        if (params?.page) {
+          queryParams.set("page", String(params.page));
+        }
+        if (params?.limit) {
+          queryParams.set("limit", String(params.limit));
+        }
         if (params?.claimType) {
           queryParams.set("claimType", params.claimType);
         }
