@@ -286,8 +286,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
       toast.success("Load updated successfully", {
         style: {
-          background: "#16a34a",
-          color: "#fff",
+          color: "#16a34a",
         },
       });
 
@@ -297,8 +296,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
 
       toast.error(errorMessage || "Updating load failed", {
         style: {
-          background: "#dc2626",
-          color: "#fff",
+          color: "#dc2626",
         },
       });
     }

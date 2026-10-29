@@ -50,12 +50,17 @@ export const apiSlice = api.injectEndpoints({
 
     getLoadClaims: builder.query<
       TLoadClaimsResponse,
-      { claimType?: TLoadClaimType } | void
+      { claimType?: TLoadClaimType; keyword?: string } | void
     >({
       query: (params) => {
-        const query = params?.claimType
-          ? `?claimType=${encodeURIComponent(params.claimType)}`
-          : "";
+        const queryParams = new URLSearchParams();
+        if (params?.claimType) {
+          queryParams.set("claimType", params.claimType);
+        }
+        if (params?.keyword) {
+          queryParams.set("keyword", params.keyword);
+        }
+        const query = queryParams.size ? `?${queryParams.toString()}` : "";
 
         return `/api/v1/loads/claims${query}`;
       },

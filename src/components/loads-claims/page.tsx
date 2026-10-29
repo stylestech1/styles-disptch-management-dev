@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { IoAlertCircle, IoCloseCircle, IoTime } from "react-icons/io5";
 import DataTable, { Column } from "@/components/ui/DataTable";
+import SearchInput from "@/components/ui/SearchInput";
 import StatsCard from "@/components/ui/StatsCard";
 import UpdateStatusModal from "@/components/loads/UpdateStatusModal";
 import {
@@ -255,6 +256,8 @@ const columns: Column[] = [
 const LoadsClaimsPage = () => {
     const theme = useAppSelector((state: RootState) => state.palette);
     const [claimFilter, setClaimFilter] = useState<ClaimFilter>("all");
+    const [searchInput, setSearchInput] = useState("");
+    const [keyword, setKeyword] = useState("");
     const [selectedLoad, setSelectedLoad] = useState<TLoadClaim | null>(null);
 
     const {
@@ -262,7 +265,7 @@ const LoadsClaimsPage = () => {
         isLoading: isAllClaimsLoading,
         error: allClaimsError,
         refetch: refetchAllClaims,
-    } = useGetLoadClaimsQuery();
+    } = useGetLoadClaimsQuery({ keyword: keyword || undefined });
 
     const {
         data: filteredClaimsData,
@@ -270,7 +273,9 @@ const LoadsClaimsPage = () => {
         error: filteredClaimsError,
         refetch: refetchFilteredClaims,
     } = useGetLoadClaimsQuery(
-        claimFilter === "all" ? undefined : { claimType: claimFilter },
+        claimFilter === "all"
+            ? undefined
+            : { claimType: claimFilter, keyword: keyword || undefined },
         { skip: claimFilter === "all" }
     );
 
@@ -412,6 +417,8 @@ const LoadsClaimsPage = () => {
     );
 
     const handleFilterChange = (value: ClaimFilter) => setClaimFilter(value);
+    const handleSearchSubmit = () => setKeyword(searchInput.trim());
+    const handleSearchClear = () => setKeyword("");
     const refetch = claimFilter === "all" ? refetchAllClaims : refetchFilteredClaims;
 
     return (
@@ -434,21 +441,39 @@ const LoadsClaimsPage = () => {
                         Review detention, layover, and TONU claims.
                     </Typography>
                 </Box>
-                <FormControl size="small" sx={{ minWidth: 190 }}>
-                    <Select
-                        value={claimFilter}
-                        aria-label="Filter claims by type"
-                        onChange={(event) =>
-                            handleFilterChange(event.target.value as ClaimFilter)
-                        }
-                        sx={{ bgcolor: theme.currentPalette.background }}
-                    >
-                        <MenuItem value="all">All Claims</MenuItem>
-                        <MenuItem value="detention">Detention</MenuItem>
-                        <MenuItem value="layover">Layover</MenuItem>
-                        <MenuItem value="tonu">TONU</MenuItem>
-                    </Select>
-                </FormControl>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        gap: 2,
+                        width: { xs: "100%", md: "auto" },
+                    }}
+                >
+                    <SearchInput
+                        value={searchInput}
+                        onChange={setSearchInput}
+                        onClear={handleSearchClear}
+                        onSubmit={handleSearchSubmit}
+                        placeholder="Search load ID, driver, or truck number"
+                        sx={{ width: { xs: "100%", sm: 320 } }}
+                    />
+                    <FormControl size="small" sx={{ minWidth: 190 }}>
+                        <Select
+                            value={claimFilter}
+                            aria-label="Filter claims by type"
+                            onChange={(event) =>
+                                handleFilterChange(event.target.value as ClaimFilter)
+                            }
+                            sx={{ bgcolor: theme.currentPalette.background }}
+                        >
+                            <MenuItem value="all">All Claims</MenuItem>
+                            <MenuItem value="detention">Detention</MenuItem>
+                            <MenuItem value="layover">Layover</MenuItem>
+                            <MenuItem value="tonu">TONU</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
             </Box>
 
             <Box
