@@ -3,6 +3,7 @@ import {
   CompanyDto,
   CompanyUpsertBody,
   PaginationResult,
+  TDispatcher,
   TCustomer,
   TDriver,
   tDriverHiring,
@@ -1154,9 +1155,23 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     // ! ========== Users [adminDashboard] ==========
-    getAllDispatchers: builder.query({
-      query: ({ page = 1, limit = 10 }) =>
-        `/api/v1/adminDashboard?page=${page}&limit=${limit}`,
+    getAllDispatchers: builder.query<
+      {
+        data: TDispatcher[];
+        results?: number;
+        paginationResult?: PaginationResult;
+        stats?: any;
+      },
+      { page?: number; limit?: number; active?: boolean }
+    >({
+      query: ({ page = 1, limit = 10, active }) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+        if (active !== undefined) params.set("active", String(active));
+        return `/api/v1/adminDashboard?${params.toString()}`;
+      },
       providesTags: ["Dispatchers"],
       keepUnusedDataFor: 60 * 60 * 24,
     }),
@@ -1190,11 +1205,25 @@ export const apiSlice = api.injectEndpoints({
       ],
     }),
 
-    getUserWithSearch: builder.query({
-      query: ({ from, to, page, limit }) => {
+    getUserWithSearch: builder.query<
+      {
+        data: TDispatcher[];
+        results?: number;
+        paginationResult?: PaginationResult;
+      },
+      {
+        from?: string;
+        to?: string;
+        page?: number;
+        limit?: number;
+        active?: boolean;
+      }
+    >({
+      query: ({ from, to, page = 1, limit = 10, active }) => {
         const params = [`page=${page}`, `limit=${limit}`];
         if (from) params.push(`from=${from}`);
         if (to) params.push(`to=${to}`);
+        if (active !== undefined) params.push(`active=${active}`);
         const queryString = params.join("&");
         return `/api/v1/adminDashboard?${queryString}`;
       },

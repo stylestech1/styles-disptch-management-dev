@@ -593,10 +593,10 @@ const DriverSummary = () => {
                   <span>Bonus</span>
                   <span>+${Number(summaryData?.earnings?.totalBonus).toFixed(2) || "0.00"}</span>
                 </Typography>
-                <Typography sx={{ display: "flex", justifyContent: "space-between", color: "#317435" }}>
+                {/* <Typography sx={{ display: "flex", justifyContent: "space-between", color: "#317435" }}>
                   <span>Detention</span>
                   <span>+${Number(summaryData?.earnings?.totalDetention).toFixed(2) || "0.00"}</span>
-                </Typography>
+                </Typography> */}
                 <Typography sx={{ display: "flex", justifyContent: "space-between", color: "#B3261E" }}>
                   <span>Deduction</span>
                   <span>-${Number(summaryData?.earnings?.totalDeduction).toFixed(2) || "0.00"}</span>

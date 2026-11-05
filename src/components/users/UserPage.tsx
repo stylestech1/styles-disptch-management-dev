@@ -256,13 +256,12 @@ const Users = () => {
     dispatchersData,
   ]);
 
-  const filteredUsers = users.filter((user: TDispatcher) =>
-    activeFilter === undefined ? true : Boolean(user.active) === activeFilter
-  );
-
-  const pagination = isFiltered
-    ? filteredData?.paginationResult || null
-    : dispatchersData?.paginationResult || null;
+  const pagination =
+    isSearching || roleFilter !== "all"
+      ? null
+      : isFiltered
+        ? filteredData?.paginationResult || null
+        : dispatchersData?.paginationResult || null;
 
   useEffect(() => {
     const currentError = dispatchersError || userByIdError || filteredError || roleError;
@@ -301,7 +300,17 @@ const Users = () => {
   }) => {
     if (!token) return router.replace("/");
     try {
-      await createUser(userData).unwrap();
+      const { name, email, phone, role, password, passwordConfirmation } = userData;
+      const userPayload = {
+        name,
+        email,
+        phone,
+        role,
+        ...(role === "employee" ? { position: userData.position } : {}),
+        password,
+        passwordConfirmation,
+      };
+      await createUser(userPayload).unwrap();
       toast.success("User created successfully!");
       setPopup(false);
       await refetchLoads();
@@ -324,7 +333,15 @@ const Users = () => {
   ) => {
     if (!token) return router.replace("/");
     try {
-      await updateUserRole({ id: userId, ...updates }).unwrap();
+      const { name, email, phone, role } = updates;
+      const userPayload = {
+        name,
+        email,
+        phone,
+        role,
+        ...(role === "employee" ? { position: updates.position } : {}),
+      };
+      await updateUserRole({ id: userId, ...userPayload }).unwrap();
       toast.success("User updated successfully!");
       await refetchLoads();
     } catch (err: unknown) {
@@ -595,7 +612,7 @@ const Users = () => {
       {/* Table */}
       <DataTable
         columns={dispatcherColumns}
-        data={filteredUsers}
+        data={users}
         renderRow={renderDispatcherRow}
         loading={Boolean(
           (isSearching && userByIdLoading) ||
