@@ -106,6 +106,7 @@ type ClaimRow = {
     source?: string;
     recordStatus?: string;
     record?: ClaimRecord;
+    relatedRows?: ClaimRow[];
 };
 
 const getClaimsData = (
@@ -171,6 +172,77 @@ const createRows = (
     });
 };
 
+const getLoadKey = (load: ClaimLoad) =>
+    load._id ?? load.id ?? load.loadId;
+
+const combineDetentionAndLayoverRows = (
+    detentionRows: ClaimRow[],
+    layoverRows: ClaimRow[],
+    requireBoth = false
+): ClaimRow[] => {
+    const layoverRowsByLoad = new Map(
+        layoverRows
+            .map((row) => [getLoadKey(row.load), row] as const)
+            .filter((entry): entry is readonly [string, ClaimRow] => Boolean(entry[0]))
+    );
+    const combinedLayoverKeys = new Set<string>();
+
+    const combinedRows = detentionRows.flatMap((detentionRow): ClaimRow[] => {
+        const loadKey = getLoadKey(detentionRow.load);
+        const layoverRow = loadKey ? layoverRowsByLoad.get(loadKey) : undefined;
+
+        if (!layoverRow) return requireBoth ? [] : [detentionRow];
+
+        combinedLayoverKeys.add(layoverRow.key);
+
+        const records = [detentionRow.record, layoverRow.record].filter(
+            (record): record is ClaimRecord => Boolean(record)
+        );
+        const amounts = records
+            .map((record) => record.amount)
+            .filter((amount): amount is number => typeof amount === "number");
+        const sources = [...new Set(
+            [detentionRow.source, layoverRow.source].filter(
+                (source): source is string => Boolean(source)
+            )
+        )];
+        const statuses = [...new Set(
+            [detentionRow.recordStatus, layoverRow.recordStatus].filter(
+                (status): status is string => Boolean(status)
+            )
+        )];
+        const notes = records
+            .map((record) => record.note)
+            .filter((note): note is string => Boolean(note));
+        const firstRecord = records[0];
+
+        return [{
+            ...detentionRow,
+            key: `${loadKey}-detention&layover`,
+            type: "detention&layover",
+            relatedRows: [detentionRow, layoverRow],
+            source: sources.join(" / "),
+            recordStatus: statuses.join(" / "),
+            record: firstRecord
+                ? {
+                    ...firstRecord,
+                    amount: amounts.length
+                        ? amounts.reduce((total, amount) => total + amount, 0)
+                        : undefined,
+                    note: notes.join(" / "),
+                }
+                : undefined,
+        }];
+    });
+
+    if (requireBoth) return combinedRows;
+
+    return [
+        ...combinedRows,
+        ...layoverRows.filter((row) => !combinedLayoverKeys.has(row.key)),
+    ];
+};
+
 const getClaimRows = (
     response: unknown,
     filter: ClaimFilter = "all"
@@ -185,13 +257,23 @@ const getClaimRows = (
         return createRows(data?.layover ?? [], "layover");
     }
 
+    if (filter === "detention&layover") {
+        return combineDetentionAndLayoverRows(
+            createRows(data?.detention ?? [], "detention"),
+            createRows(data?.layover ?? [], "layover"),
+            true
+        );
+    }
+
     if (filter === "tonu") {
         return createRows(data?.tonu ?? [], "tonu");
     }
 
     return [
-        ...createRows(data?.detention ?? [], "detention"),
-        ...createRows(data?.layover ?? [], "layover"),
+        ...combineDetentionAndLayoverRows(
+            createRows(data?.detention ?? [], "detention"),
+            createRows(data?.layover ?? [], "layover")
+        ),
         ...createRows(data?.tonu ?? [], "tonu"),
     ];
 };
@@ -242,6 +324,9 @@ const titleCase = (value?: string) =>
         ? value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
         : "-";
 
+const getClaimTypeLabel = (type: TLoadClaimType) =>
+    type === "detention&layover" ? "Detention & Layover" : titleCase(type);
+
 const columns: Column[] = [
     { key: "load", header: "Load", align: "left" },
     { key: "type", header: "Claim Type" },
@@ -261,6 +346,7 @@ const LoadsClaimsPage = () => {
     const [searchInput, setSearchInput] = useState("");
     const [keyword, setKeyword] = useState("");
     const [selectedLoad, setSelectedLoad] = useState<TLoadClaim | null>(null);
+    const isDetentionLayoverFilter = claimFilter === "detention&layover";
 
     const {
         data: allClaimsData,
@@ -269,9 +355,11 @@ const LoadsClaimsPage = () => {
         error: allClaimsError,
         refetch: refetchAllClaims,
     } = useGetLoadClaimsQuery({
-        page,
-        limit: 10,
+        page: isDetentionLayoverFilter ? 1 : page,
+        limit: isDetentionLayoverFilter ? 2147483647 : 10,
         keyword: keyword || undefined,
+    }, {
+        skip: claimFilter !== "all" && !isDetentionLayoverFilter,
     });
 
     const {
@@ -280,7 +368,7 @@ const LoadsClaimsPage = () => {
         error: filteredClaimsError,
         refetch: refetchFilteredClaims,
     } = useGetLoadClaimsQuery(
-        claimFilter === "all"
+        claimFilter === "all" || isDetentionLayoverFilter
             ? undefined
             : {
                 claimType: claimFilter,
@@ -288,7 +376,7 @@ const LoadsClaimsPage = () => {
                 page,
                 limit: 10,
             },
-        { skip: claimFilter === "all" }
+        { skip: claimFilter === "all" || isDetentionLayoverFilter }
     );
 
     const allRows = useMemo(
@@ -300,8 +388,8 @@ const LoadsClaimsPage = () => {
         () =>
             claimFilter === "all"
                 ? allRows
-                : getClaimRows(filteredClaimsData, claimFilter),
-        [allRows, claimFilter, filteredClaimsData]
+                : getClaimRows(isDetentionLayoverFilter ? allClaimsData : filteredClaimsData, claimFilter),
+        [allRows, claimFilter, allClaimsData, filteredClaimsData, isDetentionLayoverFilter]
     );
 
     const router = useRouter();
@@ -310,12 +398,16 @@ const LoadsClaimsPage = () => {
     const loading =
         claimFilter === "all"
             ? isAllClaimsFetching
-            : isFilteredClaimsFetching;
+            : isDetentionLayoverFilter
+                ? isAllClaimsFetching
+                : isFilteredClaimsFetching;
 
     const error =
         claimFilter === "all"
             ? allClaimsError
-            : filteredClaimsError;
+            : isDetentionLayoverFilter
+                ? allClaimsError
+                : filteredClaimsError;
 
     const responseHasUnexpectedShape = false;
 
@@ -421,8 +513,12 @@ const LoadsClaimsPage = () => {
 
     const stats = useMemo(
         () => ({
-            detention: allRows.filter((row) => row.type === "detention").length,
-            layover: allRows.filter((row) => row.type === "layover").length,
+            detention: allRows.filter(
+                (row) => row.type === "detention" || row.type === "detention&layover"
+            ).length,
+            layover: allRows.filter(
+                (row) => row.type === "layover" || row.type === "detention&layover"
+            ).length,
             tonu: allRows.filter((row) => row.type === "tonu").length,
         }),
         [allRows]
@@ -431,6 +527,10 @@ const LoadsClaimsPage = () => {
     const currentResponse = claimFilter === "all" ? allClaimsData : filteredClaimsData;
     const pagination =
         (currentResponse as ClaimsResponse | undefined)?.paginationResult ?? null;
+    const refetch = () => {
+        if (claimFilter === "all" || isDetentionLayoverFilter) return refetchAllClaims();
+        return refetchFilteredClaims();
+    };
 
     const handleFilterChange = (value: ClaimFilter) => {
         setPage(1);
@@ -451,8 +551,6 @@ const LoadsClaimsPage = () => {
             setKeyword("");
         }
     };
-    const refetch = claimFilter === "all" ? refetchAllClaims : refetchFilteredClaims;
-
     return (
         <Box sx={{ p: { xs: 2, md: 3 } }}>
             <Box
@@ -502,6 +600,7 @@ const LoadsClaimsPage = () => {
                             <MenuItem value="all">All Claims</MenuItem>
                             <MenuItem value="detention">Detention</MenuItem>
                             <MenuItem value="layover">Layover</MenuItem>
+                            <MenuItem value="detention&layover">Detention &amp; Layover</MenuItem>
                             <MenuItem value="tonu">TONU</MenuItem>
                         </Select>
                     </FormControl>
@@ -540,7 +639,7 @@ const LoadsClaimsPage = () => {
                 />
             </Box>
 
-            {error && (
+            {Boolean(error) && (
                 <Alert
                     severity="error"
                     action={
@@ -591,12 +690,17 @@ const LoadsClaimsPage = () => {
                             </Typography>
                         </TableCell>
                         <TableCell>
-                            <Chip
-                                size="small"
-                                label={titleCase(row.type)}
-                                color={row.type === "tonu" ? "warning" : "primary"}
-                                variant="outlined"
-                            />
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                                {(row.relatedRows ?? [row]).map((claim) => (
+                                    <Chip
+                                        key={`${row.key}-${claim.type}`}
+                                        size="small"
+                                        label={getClaimTypeLabel(claim.type)}
+                                        color={claim.type === "tonu" ? "warning" : "primary"}
+                                        variant="outlined"
+                                    />
+                                ))}
+                            </Box>
                         </TableCell>
 
                         <TableCell align="left" sx={{ py: 2 }}>
@@ -609,19 +713,18 @@ const LoadsClaimsPage = () => {
                             {formatAmount(row.record?.amount, row.load.currency)}
                         </TableCell>
                         <TableCell>
-                            {row.recordStatus ? (
-                                <Chip
-                                    size="small"
-                                    label={titleCase(row.recordStatus)}
-                                    variant="outlined"
-                                />
-                            ) : (
-                                <Chip
-                                    size="small"
-                                    label={titleCase(row.load.status)}
-                                    variant="outlined"
-                                />
-                            )}
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                                {(row.relatedRows ?? [row]).map((claim) => (
+                                    <Chip
+                                        key={`${row.key}-${claim.type}-status`}
+                                        size="small"
+                                        label={titleCase(
+                                            claim.recordStatus || row.load.status
+                                        )}
+                                        variant="outlined"
+                                    />
+                                ))}
+                            </Box>
                         </TableCell>
                         <TableCell align="left">
                             {row.type === "tonu"
@@ -650,21 +753,23 @@ const LoadsClaimsPage = () => {
                 )}
             />
 
-            <Pagination
-                pagination={
-                    pagination
-                        ? {
-                            currentPage: pagination.currentPage,
-                            totalPages: pagination.totalPages,
-                            total: pagination.totalDocs,
-                        }
-                        : null
-                }
-                page={page}
-                setPage={setPage}
-                pageSize={pagination?.limit ?? 10}
-                showInfo
-            />
+            {claimFilter !== "detention&layover" && (
+                <Pagination
+                    pagination={
+                        pagination
+                            ? {
+                                currentPage: pagination.currentPage,
+                                totalPages: pagination.totalPages,
+                                total: pagination.totalDocs,
+                            }
+                            : null
+                    }
+                    page={page}
+                    setPage={setPage}
+                    pageSize={pagination?.limit ?? 10}
+                    showInfo
+                />
+            )}
 
             {selectedLoad && (
                 <UpdateStatusModal

@@ -176,7 +176,11 @@ export type TLoads = {
   documents?: TDocument[];
   documentsForDriver?: TDocument[];
 };
-export type TLoadClaimType = "detention" | "layover" | "tonu";
+export type TLoadClaimType =
+  | "detention"
+  | "layover"
+  | "detention&layover"
+  | "tonu";
 export type TLoadClaim = TLoads & {
   claimType?: TLoadClaimType;
 };
