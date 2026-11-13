@@ -198,9 +198,6 @@ const combineDetentionAndLayoverRows = (
         const records = [detentionRow.record, layoverRow.record].filter(
             (record): record is ClaimRecord => Boolean(record)
         );
-        const amounts = records
-            .map((record) => record.amount)
-            .filter((amount): amount is number => typeof amount === "number");
         const sources = [...new Set(
             [detentionRow.source, layoverRow.source].filter(
                 (source): source is string => Boolean(source)
@@ -226,9 +223,6 @@ const combineDetentionAndLayoverRows = (
             record: firstRecord
                 ? {
                     ...firstRecord,
-                    amount: amounts.length
-                        ? amounts.reduce((total, amount) => total + amount, 0)
-                        : undefined,
                     note: notes.join(" / "),
                 }
                 : undefined,
@@ -710,7 +704,20 @@ const LoadsClaimsPage = () => {
                         <TableCell>{formatDate(row.load.deliveredAt)}</TableCell>
                         <TableCell>{titleCase(row.source)}</TableCell>
                         <TableCell>
-                            {formatAmount(row.record?.amount, row.load.currency)}
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                {(row.relatedRows ?? [row]).map((claim) => (
+                                    <Chip
+                                        key={`${row.key}-${claim.type}-amount`}
+                                        size="small"
+                                        color="primary"
+                                        label={formatAmount(
+                                            claim.record?.amount,
+                                            row.load.currency
+                                        )}
+                                        variant="outlined"
+                                    />
+                                ))}
+                            </Box>
                         </TableCell>
                         <TableCell>
                             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
