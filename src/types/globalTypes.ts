@@ -63,6 +63,7 @@ export type InvestorsResponse =
   | {
       data: InvestorDto[];
       message?: string;
+      paginationResult?: PaginationResult;
     };
 
 export type CompanyStatus = "Active" | "Inactive";

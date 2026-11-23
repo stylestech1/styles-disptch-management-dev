@@ -1333,8 +1333,16 @@ export const apiSlice = api.injectEndpoints({
     }),
 
     // ! ========== Investor trucks ==========
-    getInvestors: builder.query<InvestorsResponse, void>({
-      query: () => `/api/v1/investors`,
+    getInvestors: builder.query<
+      InvestorsResponse,
+      { page?: number; limit?: number } | void
+    >({
+      query: (params) => {
+        const query = new URLSearchParams();
+        if (params?.page) query.set("page", String(params.page));
+        if (params?.limit) query.set("limit", String(params.limit));
+        return `/api/v1/investors${query.size ? `?${query.toString()}` : ""}`;
+      },
       providesTags: ["Investors"],
     }),
 

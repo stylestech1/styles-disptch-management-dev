@@ -38,6 +38,7 @@ import {
   useUnassignTruckFromInvestorMutation,
 } from "@/redux/slices/apiSlice";
 import DataTable, { Column } from "@/components/ui/DataTable";
+import Pagination from "@/components/ui/Pagination";
 import {
   InvestorDto,
   InvestorTruckItem,
@@ -148,6 +149,8 @@ function InvestorRow({
 }
 
 export default function InvestorTruckManagement() {
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [createInvestorOpen, setCreateInvestorOpen] = useState(false);
   const [createInvestorError, setCreateInvestorError] = useState("");
   const [createInvestorForm, setCreateInvestorForm] =
@@ -162,7 +165,7 @@ export default function InvestorTruckManagement() {
     isError: investorsIsError,
     error: investorsError,
     refetch: refetchInvestors,
-  } = useGetInvestorsQuery();
+  } = useGetInvestorsQuery({ page, limit: pageSize });
   const investors = useMemo(
     () =>
       Array.isArray(investorsResponse)
@@ -173,6 +176,10 @@ export default function InvestorTruckManagement() {
   const editingInvestor = investors.find(
     (investor) => investor.id === editingInvestorId,
   );
+  const pagination =
+    investorsResponse && !Array.isArray(investorsResponse)
+      ? investorsResponse.paginationResult ?? null
+      : null;
   const {
     data: availableResponse,
     isLoading: availableLoading,
@@ -340,6 +347,15 @@ export default function InvestorTruckManagement() {
           </TableRow>
         }
       />
+      {pagination && investors.length > 0 && (
+        <Pagination
+          pagination={pagination}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          showInfo
+        />
+      )}
 
       <Dialog
         open={createInvestorOpen}
