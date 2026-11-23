@@ -1,7 +1,7 @@
 import { TPlace } from "@/components/sections/LocationAutocomplete";
 import { Dayjs } from "dayjs";
 
-export type TUserRole = "admin" | "employee" | "driver" | "superAdmin" | "manager";
+export type TUserRole = "admin" | "employee" | "driver" | "superAdmin" | "manager" | "investor";
 export type TStatusLoad = "pending" | "in_transit" | "delivered" | "cancelled" | "truck_order_not_used";
 export type TStatusDriver = "inactive" | "available" | "busy";
 export type TTruckType = "reefer" | "van";
@@ -51,6 +51,19 @@ export type TUser = {
   jobId: number;
   driver?: string;
 };
+export type InvestorDto = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  active?: boolean;
+};
+export type InvestorsResponse =
+  | InvestorDto[]
+  | {
+      data: InvestorDto[];
+      message?: string;
+    };
 
 export type CompanyStatus = "Active" | "Inactive";
 
@@ -204,6 +217,30 @@ export type AttachmentHiringDriver = {
   downloadLink: string;
   uploadedAt: string;
 }
+
+export type CompanyRecruitmentSettings = {
+  companyId: string;
+  companyName: string;
+  enabled: boolean;
+  publicSlug: string;
+  publicUrl: string;
+};
+
+export type ApplicantStats = {
+  total: number;
+  newApplicants: number;
+  pending: number;
+  qualified: number;
+  disqualified: number;
+  rejected: number;
+};
+
+export type ApplicantFileTicket = {
+  ticket: string;
+  expiresIn: number;
+  url: string;
+};
+
 export type TDriver = {
   id: string;
   driverId: number;
@@ -295,6 +332,16 @@ export type TTruck = {
   insuranceCost: number;
   repairCost: number;
   summary?: TTruckSummary;
+};
+export type InvestorTruckAssignmentPayload = {
+  investorId: string;
+  truckIds: string[];
+  notes?: string;
+};
+export type InvestorTruckItem = TTruck | { truck: TTruck };
+export type InvestorTrucksResponse = {
+  data: InvestorTruckItem[];
+  message?: string;
 };
 export interface TruckApiResponse {
   data: TTruck[];

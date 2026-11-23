@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import NextLink from "next/link";
 import {
   Box,
   Button,
@@ -1039,6 +1040,17 @@ export default function CompaniesPage() {
           },
         }}
       >
+        <MenuItem
+          component={NextLink}
+          href={menuRow ? `/superAdmin/companies/${menuRow.id}/recruitment` : "/superAdmin/companies"}
+          onClick={closeActionsMenu}
+          sx={{ py: 1.2, color: theme.currentPalette.primary }}
+        >
+          <ListItemIcon sx={{ minWidth: 34, color: theme.currentPalette.primary }}>
+            <Building2 size={18} />
+          </ListItemIcon>
+          <ListItemText primary="Recruitment Settings" primaryTypographyProps={{ fontWeight: 800 }} />
+        </MenuItem>
         <MenuItem
           onClick={() => {
             if (!menuRow) return;

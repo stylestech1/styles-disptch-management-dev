@@ -82,7 +82,12 @@ export default function ManagerLayout({
 
   const effectiveRole = getEffectiveUserRole(currentUser);
   const roleKey = effectiveRole.toLowerCase() as keyof typeof TABS_CONFIG;
-  const base = effectiveRole === "admin" ? "/admin" : "/manager";
+  const base =
+    effectiveRole === "admin"
+      ? "/admin"
+      : effectiveRole === "investor"
+        ? "/investor"
+        : "/manager";
 
   const tabs = Array.isArray(TABS_CONFIG[roleKey]) ? TABS_CONFIG[roleKey] : [];
 

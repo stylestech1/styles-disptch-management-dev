@@ -115,6 +115,8 @@ export const DriverHirringForm = ({
 
     useEffect(() => {
         if (open) {
+            setDocuments([]);
+            setDocumentsOpen(editMode);
             reset({
                 firstName: formData.firstName || "",
                 lastName: formData.lastName || "",
@@ -136,7 +138,7 @@ export const DriverHirringForm = ({
                 status: formData.status || "New",
             });
         }
-    }, [open, formData, reset]);
+    }, [open, formData, reset, editMode]);
 
     const submitForm = (data: DriverHiringFormData) => {
         onSubmit(data);
@@ -146,20 +148,23 @@ export const DriverHirringForm = ({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-
-        const pdfFiles = files.filter(
-            (file) =>
-                file.type === "application/pdf" ||
-                file.name.toLowerCase().endsWith(".pdf")
-        );
-
-        if (pdfFiles.length !== files.length) {
+        const selected = e.target.files?.[0];
+        if (!selected) return;
+        if (
+            selected.type !== "application/pdf" ||
+            !selected.name.toLowerCase().endsWith(".pdf")
+        ) {
             toast.error("Only PDF files are allowed");
+            e.target.value = "";
+            return;
+        }
+        if (selected.size > 10 * 1024 * 1024) {
+            toast.error("PDF files must be 10MB or smaller");
+            e.target.value = "";
+            return;
         }
 
-        const newDocuments = [...documents, ...pdfFiles];
-
+        const newDocuments = [selected];
         setDocuments(newDocuments);
         setValue("documents", newDocuments, {
             shouldDirty: true,
@@ -222,6 +227,7 @@ export const DriverHirringForm = ({
                                 {...field}
                                 fullWidth
                                 required
+                                disabled={editMode}
                                 label="First Name"
                                 placeholder="Enter first name"
                                 error={!!fieldState.error}
@@ -241,6 +247,7 @@ export const DriverHirringForm = ({
                                 {...field}
                                 fullWidth
                                 required
+                                disabled={editMode}
                                 label="Last Name"
                                 placeholder="Enter last name"
                                 error={!!fieldState.error}
@@ -260,6 +267,7 @@ export const DriverHirringForm = ({
                                 {...field}
                                 fullWidth
                                 required
+                                disabled={editMode}
                                 label="Email"
                                 placeholder="Enter email"
                                 error={!!fieldState.error}
@@ -280,7 +288,7 @@ export const DriverHirringForm = ({
                                 {...field}
                                 value={field.value || ""}
                                 fullWidth
-                                required
+                                disabled={editMode}
                                 label="State"
                                 placeholder="Enter state"
                                 error={!!fieldState.error}
@@ -301,6 +309,7 @@ export const DriverHirringForm = ({
                                 {...field}
                                 fullWidth
                                 required
+                                disabled={editMode}
                                 label="Phone Number"
                                 placeholder="Enter phone number"
                                 error={!!fieldState.error}
@@ -321,7 +330,7 @@ export const DriverHirringForm = ({
                                 {...field}
                                 fullWidth
                                 required
-
+                                disabled={editMode}
                                 label="Years of Experience"
                                 placeholder="Enter years of experience"
                                 error={!!fieldState.error}
@@ -343,6 +352,7 @@ export const DriverHirringForm = ({
                                 value={field.value || ""}
                                 fullWidth
                                 required
+                                disabled={editMode}
                                 type="date"
                                 label="Ready Date"
                                 error={!!fieldState.error}
@@ -478,6 +488,7 @@ export const DriverHirringForm = ({
                             {...field}
                             required
                             fullWidth
+                            disabled={editMode}
                             label="Violations"
                             placeholder="Enter violations"
                             multiline
@@ -571,7 +582,6 @@ export const DriverHirringForm = ({
                                 ref={fileInputRef}
                                 type="file"
                                 accept="application/pdf,.pdf"
-                                multiple
                                 hidden
                                 onChange={handleSelectFiles}
                             />

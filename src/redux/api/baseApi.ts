@@ -19,6 +19,7 @@ export const api = createApi({
     "Repairs",
     "Drivers",
     "Hiring Drivers",
+    "Recruitment",
     "Comments",
     "Dispatchers",
     "Users",
@@ -35,7 +36,8 @@ export const api = createApi({
     "centermaintenance",
     "companies",
     "Settings",
-    "Owner Operators"
+    "Owner Operators",
+    "Investors",
   ],
   refetchOnFocus: false,
   refetchOnReconnect: false,

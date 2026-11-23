@@ -41,6 +41,7 @@ interface UserSettingsModalProps {
   onActivateUser: (userId: string) => Promise<void>;
   onDeactivateUser: (userId: string) => Promise<void>;
   isLoading?: boolean;
+  allowInvestorRole?: boolean;
 }
 
 const DRAWER_RADIUS = 12;
@@ -53,6 +54,7 @@ const UserSettingsModal = ({
   onActivateUser,
   onDeactivateUser,
   isLoading = false,
+  allowInvestorRole = false,
 }: UserSettingsModalProps) => {
   const theme = useAppSelector((state: RootState) => state.palette);
 
@@ -362,6 +364,7 @@ const UserSettingsModal = ({
                 <MenuItem value="employee">Employee</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
                 <MenuItem value="driver">Driver</MenuItem>
+                {allowInvestorRole && <MenuItem value="investor">Investor</MenuItem>}
                 
               </Select>
             </FormControl>

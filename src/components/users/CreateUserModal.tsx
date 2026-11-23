@@ -44,6 +44,7 @@ interface CreateUserModalProps {
   }) => Promise<void>;
   isLoading?: boolean;
   closeOnOutsideClick?: boolean;
+  allowInvestorRole?: boolean;
 }
 
 interface UserFormData {
@@ -62,6 +63,7 @@ export default function CreateUserModal({
   onSubmit,
   isLoading = false,
   closeOnOutsideClick = true,
+  allowInvestorRole = false,
 }: CreateUserModalProps) {
   const theme = useAppSelector((state: RootState) => state.palette);
 
@@ -363,6 +365,7 @@ export default function CreateUserModal({
                   <MenuItem value="driver">Driver</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="employee">Employee</MenuItem>
+                  {allowInvestorRole && <MenuItem value="investor">Investor</MenuItem>}
                 </TextField>
               )}
             />

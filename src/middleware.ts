@@ -9,9 +9,10 @@ export function middleware(req: NextRequest) {
   const isAdminRoute = pathname.startsWith("/admin");
   const isManagerRoute = pathname.startsWith("/manager");
   const isEmployeeRoute = pathname.startsWith("/users");
+  const isInvestorRoute = pathname.startsWith("/investor");
 
   // Redirect to login if no token
-  if ((isAdminRoute || isManagerRoute || isEmployeeRoute) && !token) {
+  if ((isAdminRoute || isManagerRoute || isEmployeeRoute || isInvestorRoute) && !token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -25,9 +26,13 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  if (isInvestorRoute && userRole !== "investor") {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/manager/:path*", "/users/:path*"],
+  matcher: ["/admin/:path*", "/manager/:path*", "/users/:path*", "/investor/:path*"],
 };

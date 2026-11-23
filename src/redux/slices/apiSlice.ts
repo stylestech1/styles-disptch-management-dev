@@ -14,6 +14,12 @@ import {
   TTruckSummaryResponse,
   TTruckWithSummary,
   TOwnerOperator,
+  ApplicantFileTicket,
+  ApplicantStats,
+  CompanyRecruitmentSettings,
+  InvestorsResponse,
+  InvestorTruckAssignmentPayload,
+  InvestorTrucksResponse,
 } from "@/types/globalTypes";
 import { api } from "../api/baseApi";
 import {
@@ -318,20 +324,29 @@ export const apiSlice = api.injectEndpoints({
     getDriverApplicants: builder.query<
       {
         data: tDriverHiring[];
-        totalDrivers?: number;
         paginationResult?: PaginationResult;
-        stats?: any;
+        stats?: ApplicantStats;
+        results?: number;
+        message?: string;
       },
-      { page?: number; limit?: number }
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        keyword?: string;
+        experienceYearsGte?: number;
+      }
     >({
-      query: ({ page, limit }) => {
-        const params: string[] = [];
-
-        if (page) params.push(`page=${page}`);
-        if (limit) params.push(`limit=${limit}`);
-
-        const queryString = params.length ? `?${params.join("&")}` : "";
-
+      query: ({ page, limit, status, keyword, experienceYearsGte }) => {
+        const params = new URLSearchParams();
+        if (page) params.set("page", String(page));
+        if (limit) params.set("limit", String(limit));
+        if (status) params.set("status", status);
+        if (keyword) params.set("keyword", keyword);
+        if (experienceYearsGte !== undefined) {
+          params.set("experienceYears[gte]", String(experienceYearsGte));
+        }
+        const queryString = params.size ? `?${params.toString()}` : "";
         return `/api/v1/driver-applicants${queryString}`;
       },
       providesTags: ["Hiring Drivers"],
@@ -375,16 +390,24 @@ export const apiSlice = api.injectEndpoints({
         { type: "Hiring Drivers", id },
       ],
     }),
-    createDriverApplicant: builder.mutation<any, FormData>({
-      query: (body) => ({
-        url: "/api/v1/driver-applicants",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Hiring Drivers"],
-    }),
-
-    updateDriverApplicant: builder.mutation<any, { id: string; body: FormData }>({
+    updateDriverApplicant: builder.mutation<
+      any,
+      {
+        id: string;
+        body:
+          | FormData
+          | {
+              status?: string;
+              notes?: string;
+              reminder?: {
+                date?: string;
+                time?: string;
+                reason?: string;
+                isDone?: boolean;
+              };
+            };
+      }
+    >({
       query: ({ id, body }) => ({
         url: `/api/v1/driver-applicants/${id}`,
         method: "PATCH",
@@ -393,12 +416,39 @@ export const apiSlice = api.injectEndpoints({
       invalidatesTags: ["Hiring Drivers"],
     }),
 
-    deleteDriverApplicant: builder.mutation<any, string>({
+    getApplicantFileTicket: builder.mutation<
+      ApplicantFileTicket,
+      string
+    >({
       query: (id) => ({
-        url: `/api/v1/driver-applicants/${id}`,
-        method: "DELETE",
+        url: `/api/v1/files/${id}/ticket`,
+        method: "POST",
       }),
-      invalidatesTags: ["Hiring Drivers"],
+    }),
+
+    getCompanyRecruitment: builder.query<
+      { data: CompanyRecruitmentSettings },
+      string | void
+    >({
+      query: (companyId) =>
+        companyId
+          ? `/api/v1/companies/${encodeURIComponent(companyId)}/recruitment`
+          : "/api/v1/companies/recruitment",
+      providesTags: ["Recruitment"],
+    }),
+
+    updateCompanyRecruitment: builder.mutation<
+      { data: CompanyRecruitmentSettings },
+      { enabled: boolean; companyId?: string }
+    >({
+      query: ({ enabled, companyId }) => ({
+        url: companyId
+          ? `/api/v1/companies/${encodeURIComponent(companyId)}/recruitment`
+          : "/api/v1/companies/recruitment",
+        method: "PATCH",
+        body: { enabled },
+      }),
+      invalidatesTags: ["Recruitment"],
     }),
 
     // ! ========== Owner Operators =============
@@ -1282,6 +1332,54 @@ export const apiSlice = api.injectEndpoints({
       keepUnusedDataFor: 60 * 60 * 24,
     }),
 
+    // ! ========== Investor trucks ==========
+    getInvestors: builder.query<InvestorsResponse, void>({
+      query: () => `/api/v1/investors`,
+      providesTags: ["Investors"],
+    }),
+
+    getAvailableInvestorTrucks: builder.query<InvestorTrucksResponse, void>({
+      query: () => `/api/v1/investors/available-trucks`,
+      providesTags: ["Investors"],
+    }),
+
+    getInvestorTrucks: builder.query<InvestorTrucksResponse, string>({
+      query: (investorId) => `/api/v1/investors/${encodeURIComponent(investorId)}/trucks`,
+      providesTags: (_result, _error, investorId) => [
+        { type: "Investors", id: investorId },
+      ],
+    }),
+
+    assignTruckToInvestor: builder.mutation<
+      unknown,
+      InvestorTruckAssignmentPayload
+    >({
+      query: (body) => ({
+        url: `/api/v1/investors/assign`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { investorId }) => [
+        "Investors",
+        { type: "Investors", id: investorId },
+      ],
+    }),
+
+    unassignTruckFromInvestor: builder.mutation<
+      unknown,
+      InvestorTruckAssignmentPayload
+    >({
+      query: (body) => ({
+        url: `/api/v1/investors/unassign`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { investorId }) => [
+        "Investors",
+        { type: "Investors", id: investorId },
+      ],
+    }),
+
     updateUserInfo: builder.mutation({
       query: ({ ...body }) => ({
         url: `/api/v1/userDashboard/updateMyData`,
@@ -1647,6 +1745,11 @@ export const {
   // useUpdateDeactivationCompanyMutation,
   // TODO: ----- settings  -----
   useGetUserByRoleQuery,
+  useGetInvestorsQuery,
+  useGetAvailableInvestorTrucksQuery,
+  useGetInvestorTrucksQuery,
+  useAssignTruckToInvestorMutation,
+  useUnassignTruckFromInvestorMutation,
   useGetSettingsQuery,
   useCreateSettingMutation,
   useUpdateSettingMutation,
@@ -1658,12 +1761,14 @@ export const {
   useResetPasswordMutation,
   // driver applicants
   useGetDriverApplicantsQuery,
-  useCreateDriverApplicantMutation,
   useUpdateDriverApplicantMutation,
-  useDeleteDriverApplicantMutation,
   useGetDriverApplicantsWithFilterQuery,
   useLazyGetDriverApplicantByIdQuery,
   useGetDriverApplicantByIdQuery,
+  useGetApplicantFileTicketMutation,
+  // company recruitment
+  useGetCompanyRecruitmentQuery,
+  useUpdateCompanyRecruitmentMutation,
   // TODO: ----- Owner Operators -----
   useGetOwnerOperatorsQuery,
   useCreateOwnerOperatorMutation,

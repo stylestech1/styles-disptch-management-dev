@@ -44,7 +44,7 @@ import {
 import SearchInput from "@/components/ui/SearchInput";
 import { CircleUserRound, ShieldUser, UsersRound, UserPen, UserRoundCog } from "lucide-react";
 
-type RoleFilter = "all" | "employee" | "driver" | "admin";
+type RoleFilter = "all" | "employee" | "driver" | "admin" | "investor";
 type StatusFilter = "all" | "active" | "inactive";
 const Users = () => {
   const [page, setPage] = useState(1);
@@ -63,6 +63,8 @@ const Users = () => {
 
   const router = useRouter();
   const token = useAppSelector((state: RootState) => state.auth.token);
+  const currentUser = useAppSelector((state: RootState) => state.auth.user);
+  const allowInvestorRole = currentUser?.role === "admin";
   const { error, setError } = useError();
   const theme = useAppSelector((state: RootState) => state.palette);
 
@@ -560,6 +562,7 @@ const Users = () => {
                   <MenuItem value="employee">Employee</MenuItem>
                   <MenuItem value="driver">Driver</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
+                  {allowInvestorRole && <MenuItem value="investor">Investor</MenuItem>}
                 </Select>
               </FormControl>
             </Box>
@@ -628,6 +631,7 @@ const Users = () => {
         onClose={closeCreateUserPopup}
         onSubmit={handleCreateUser}
         isLoading={creatingUser}
+        allowInvestorRole={allowInvestorRole}
       />
 
       {/* User Settings Modal */}
@@ -639,6 +643,7 @@ const Users = () => {
         onActivateUser={handleActivateUser}
         onDeactivateUser={handleDeactivateUser}
         isLoading={updatingRole || activating || deactivating}
+        allowInvestorRole={allowInvestorRole}
       />
 
       {!isFiltered && !isSearching && pagination && users.length > 0 && (

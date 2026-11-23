@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -13,11 +12,10 @@ import StatsCard from "@/components/ui/StatsCard";
 import useError from "@/hook/useError";
 
 import {
-    useCreateDriverApplicantMutation,
-    useDeleteDriverApplicantMutation,
     useGetDriverApplicantsQuery,
     useUpdateDriverApplicantMutation,
     useGetDriverApplicantByIdQuery,
+    useGetApplicantFileTicketMutation,
 } from "@/redux/slices/apiSlice";
 
 import {
@@ -34,8 +32,8 @@ import {
     TextField,
     Typography,
     alpha,
-    darken,
 } from "@mui/material";
+import Pagination from "@mui/material/Pagination";
 
 import {
     X,
@@ -48,7 +46,6 @@ import {
     Briefcase,
     UserPlus,
     CircleEllipsis,
-    Trash2,
     UserRoundCheck,
     UserRoundX,
     UsersRound,
@@ -62,6 +59,7 @@ import {
 
 import { IoMdEye } from "react-icons/io";
 import { DriverHirringForm } from "@/components/drivers/DriverHiringForm";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 
 type DriverHiringFormData = {
     firstName: string;
@@ -117,11 +115,13 @@ const HiringDriversPage = () => {
 
     const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [minimumExperience, setMinimumExperience] = useState("");
 
     const [open, setOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState<Partial<tDriverHiring>>({});
-    const [originalData, setOriginalData] = useState<Partial<tDriverHiring>>({});
 
     const [selectedDriver, setSelectedDriver] = useState<tDriverHiring | null>(
         null,
@@ -139,16 +139,6 @@ const HiringDriversPage = () => {
     const [localApplicants, setLocalApplicants] = useState<tDriverHiring[]>([]);
     const [dismissedReminderIds, setDismissedReminderIds] = useState<Record<string, boolean>>({});
 
-    const [deleteToast, setDeleteToast] = useState({
-        open: false,
-        message: "",
-    });
-
-    const [driverToDelete, setDriverToDelete] = useState<{
-        _id: string;
-        name?: string;
-    } | null>(null);
-
     const {
         data: driversData,
         isLoading: driversLoading,
@@ -158,6 +148,11 @@ const HiringDriversPage = () => {
         {
             page,
             limit: 100,
+            keyword: debouncedSearch || undefined,
+            status: statusFilter || undefined,
+            experienceYearsGte: minimumExperience
+                ? Number(minimumExperience)
+                : undefined,
         },
         {
             refetchOnFocus: true,
@@ -166,14 +161,10 @@ const HiringDriversPage = () => {
         },
     );
 
-    const [createDriverApplicant, { isLoading: isCreating }] =
-        useCreateDriverApplicantMutation();
-
     const [updateDriverApplicant, { isLoading: isUpdating }] =
         useUpdateDriverApplicantMutation();
 
-    const [deleteDriverApplicant, { isLoading: isDeleting }] =
-        useDeleteDriverApplicantMutation();
+    const [getApplicantFileTicket] = useGetApplicantFileTicketMutation();
 
     const { data: driverDetailsResponse, isLoading: driverDetailsLoading } =
         useGetDriverApplicantByIdQuery(selectedDriver?._id!, {
@@ -189,21 +180,14 @@ const HiringDriversPage = () => {
         }
     }, [driversData?.data]);
 
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
+        return () => window.clearTimeout(timer);
+    }, [searchTerm]);
+
     const filteredApplicants = useMemo(() => {
-        const data = localApplicants || [];
-
-        if (!searchTerm.trim()) return data;
-
-        const value = searchTerm.toLowerCase();
-
-        return data.filter((driver) =>
-            Object.values(driver).some((item) =>
-                String(item || "")
-                    .toLowerCase()
-                    .includes(value),
-            ),
-        );
-    }, [localApplicants, searchTerm]);
+        return localApplicants || [];
+    }, [localApplicants]);
 
     const applicantsByStatus = useMemo(() => {
         return KANBAN_COLUMNS.reduce(
@@ -218,28 +202,24 @@ const HiringDriversPage = () => {
         );
     }, [filteredApplicants]);
 
-    const statsData = useMemo(() => {
-        const total = localApplicants.length;
-
-        return {
-            total,
-            new: localApplicants.filter(
-                (driver) => normalizeStatus(driver.status) === "New",
-            ).length,
-            pending: localApplicants.filter(
-                (driver) => normalizeStatus(driver.status) === "Pending",
-            ).length,
-            qualified: localApplicants.filter(
-                (driver) => normalizeStatus(driver.status) === "Qualified",
-            ).length,
-            disqualified: localApplicants.filter(
-                (driver) => normalizeStatus(driver.status) === "Disqualified",
-            ).length,
-            rejected: localApplicants.filter(
-                (driver) => normalizeStatus(driver.status) === "Rejected",
-            ).length,
-        };
-    }, [localApplicants]);
+    const statsData = driversData?.stats || {
+        total: localApplicants.length,
+        newApplicants: localApplicants.filter(
+            (driver) => normalizeStatus(driver.status) === "New",
+        ).length,
+        pending: localApplicants.filter(
+            (driver) => normalizeStatus(driver.status) === "Pending",
+        ).length,
+        qualified: localApplicants.filter(
+            (driver) => normalizeStatus(driver.status) === "Qualified",
+        ).length,
+        disqualified: localApplicants.filter(
+            (driver) => normalizeStatus(driver.status) === "Disqualified",
+        ).length,
+        rejected: localApplicants.filter(
+            (driver) => normalizeStatus(driver.status) === "Rejected",
+        ).length,
+    };
 
     const formatDate = (date?: string) => {
         if (!date) return "-";
@@ -247,64 +227,29 @@ const HiringDriversPage = () => {
         return new Date(date).toLocaleDateString("en-GB").replace(/\//g, "-");
     };
 
-    const buildDriverFormData = (data: DriverHiringFormData) => {
-        const formDataBody = new FormData();
-
-        formDataBody.append("firstName", data.firstName || "");
-        formDataBody.append("lastName", data.lastName || "");
-        formDataBody.append("email", data.email || "");
-        formDataBody.append("phone", data.phone || "");
-        formDataBody.append("state", data.state || "");
-        formDataBody.append("status", data.status || "new");
-        formDataBody.append("notes", data.notes || "");
-        formDataBody.append("violations", data.violations || "");
-        formDataBody.append(
-            "experienceYears",
-            String(Number(data.experienceYears || 0)),
-        );
-        formDataBody.append("readyDate", data.readyDate || "");
-
+    const buildDriverUpdateBody = (data: DriverHiringFormData) => {
         const reminderPayload = {
             date: data.reminder?.date || "",
             time: data.reminder?.time || "",
             reason: data.reminder?.reason || "",
             isDone: Boolean(data.reminder?.isDone || false),
         };
-
-        formDataBody.append("reminder", JSON.stringify(reminderPayload));
-        formDataBody.append("reminderDate", reminderPayload.date);
-        formDataBody.append("reminderTime", reminderPayload.time);
-        formDataBody.append("reminderReason", reminderPayload.reason);
-        formDataBody.append("isDone", String(reminderPayload.isDone));
-
-        if (data.documents?.length) {
-            Array.from(data.documents).forEach((file) => {
-                formDataBody.append("documents", file);
+        const files = data.documents ? Array.from(data.documents) : [];
+        if (files.length) {
+            const formDataBody = new FormData();
+            formDataBody.append("status", data.status || "New");
+            formDataBody.append("notes", data.notes || "");
+            formDataBody.append("reminder", JSON.stringify(reminderPayload));
+            files.forEach((file) => {
+                formDataBody.append("documents", file, file.name);
             });
+            return formDataBody;
         }
-
-        return formDataBody;
-    };
-
-    const buildStatusFormData = (status: ApplicantStatus) => {
-        const formDataBody = new FormData();
-        formDataBody.append("status", status);
-        return formDataBody;
-    };
-
-    const handleOpenCreate = () => {
-        setEditMode(false);
-        setFormData({
-            status: "New",
-            reminder: {
-                date: "",
-                time: "",
-                reason: "",
-                isDone: false,
-            },
-        });
-        setOriginalData({});
-        setOpen(true);
+        return {
+            status: data.status || "New",
+            notes: data.notes || "",
+            reminder: reminderPayload,
+        };
     };
 
     const handleViewClick = (driver: tDriverHiring) => {
@@ -313,8 +258,6 @@ const HiringDriversPage = () => {
     };
 
     const handleEditClick = (driver: tDriverHiring) => {
-        setOriginalData(driver);
-
         setFormData({
             _id: driver._id,
             firstName: driver.firstName,
@@ -342,52 +285,15 @@ const HiringDriversPage = () => {
         setOpen(true);
     };
 
-    const handleCreate = async (data: DriverHiringFormData) => {
-        try {
-            const formDataBody = buildDriverFormData({
-                ...data,
-                status: data.status || "new",
-            });
-
-            const response = await createDriverApplicant(formDataBody as any).unwrap();
-            const createdApplicant = {
-                _id: (response as any)?.data?._id || `temp-${Date.now()}`,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                email: data.email,
-                phone: data.phone,
-                state: data.state,
-                status: data.status || "New",
-                experienceYears: Number(data.experienceYears || 0),
-                readyDate: data.readyDate,
-                reminder: {
-                    date: data.reminder?.date || "",
-                    time: data.reminder?.time || "",
-                    reason: data.reminder?.reason || "",
-                    isDone: Boolean(data.reminder?.isDone || false),
-                },
-                notes: data.notes,
-                violations: data.violations,
-            } as tDriverHiring;
-
-            setLocalApplicants((prev) => [createdApplicant, ...prev]);
-            toast.success("Driver applicant created successfully!");
-            setOpen(false);
-            refetchDrivers();
-        } catch (err) {
-            toast.error("Failed to create driver applicant");
-        }
-    };
-
     const handleUpdate = async (data: DriverHiringFormData) => {
         if (!formData._id) return;
 
         try {
-            const formDataBody = buildDriverFormData(data);
+            const updateBody = buildDriverUpdateBody(data);
 
             await updateDriverApplicant({
                 id: formData._id,
-                body: formDataBody,
+                body: updateBody,
             }).unwrap();
 
             setLocalApplicants((prev) =>
@@ -395,14 +301,7 @@ const HiringDriversPage = () => {
                     driver._id === formData._id
                         ? {
                             ...driver,
-                            firstName: data.firstName,
-                            lastName: data.lastName,
-                            email: data.email,
-                            phone: data.phone,
-                            state: data.state,
                             status: data.status || "New",
-                            experienceYears: Number(data.experienceYears || 0),
-                            readyDate: data.readyDate,
                             reminder: {
                                 date: data.reminder?.date || "",
                                 time: data.reminder?.time || "",
@@ -410,7 +309,6 @@ const HiringDriversPage = () => {
                                 isDone: Boolean(data.reminder?.isDone || false),
                             },
                             notes: data.notes,
-                            violations: data.violations,
                         }
                         : driver,
                 ),
@@ -420,42 +318,8 @@ const HiringDriversPage = () => {
             setOpen(false);
             refetchDrivers();
         } catch (err) {
-            toast.error("Failed to update driver applicant");
+            toast.error(getErrorMessage(err));
         }
-    };
-
-    const handleDelete = (_id: string, name?: string) => {
-        setDeleteToast({
-            open: true,
-            message: `Are you sure you want to delete driver applicant ${name ? `"${name}"` : ""
-                }?`,
-        });
-
-        setDriverToDelete({ _id, name });
-    };
-
-    const confirmDelete = async () => {
-        if (!driverToDelete?._id) return;
-
-        try {
-            await deleteDriverApplicant(driverToDelete._id).unwrap();
-
-            toast.success(
-                `Driver applicant ${driverToDelete.name ? `"${driverToDelete.name}"` : ""
-                } deleted successfully!`,
-            );
-
-            refetchDrivers();
-            setDeleteToast({ open: false, message: "" });
-            setDriverToDelete(null);
-        } catch (err) {
-            toast.error("Failed to delete driver applicant");
-        }
-    };
-
-    const cancelDelete = () => {
-        setDeleteToast({ open: false, message: "" });
-        setDriverToDelete(null);
     };
 
     const handleDragStart = (driverId?: string) => {
@@ -501,18 +365,16 @@ const HiringDriversPage = () => {
         );
 
         try {
-            const formDataBody = buildStatusFormData(newStatus);
-
             await updateDriverApplicant({
                 id: draggedApplicant._id,
-                body: formDataBody,
+                body: { status: newStatus },
             }).unwrap();
 
             toast.success(`Applicant moved to ${newStatus}`);
             refetchDrivers();
         } catch (err) {
             setLocalApplicants(oldApplicants);
-            toast.error("Failed to update applicant status");
+            toast.error(getErrorMessage(err));
         } finally {
             handleDragEnd();
         }
@@ -1115,7 +977,7 @@ const HiringDriversPage = () => {
 
                     <StatsCard
                         title="New"
-                        value={statsData.new}
+                        value={statsData.newApplicants}
                         icon={Plus}
                     />
 
@@ -1185,8 +1047,12 @@ const HiringDriversPage = () => {
                 <TextField
                     size="small"
                     value={searchTerm}
-                    placeholder="Search by name, phone, state..."
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by name, email, phone..."
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setPage(1);
+                    }}
+                    label="Search applicants"
                     sx={{
                         flex: "1 1 320px",
                         minWidth: { xs: "100%", sm: 250, md: 320 },
@@ -1197,35 +1063,43 @@ const HiringDriversPage = () => {
                         },
                     }}
                 />
-
-                <Button
-                    onClick={handleOpenCreate}
-                    variant="contained"
-                    startIcon={<Plus size={20} />}
-                    sx={{
-                        flex: "0 1 auto",
-                        minWidth: { xs: "100%", sm: 180 },
-                        height: 48,
-
-                        borderRadius: 2,
-                        background: theme.currentPalette.primary,
-                        color: theme.currentPalette.background,
-                        textTransform: "capitalize",
-                        whiteSpace: "nowrap",
-                        boxShadow: "none",
-                        "&:hover": {
-                            background: darken(theme.currentPalette.primary, 0.1),
-                            boxShadow: "none",
-                        },
+                <TextField
+                    select
+                    size="small"
+                    label="Status"
+                    value={statusFilter}
+                    onChange={(event) => {
+                        setStatusFilter(event.target.value);
+                        setPage(1);
                     }}
+                    sx={{ minWidth: { xs: "100%", sm: 150 } }}
                 >
-                    Add Applicant
-                </Button>
+                    <MenuItem value="">All statuses</MenuItem>
+                    {KANBAN_COLUMNS.map(({ key }) => (
+                        <MenuItem value={key} key={key}>{key}</MenuItem>
+                    ))}
+                </TextField>
+                <TextField
+                    select
+                    size="small"
+                    label="Minimum experience"
+                    value={minimumExperience}
+                    onChange={(event) => {
+                        setMinimumExperience(event.target.value);
+                        setPage(1);
+                    }}
+                    sx={{ minWidth: { xs: "100%", sm: 190 } }}
+                >
+                    <MenuItem value="">Any experience</MenuItem>
+                    <MenuItem value="2">2+ years</MenuItem>
+                    <MenuItem value="5">5+ years</MenuItem>
+                    <MenuItem value="10">10+ years</MenuItem>
+                </TextField>
             </Box>
 
-            {error && (
+            {(error || driverError) && (
                 <Box sx={{ mb: 3 }}>
-                    <Erros message={error} />
+                    <Erros message={error || getErrorMessage(driverError)} />
                 </Box>
             )}
 
@@ -1274,6 +1148,16 @@ const HiringDriversPage = () => {
                     </Box>
                 ))}
             </Box>
+            {(driversData?.paginationResult?.totalPages || 1) > 1 && (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                    <Pagination
+                        page={page}
+                        count={driversData?.paginationResult?.totalPages || 1}
+                        onChange={(_, nextPage) => setPage(nextPage)}
+                        color="primary"
+                    />
+                </Box>
+            )}
 
             <Menu
                 anchorEl={anchorEl}
@@ -1331,26 +1215,6 @@ const HiringDriversPage = () => {
                     />
                 </MenuItem>
 
-                <MenuItem
-                    onClick={() => {
-                        if (menuDriver?._id) handleDelete(menuDriver._id, menuDriver.name);
-                        closeActionMenu();
-                    }}
-                    sx={{ fontSize: "14px", color: "#dc2626" }}
-                >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                        <Trash2 size={18} color="#dc2626" />
-                    </ListItemIcon>
-
-                    <ListItemText
-                        primary="Delete"
-                        slotProps={{
-                            primary: {
-                                sx: { color: "#dc2626" },
-                            },
-                        }}
-                    />
-                </MenuItem>
             </Menu>
 
             <DriverHirringForm
@@ -1359,12 +1223,11 @@ const HiringDriversPage = () => {
                     setOpen(false);
                     setEditMode(false);
                     setFormData({});
-                    setOriginalData({});
                 }}
                 formData={formData as Partial<tDriverHiring>}
-                onSubmit={editMode ? handleUpdate : handleCreate}
+                onSubmit={handleUpdate}
                 editMode={editMode}
-                isLoading={isCreating || isUpdating}
+                isLoading={isUpdating}
             />
 
             <Dialog
@@ -1537,33 +1400,29 @@ const HiringDriversPage = () => {
                             </Box>
 
                             <Box sx={{ mt: 1.5 }}>
-                                {document?.viewLink ? (
-                                    <Box
-                                        component="a"
-                                        href={document.viewLink}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1.5,
-                                            border: "1px solid #BFD3F0",
-                                            borderRadius: "10px",
-                                            p: 2,
-                                            textDecoration: "none",
-                                            color: theme.currentPalette.primary,
-
-                                            bgcolor: "#fff",
-                                            cursor: "pointer",
-                                            "&:hover": {
-                                                bgcolor: "#F3F7FF",
-                                            },
+                                {document?.fileId ? (
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        startIcon={<FileText size={20} />}
+                                        onClick={async () => {
+                                            const popup = window.open("about:blank", "_blank");
+                                            if (!popup) {
+                                                toast.error("Allow pop-ups to view the applicant document.");
+                                                return;
+                                            }
+                                            try {
+                                                const ticket = await getApplicantFileTicket(document.fileId).unwrap();
+                                                popup.location.href = ticket.url;
+                                            } catch {
+                                                popup.close();
+                                                toast.error("Could not securely open the applicant document.");
+                                            }
                                         }}
+                                        sx={{ minHeight: 52 }}
                                     >
-                                        <FileText size={20} />
-
-                                        <Typography sx={{}}>Document</Typography>
-                                    </Box>
+                                        View Resume / CDL (PDF)
+                                    </Button>
                                 ) : (
                                     <Box
                                         sx={{
@@ -1590,69 +1449,6 @@ const HiringDriversPage = () => {
                 ) : null}
             </Dialog>
 
-            <Dialog
-                open={deleteToast.open}
-                onClose={cancelDelete}
-                PaperProps={{
-                    sx: {
-                        borderRadius: 2,
-                        boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                        minWidth: 300,
-                        maxWidth: 400,
-                        margin: 2,
-                    },
-                }}
-            >
-                <Box sx={{ p: 3, textAlign: "center" }}>
-                    <Typography
-                        variant="h6"
-                        gutterBottom
-                        sx={{
-
-                            color: "text.primary",
-                        }}
-                    >
-                        Confirm Delete
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mb: 3,
-                            color: "text.secondary",
-                        }}
-                    >
-                        {deleteToast.message}
-                    </Typography>
-
-                    <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
-                        <Button
-                            variant="outlined"
-                            color="inherit"
-                            onClick={cancelDelete}
-                            sx={{
-                                borderRadius: 2,
-                                minWidth: 80,
-                            }}
-                        >
-                            Cancel
-                        </Button>
-
-                        <Button
-                            variant="contained"
-                            color="error"
-                            onClick={confirmDelete}
-                            disabled={isDeleting}
-                            sx={{
-                                borderRadius: 2,
-                                minWidth: 80,
-                            }}
-                        >
-                            Delete
-                        </Button>
-                    </Box>
-                </Box>
-            </Dialog>
         </Box>
     );
 };

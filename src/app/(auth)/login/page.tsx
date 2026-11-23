@@ -331,6 +331,8 @@ const Login = () => {
           router.replace("/superAdmin/companies");
         } else if (role === "manager") {
           router.replace("/manager/loads");
+        } else if (role === "investor") {
+          router.replace("/investor/trucks");
         } else if (role === "employee") {
           router.replace("/dispatchers/loads");
         } else if (role === "driver") {
