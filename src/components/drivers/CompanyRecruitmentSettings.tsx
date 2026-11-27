@@ -99,7 +99,7 @@ export default function CompanyRecruitmentSettings({
   }
 
   return (
-    <Box sx={{ maxWidth: 900, mx: "auto", py: { xs: 1, md: 3 } }}>
+    <Box sx={{ maxWidth: 1100, mx: "auto", py: { xs: 1, md: 3 } }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         Company Recruitment
       </Typography>
