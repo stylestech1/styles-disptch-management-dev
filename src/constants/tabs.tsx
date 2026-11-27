@@ -182,11 +182,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       subtitle: "Review, approve, and manage driver recruitment requests",
       icon: icons.hiringDrivers,
     },
-    // {
-    //   label: "Recruitment",
-    //   subtitle: "Manage your public driver application link and availability",
-    //   icon: icons.recruitment,
-    // },
+    {
+      label: "Recruitment",
+      subtitle: "Manage your public driver application link and availability",
+      icon: icons.recruitment,
+    },
     {
       label: "Owner Operators",
       subtitle: "Review, approve, and manage owner operator applications",
@@ -306,11 +306,11 @@ export const TABS_CONFIG: Record<TUserRole, TabItem[]> = {
       icon: icons.detention,
       path: "loads-claims",
     },
-    // {
-    //   label: "Recruitment",
-    //   subtitle: "View your public driver application link and availability",
-    //   icon: icons.recruitment,
-    // },
+    {
+      label: "Recruitment",
+      subtitle: "View your public driver application link and availability",
+      icon: icons.recruitment,
+    },
     {
       label: "Hiring Drivers",
       subtitle: "Review, approve, and manage driver recruitment requests",
